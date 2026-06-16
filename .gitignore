@@ -1,0 +1,11 @@
+node_modules/
+.svelte-kit/
+build/
+dist/
+.turbo/
+*.tsbuildinfo
+.env
+.env.local
+.DS_Store
+/playwright-report/
+/test-results/

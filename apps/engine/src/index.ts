@@ -1,4 +1,4 @@
-import { claimNextJob, completeJob, failJob } from "@vitruvius/db";
+import { claimNextJob, completeJob, dbClientFromEnv, failJob, type DbClient } from "@vitruvius/db";
 import type { Job } from "@vitruvius/core";
 import { handleProcessJob } from "./process.js";
 import { handleExportJob } from "./export.js";
@@ -20,25 +20,26 @@ async function dispatch(job: Job): Promise<void> {
   }
 }
 
-async function tick(): Promise<void> {
-  const job = await claimNextJob();
+async function tick(db: DbClient): Promise<void> {
+  const job = await claimNextJob(db);
   if (!job) return;
 
   try {
     await dispatch(job);
-    await completeJob(job.id);
+    await completeJob(db, job.id);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     console.error(`[engine] job ${job.id} (${job.type}) failed: ${reason}`);
-    await failJob(job.id, reason);
+    await failJob(db, job.id, reason);
   }
 }
 
 async function main(): Promise<void> {
+  const db = dbClientFromEnv();
   console.log(`[engine] worker started; polling every ${POLL_INTERVAL_MS}ms`);
   for (;;) {
     try {
-      await tick();
+      await tick(db);
     } catch (error) {
       // A failure to even claim a job (e.g. DB unavailable) must not kill the loop.
       console.error("[engine] poll tick error:", error);

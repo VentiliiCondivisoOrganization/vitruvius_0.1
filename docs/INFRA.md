@@ -20,7 +20,8 @@ env vars lives in [`.env.example`](../.env.example).
   `ENGINE_POLL_INTERVAL_MS` to pace its polling.
 
 ### Supabase
-- **Postgres** — stores `manuals`, `steps`, and `jobs`.
+- **Postgres** — stores `manuals`, `steps`, `jobs`, and `learnings` (the meta-learning store,
+  spec 11 — reusable domain heuristics, written at end-of-run and from confirmed editor edits).
 - **Storage** — stores uploaded videos, extracted keyframes, and exported PDFs.
 - **Auth** — user authentication for the web app.
 
@@ -40,5 +41,15 @@ env vars lives in [`.env.example`](../.env.example).
 | `PUBLIC_SUPABASE_URL` | web (client + server) | Supabase project URL |
 | `PUBLIC_SUPABASE_ANON_KEY` | web (client + server) | Public anon key for browser clients |
 | `SUPABASE_SERVICE_ROLE_KEY` | engine (server) | Privileged DB/Storage access for the worker |
-| `GEMINI_API_KEY` | engine (server) | Gemini video understanding |
+| `GEMINI_API_KEY` | engine (server) | Gemini video understanding (segment, instructions, critic) |
 | `ENGINE_POLL_INTERVAL_MS` | engine | Poll cadence for claiming jobs (default 2000) |
+
+## AI cost & configuration (mostly future)
+
+- **Credit attribution.** Each AI call should be attributable to a `manualId` so credit spend per
+  manual is observable — you can't optimize what you don't count. See [`AI.md`](./AI.md).
+- **Agent registry (out of MVP scope).** Today the engine uses one provider (Gemini) under
+  `GEMINI_API_KEY`. The future self-host/BYO model resolves each agent role (Segmenter / Instructor /
+  Critic) to a provider + model + credential from a startup config; that config and its env vars land
+  with their own spec. Nothing in the MVP should assume a single hardcoded provider beyond
+  `packages/ai`.

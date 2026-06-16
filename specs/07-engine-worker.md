@@ -2,7 +2,7 @@
 
 **Goal:** The engine claims `process` jobs and runs the full pipeline.
 **Package/app(s):** `apps/engine`, `packages/db`, `packages/media`, `packages/ai`.
-**Depends on:** 02-db, 04-media, 05-ai-segment, 06-ai-instructions.
+**Depends on:** 02-db, 04-media, 05-ai-segment, 06-ai-instructions, 10-ai-critic, 11-learnings.
 
 ## Inputs
 - A queued `process` job (claimed via `@vitruvius/db`).
@@ -14,9 +14,12 @@
 
 ## In scope
 - The poll loop claims a `process` job.
-- Run media → ai-segment → ai-instructions.
+- Run the full pipeline: prime with learnings → media → ai-segment → ai-instructions →
+  ai-critic (spec 10) → distill learnings (spec 11).
 - Save the manual via db; set `manuals.status` and the job status.
 - Retry / attempt handling on failure.
+- Order matters for cost: the Critic and learnings passes are cheap text-only stages that run after
+  the expensive media/segment work — never re-watch the video here.
 
 ## Out of scope
 - The editor (spec 08).

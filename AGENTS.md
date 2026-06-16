@@ -13,6 +13,18 @@
 - They communicate only through the database (jobs table + manual rows) and `@vitruvius/core`.
 - ffmpeg, Gemini, and Playwright live in the engine, never in the web app.
 
+## AI layer (see `docs/AI.md`)
+- **Credits are a budget.** Prefer the cheapest model that clears the bar; batch into one structured
+  call over many round-trips; chunk only fast/ambiguous sections; cache on a content hash. Never call
+  AI from the web app — model access lives in the engine, behind `packages/ai`, only.
+- **Stay provider-pluggable.** No SDK import, model name, or API key may leak outside `packages/ai`.
+  The pipeline depends on the agent interfaces (`segment`, `writeInstructions`, `critique`), never on
+  a concrete provider. (Enables the future BYO-license self-host; out of MVP scope.)
+- **Don't let the generator grade itself.** Accuracy review is the decoupled Critic (spec 10); it
+  only recalibrates `confidence` and raises `critique` flags — it never rewrites instructions.
+- **Capture learnings, don't inline them.** Reusable, core-scope knowledge goes to the learnings
+  store (spec 11) to prime future runs — never hardcode domain heuristics in prompts or code.
+
 ## TypeScript
 - Never use `any`. Use precise types, generics, or `unknown` with narrowing.
 - Validate external/AI/untrusted data with the zod schemas in `@vitruvius/core`.

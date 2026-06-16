@@ -31,3 +31,26 @@ One vendor for DB + Storage + Auth keeps the surface small. Revisit if egress co
 ### 7. Gemini for video understanding
 Verify the exact current model name before implementing `packages/ai`; chunk clips for fast action
 sequences. Real calls are stubbed in the bootstrap.
+
+### 8. Credits are a first-class constraint; the AI layer is provider-pluggable (BYO future)
+AI calls are the dominant variable cost, so credit optimization is a design constraint in every
+AI-touching spec, not an afterthought (cheapest model that clears the bar, batch over round-trips,
+chunk only what needs it, cache on content hash, attribute spend per manual). To keep the future
+open, **all model access goes through `packages/ai`** and the pipeline depends on agent *interfaces*,
+never a concrete provider — that seam later becomes an agent registry so a company can self-host,
+choose which agents to run, and attach their own license/keys. The registry itself is **out of MVP
+scope**; the MVP ships one hosted provider under our key. See [`AI.md`](./AI.md).
+
+### 9. Accuracy review is a decoupled Critic agent
+The generator is biased toward its own output, so it cannot honestly grade it. A separate **Critic**
+agent (spec 10) with its own prompt — and optionally a cheaper model — reviews the draft against its
+`sourceNotes`, recalibrates `confidence`, and raises concrete `critique` flags. It only scores and
+flags; it never rewrites instructions. This keeps the human editor's trust signal independent of the
+thing that produced the draft. In the spirit of a `/grill-me` reviewer: unbiased and relentless, but
+no busywork on well-supported steps.
+
+### 10. Meta-learning via a learnings store
+Knowledge the pipeline discovers for its core scope (tool/part conventions, audio cues, recurring
+warnings) — and especially confirmed human edits — is distilled into a `learnings` store (spec 11)
+and injected back into future runs. This improves accuracy and cuts credits (the model reasons less
+from scratch). Only reusable, generalizable heuristics are stored — never per-video transcripts.

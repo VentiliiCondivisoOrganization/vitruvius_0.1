@@ -18,7 +18,7 @@ and source notes, and a human confirms or corrects each step before export.
 | File storage | Supabase Storage |
 | Auth | Supabase Auth |
 | Video processing | ffmpeg (inside the engine container) |
-| AI runtime | Google Gemini (video understanding) — stubbed in this bootstrap |
+| AI runtime | Google Gemini (video understanding) — stubbed in this bootstrap; credit-aware and provider-pluggable behind `packages/ai` (see [`docs/AI.md`](docs/AI.md)) |
 | PDF export | HTML template + Playwright print-to-PDF (inside the engine container) |
 | Node | current active LTS |
 
@@ -49,6 +49,7 @@ Useful workspace scripts: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm tes
 ## Docs & specs
 
 - Architecture map: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- The AI layer (agents, credit budget, Critic, learnings, BYO-license future): [`docs/AI.md`](docs/AI.md)
 - Infrastructure & env vars: [`docs/INFRA.md`](docs/INFRA.md)
 - Decisions (ADR-lite): [`docs/DECISIONS.md`](docs/DECISIONS.md)
-- Task specs: [`specs/`](specs/) — one vertical slice per file (`01`–`09`).
+- Task specs: [`specs/`](specs/) — one vertical slice per file (`01`–`11`).

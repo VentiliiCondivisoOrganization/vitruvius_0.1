@@ -14,8 +14,12 @@
 
 ## In scope
 - A Gemini call that fills the operative fields per step.
-- Preserve `sourceNotes` and `confidence` from segmentation.
+- Preserve `sourceNotes` and `confidence` from segmentation (the **Critic**, spec 10, depends on
+  `sourceNotes` to judge whether each instruction is actually supported).
 - Validate output with `manualStepSchema` from `@vitruvius/core`.
+- **Credit discipline** (see [`docs/AI.md`](../docs/AI.md)): fill all steps in one structured call
+  rather than per-step round-trips; cache on a content hash of the input + prompt version.
+- Prime the prompt with relevant prior **learnings** (spec 11) when available.
 
 ## Out of scope
 - Segmentation / time bounds (spec 05).

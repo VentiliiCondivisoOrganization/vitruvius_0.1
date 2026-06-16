@@ -14,8 +14,10 @@
 - A SvelteKit steps list + step editor supporting: edit a step, split/merge steps, correct
   components/tools, add quality checks, add warnings, handle missing info, and choose among
   `alternatives`.
-- Surface each step's `confidence`, `reviewStatus`, and `sourceNotes`.
-- Persist edits and update `reviewStatus`.
+- Surface each step's `confidence`, `reviewStatus`, and `sourceNotes` (the Critic, spec 10,
+  recalibrates `confidence` and may add `critique` flags upstream — surface those if present).
+- Persist edits and update `reviewStatus`. Confirmed/corrected edits are the highest-quality signal
+  for the learnings store (spec 11), though distillation itself runs in the engine, not here.
 
 ## Out of scope
 - AI re-generation.

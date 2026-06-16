@@ -8,8 +8,20 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "vitest run",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:stop": "supabase stop"
   },
-  "dependencies": { "@vitruvius/core": "workspace:*" },
-  "devDependencies": { "typescript": "6.0.3" }
+  "dependencies": {
+    "@vitruvius/core": "workspace:*",
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "^3.0.0",
+    "dotenv": "^16.4.0",
+    "@types/node": "24.7.0"
+  }
 }

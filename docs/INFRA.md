@@ -28,7 +28,15 @@ env vars lives in [`.env.example`](../.env.example).
 ### Job queue
 - The `jobs` table in Postgres **is** the queue. The engine claims work with
   `SELECT ... FOR UPDATE SKIP LOCKED`, so multiple engine instances can run concurrently without
-  double-processing. **No Redis, no third-party queue.**
+  double-processing. **No Redis, no third-party queue.** The lock lives in the `claim_next_job`
+  Postgres function (`packages/db`), called via `.rpc()` — PostgREST can't issue row-locking selects.
+
+### Local development (Supabase)
+- The `supabase` CLI ships as a repo devDependency (no global install). The local stack runs in
+  Docker; the schema lives as versioned SQL in `packages/db/supabase/migrations/`.
+- From `packages/db`: `pnpm db:start` (boot the stack), `pnpm db:reset` (apply migrations), `pnpm
+  db:stop`. Get the local URL + keys with `pnpm supabase status`. The same migrations apply to a
+  hosted project at deploy time (`supabase link` + `db push`).
 
 ### Google Gemini
 - Runtime AI for video understanding (segmentation + instruction writing), called from the engine

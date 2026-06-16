@@ -1,0 +1,23 @@
+{
+  "name": "@vitruvius/engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@vitruvius/core": "workspace:*",
+    "@vitruvius/db": "workspace:*",
+    "@vitruvius/media": "workspace:*",
+    "@vitruvius/ai": "workspace:*",
+    "@vitruvius/export": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "@types/node": "24.7.0"
+  }
+}

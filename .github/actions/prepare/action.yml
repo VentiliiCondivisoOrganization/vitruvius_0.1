@@ -1,0 +1,20 @@
+name: Prepare
+
+description: Checkout-side setup — install the pnpm toolchain, Node, and dependencies.
+
+runs:
+  using: composite
+  steps:
+    # `packageManager` in package.json pins the pnpm version; action-setup reads it.
+    - name: Set up pnpm
+      uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+
+    - name: Set up Node
+      uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+      with:
+        node-version-file: .node-version
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

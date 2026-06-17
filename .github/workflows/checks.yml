@@ -1,0 +1,171 @@
+name: Checks
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+# Cancel superseded runs on a PR — a new push makes the in-progress run moot.
+# On main/tags cancel-in-progress is false, so pushes there queue under a shared
+# per-ref group instead of cancelling each other.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-24.04
+    # No API access needed — the title comes from the event payload, not the API.
+    permissions: {}
+    steps:
+      - name: Skip outside pull requests
+        if: github.event_name != 'pull_request'
+        run: echo "PR title check only runs for pull_request events."
+
+      - name: Validate Conventional Commit PR title (scope required)
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Scope is REQUIRED: type(scope): description — or type(scope)!: … for a breaking change.
+          pattern='^(feat|fix|perf|deps|revert|docs|style|chore|refactor|test|build|ci)\([-a-zA-Z0-9,._/]+\)!?: .+$'
+
+          if [[ "$PR_TITLE" =~ $pattern ]]; then
+            echo "PR title OK."
+            exit 0
+          fi
+
+          # Keep the title off the start of a line so it can't inject a ::workflow:: command.
+          echo "::error::PR title must be a Conventional Commit WITH A SCOPE: 'type(scope): description' (or 'type(scope)!: …' for a breaking change)."
+          echo "::error::Scope = the affected package/app (core, db, web, engine, ai, media, export), or a short area such as 'checks' or 'deps'. E.g. 'feat(db): add manuals table'. See AGENTS.md § Pull requests."
+          echo "Got title: $PR_TITLE"
+          exit 1
+
+  format:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Prepare
+        uses: ./.github/actions/prepare
+
+      # Prettier's content-based cache: only changed files are re-checked.
+      - name: Restore Prettier cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ./node_modules/.cache/prettier/.prettier-cache
+          key: ${{ runner.os }}-prettier-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-prettier-
+
+      - name: Check formatting
+        run: pnpm format:check
+
+  lint:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Prepare
+        uses: ./.github/actions/prepare
+
+      # Turbo's content-hashed cache: unchanged packages skip ESLint entirely.
+      # `lint` runs per-package (incl. apps/web's own config) via turbo.
+      - name: Restore Turbo cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-lint-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-turbo-lint-
+
+      - name: Lint
+        run: pnpm lint
+
+  typecheck:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Prepare
+        uses: ./.github/actions/prepare
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Prepare
+        uses: ./.github/actions/prepare
+
+      - name: Build
+        run: pnpm build
+
+  # ---------------------------------------------------------------------------
+  # Unit tests are not gated yet: the only test suite today is `@vitruvius/db`,
+  # whose Vitest run needs a live Supabase (Docker) instance — see specs/02-db.md.
+  # Enable this job (and add it to `checks-pass.needs`) once tests run without
+  # external services, or once we provision Supabase/Postgres as a CI service.
+  #
+  # test:
+  #   runs-on: ubuntu-24.04
+  #   permissions:
+  #     contents: read
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+  #       with:
+  #         persist-credentials: false
+  #     - name: Prepare
+  #       uses: ./.github/actions/prepare
+  #     - name: Test
+  #       run: pnpm test
+  # ---------------------------------------------------------------------------
+
+  # Aggregate gate. This is the single status check the `main` ruleset requires,
+  # so adding/removing a job above only means editing its `needs` list — the
+  # branch protection rule never has to change.
+  checks-pass:
+    if: always()
+    needs: ['pr-title', 'format', 'lint', 'typecheck', 'build']
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Fail if any required check did not succeed
+        uses: ./.github/actions/needs_success
+        with:
+          needs: '${{ toJson(needs) }}'

@@ -1,26 +1,26 @@
 # Vitruvius
 
 Vitruvius turns a **video of an assembly process** into an **editable, step-by-step instruction
-manual** (IKEA-style). The positioning is deliberate: *AI-generated draft instructions with a guided
-human revision editor* — not a fully automatic generator. Every AI output carries a confidence value
+manual** (IKEA-style). The positioning is deliberate: _AI-generated draft instructions with a guided
+human revision editor_ — not a fully automatic generator. Every AI output carries a confidence value
 and source notes, and a human confirms or corrects each step before export.
 
 ## Stack
 
-| Concern | Choice |
-|---|---|
-| Language | TypeScript everywhere |
-| Monorepo tooling | pnpm workspaces + Turborepo |
-| Web app | SvelteKit + Tailwind + shadcn-svelte |
-| Processing engine | `apps/engine` — standalone containerized worker (own deploy/scale cadence) |
-| Job queue | Postgres-backed `jobs` table in Supabase (`FOR UPDATE SKIP LOCKED`) — no Redis |
-| Database | Supabase Postgres |
-| File storage | Supabase Storage |
-| Auth | Supabase Auth |
-| Video processing | ffmpeg (inside the engine container) |
-| AI runtime | Google Gemini (video understanding) — stubbed in this bootstrap; credit-aware and provider-pluggable behind `packages/ai` (see [`docs/AI.md`](docs/AI.md)) |
-| PDF export | HTML template + Playwright print-to-PDF (inside the engine container) |
-| Node | current active LTS |
+| Concern           | Choice                                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Language          | TypeScript everywhere                                                                                                                                      |
+| Monorepo tooling  | pnpm workspaces + Turborepo                                                                                                                                |
+| Web app           | SvelteKit + Tailwind + shadcn-svelte                                                                                                                       |
+| Processing engine | `apps/engine` — standalone containerized worker (own deploy/scale cadence)                                                                                 |
+| Job queue         | Postgres-backed `jobs` table in Supabase (`FOR UPDATE SKIP LOCKED`) — no Redis                                                                             |
+| Database          | Supabase Postgres                                                                                                                                          |
+| File storage      | Supabase Storage                                                                                                                                           |
+| Auth              | Supabase Auth                                                                                                                                              |
+| Video processing  | ffmpeg (inside the engine container)                                                                                                                       |
+| AI runtime        | Google Gemini (video understanding) — stubbed in this bootstrap; credit-aware and provider-pluggable behind `packages/ai` (see [`docs/AI.md`](docs/AI.md)) |
+| PDF export        | HTML template + Playwright print-to-PDF (inside the engine container)                                                                                      |
+| Node              | current active LTS                                                                                                                                         |
 
 ## The web / engine boundary
 

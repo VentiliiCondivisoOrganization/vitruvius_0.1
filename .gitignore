@@ -4,8 +4,17 @@ build/
 dist/
 .turbo/
 *.tsbuildinfo
+
+# Formatter / linter caches
+.eslintcache
+.cache/
 .env
 .env.local
 .DS_Store
 /playwright-report/
 /test-results/
+coverage/
+
+# Claude Code agent worktrees (full repo checkouts) & local settings
+.claude/worktrees/
+.claude/settings.local.json

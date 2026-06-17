@@ -27,8 +27,13 @@ the `@vitruvius/core` zod schemas before it is trusted.
 
 ## Credit optimization (cross-cutting)
 
-AI calls are the dominant variable cost. Treat **credits as a first-class budget**, not an
-afterthought — in every spec, every prompt, every loop.
+**Accuracy, confidence, and reliability are the constraint; credits are minimized within it, never
+above it.** Optimize away *waste* — redundant calls, over-sized models on easy steps, re-billing
+identical inputs — never quality. If a cheaper path would lower accuracy or weaken the confidence
+signal, it is not the cheaper path; it is the wrong path.
+
+With that ordering fixed: AI calls are the dominant variable cost, so treat **credits as a
+first-class budget**, not an afterthought — in every spec, every prompt, every loop.
 
 - **Cheapest model that clears the bar.** Don't default to the largest model. Reserve expensive
   calls (e.g. fine-grained re-segmentation) for sections the cheap pass flagged as low-confidence.

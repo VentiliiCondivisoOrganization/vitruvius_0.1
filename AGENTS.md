@@ -14,9 +14,11 @@
 - ffmpeg, Gemini, and Playwright live in the engine, never in the web app.
 
 ## AI layer (see `docs/AI.md`)
-- **Credits are a budget.** Prefer the cheapest model that clears the bar; batch into one structured
-  call over many round-trips; chunk only fast/ambiguous sections; cache on a content hash. Never call
-  AI from the web app — model access lives in the engine, behind `packages/ai`, only.
+- **Credits are a budget, spent under a quality bar.** Accuracy, confidence, and reliability come
+  first; minimize credits within that, never above it — cut waste, not quality. Prefer the cheapest
+  model that clears the bar; batch into one structured call over many round-trips; chunk only
+  fast/ambiguous sections; cache on a content hash. Never call AI from the web app — model access
+  lives in the engine, behind `packages/ai`, only.
 - **Stay provider-pluggable.** No SDK import, model name, or API key may leak outside `packages/ai`.
   The pipeline depends on the agent interfaces (`segment`, `writeInstructions`, `critique`), never on
   a concrete provider. (Enables the future BYO-license self-host; out of MVP scope.)

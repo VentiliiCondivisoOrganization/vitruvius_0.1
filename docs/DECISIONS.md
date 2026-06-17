@@ -33,8 +33,9 @@ Verify the exact current model name before implementing `packages/ai`; chunk cli
 sequences. Real calls are stubbed in the bootstrap.
 
 ### 8. Credits are a first-class constraint; the AI layer is provider-pluggable (BYO future)
-AI calls are the dominant variable cost, so credit optimization is a design constraint in every
-AI-touching spec, not an afterthought (cheapest model that clears the bar, batch over round-trips,
+Accuracy, confidence, and reliability come first; credits are minimized *within* that bar, never
+above it — we cut waste, not quality. With that ordering fixed, AI calls are the dominant variable
+cost, so credit optimization is a design constraint in every AI-touching spec, not an afterthought (cheapest model that clears the bar, batch over round-trips,
 chunk only what needs it, cache on content hash, attribute spend per manual). To keep the future
 open, **all model access goes through `packages/ai`** and the pipeline depends on agent *interfaces*,
 never a concrete provider — that seam later becomes an agent registry so a company can self-host,

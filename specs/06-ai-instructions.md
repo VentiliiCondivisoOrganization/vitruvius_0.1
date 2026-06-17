@@ -20,7 +20,7 @@
 - Preserve `sourceNotes` and `confidence` from segmentation (the **Critic**, spec 10, depends on
   `sourceNotes` to judge whether each instruction is actually supported).
 - Validate output with `manualStepSchema` from `@vitruvius/core`.
-- **Credit discipline** (see [`docs/AI.md`](../docs/AI.md)): fill all steps in one structured call
+- **Credit discipline** (see [`docs/ai/ai-layer.md`](../docs/ai/ai-layer.md)): fill all steps in one structured call
   rather than per-step round-trips; cache on a content hash of the input + prompt version.
 - Prime the prompt with relevant prior **learnings** (spec 11) when available.
 

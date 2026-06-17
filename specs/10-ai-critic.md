@@ -4,8 +4,8 @@
 **Package/app(s):** `packages/ai` (+ a small contract addition in `packages/core`).
 **Depends on:** 01-core, 06-ai-instructions.
 
-> Decoupling is the point: the generator must not grade itself. See [`docs/AI.md`](../docs/AI.md)
-> ("The Critic") and decision 9 in [`docs/DECISIONS.md`](../docs/DECISIONS.md). The spirit is a
+> Decoupling is the point: the generator must not grade itself. See [`docs/ai/ai-layer.md`](../docs/ai/ai-layer.md)
+> ("The Critic") and decision 9 in [`docs/ai/decisions.md`](../docs/ai/decisions.md). The spirit is a
 > `/grill-me` reviewer — relentless and unbiased, but no busywork on well-supported steps.
 
 ## Inputs

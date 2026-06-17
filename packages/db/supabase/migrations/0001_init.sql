@@ -57,8 +57,10 @@ create table jobs (
   updated_at timestamptz not null default now()
 );
 
--- The hot path for claim_next_job: find the oldest queued job of a given type.
-create index jobs_claim_idx on jobs (status, created_at);
+-- The hot path for claim_next_job: oldest queued job of a given type. Keying on
+-- (status, type, created_at) lets a worker claiming a subset of types seek
+-- straight to matching rows instead of scanning queued rows of other types.
+create index jobs_claim_idx on jobs (status, type, created_at);
 
 -- ---------------------------------------------------------------------------
 -- updated_at maintenance

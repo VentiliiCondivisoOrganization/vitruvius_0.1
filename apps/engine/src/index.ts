@@ -1,4 +1,4 @@
-import { claimNextJob, completeJob, dbClientFromEnv, failJob, type DbClient } from "@vitruvius/db";
+import { claimNextJob, completeJob, createDbClient, failJob, type DbClient } from "@vitruvius/db";
 import type { Job } from "@vitruvius/core";
 import { handleProcessJob } from "./process.js";
 import { handleExportJob } from "./export.js";
@@ -34,8 +34,18 @@ async function tick(db: DbClient): Promise<void> {
   }
 }
 
+// The engine bypasses RLS, so it MUST run with the service-role key. Fail fast
+// here rather than surfacing opaque permission errors on the first query.
+function engineDbClient(): DbClient {
+  const url = process.env.PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url) throw new Error("[engine] PUBLIC_SUPABASE_URL is required");
+  if (!key) throw new Error("[engine] SUPABASE_SERVICE_ROLE_KEY is required");
+  return createDbClient({ url, key });
+}
+
 async function main(): Promise<void> {
-  const db = dbClientFromEnv();
+  const db = engineDbClient();
   console.log(`[engine] worker started; polling every ${POLL_INTERVAL_MS}ms`);
   for (;;) {
     try {

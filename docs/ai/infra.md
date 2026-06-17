@@ -1,7 +1,7 @@
 # Infrastructure
 
 How the services connect, and which environment variable each one consumes. The canonical list of
-env vars lives in [`.env.example`](../.env.example).
+env vars lives in [`.env.example`](../../.env.example).
 
 ## Services
 
@@ -52,7 +52,7 @@ env vars lives in [`.env.example`](../.env.example).
 ## AI cost & configuration (mostly future)
 
 - **Credit attribution.** Each AI call should be attributable to a `manualId` so credit spend per
-  manual is observable — you can't optimize what you don't count. See [`AI.md`](./AI.md).
+  manual is observable — you can't optimize what you don't count. See [`ai-layer.md`](./ai-layer.md).
 - **Agent registry (out of MVP scope).** Today the engine uses one provider (Gemini) under
   `GEMINI_API_KEY`. The future self-host/BYO model resolves each agent role (Segmenter / Instructor /
   Critic) to a provider + model + credential from a startup config; that config and its env vars land

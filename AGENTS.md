@@ -78,8 +78,9 @@
   — e.g. `feat(db): add manuals table`, `ci: structure checks workflow`. Match the repo's
   existing history; the `pr-title` CI job enforces the shape.
   - Types: `feat fix perf refactor style docs test chore build ci deps revert`.
-  - Scope is a package/app name (`core`, `db`, `web`, `engine`, `ai`, `media`, `export`, `ci`,
-    `deps`) or a short lowercase area; optional but encouraged.
+  - **Scope is required** (the `pr-title` job rejects a scopeless title): a package/app name
+    (`core`, `db`, `web`, `engine`, `ai`, `media`, `export`), `ci` for infra, `deps` for bumps,
+    or a short lowercase area.
   - A change that breaks the `@vitruvius/core` contract or the DB schema gets a `!`
     (`feat(core)!: …`) and a `BREAKING CHANGE:` block in the body.
 - **Body follows [`.github/pull_request_template.md`](.github/pull_request_template.md)** — the

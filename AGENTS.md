@@ -37,6 +37,20 @@
 - After changes run: `pnpm typecheck`, `pnpm lint`, and the smallest relevant test.
 - Do not claim a command passed unless it was actually run.
 
+## CI (`.github/workflows/checks.yml`)
+- One job per concern (`pr-title`, `lint`, `typecheck`, `build`, …), each set up via the
+  `prepare` composite action (pnpm + Node from `.node-version` + frozen install).
+- They all feed one aggregate job, **`checks-pass`** — the single status check the `main`
+  ruleset requires. Add or drop a job by editing only its `needs:` list; never change the
+  branch-protection rule to match.
+- `main` is protected: PR-only, squash-only, threads resolved, and gated by a **merge queue**.
+  The workflow runs on `pull_request` *and* `merge_group`, so keep both triggers when editing it.
+- **Every stack gets CI before it lands.** When you add a new app/package or a non-JS toolchain
+  (Docker engine worker, ffmpeg, Playwright, DB migrations, …) and no check covers it yet, add a
+  job for it in the same PR and wire it into `checks-pass.needs`. A stack with no CI is incomplete.
+  If a check can't run in plain CI yet (needs Docker/a live service), scaffold it commented-out
+  with a note on what would enable it, rather than leaving it unmentioned.
+
 ## Output
 - Summarise changed files, assumptions, and risks.
 - Report the commands you ran and their results.

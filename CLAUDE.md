@@ -8,5 +8,5 @@ instruction manuals (AI draft + guided human editor — not a fully automatic ge
 Architecture: a SvelteKit web app and a separate containerized engine worker, in one
 monorepo, communicating only via the database and the `@vitruvius/core` contract.
 
-Start from `docs/ARCHITECTURE.md` for the map and `specs/` for the task you were assigned.
+Start from `docs/ai/architecture.md` for the map and `specs/` for the task you were assigned.
 Use Plan mode for any non-trivial task. Build vertical slices, not the whole app at once.

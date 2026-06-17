@@ -32,7 +32,7 @@ One vendor for DB + Storage + Auth keeps the surface small. Revisit if egress co
 Verify the exact current model name before implementing `packages/ai`; chunk clips for fast action
 sequences. Real calls are stubbed in the bootstrap.
 
-### 8. Credits are a first-class constraint; the AI layer is provider-pluggable (BYO future)
+### 8. Quality first, then minimize credits; the AI layer is provider-pluggable (BYO future)
 Accuracy, confidence, and reliability come first; credits are minimized *within* that bar, never
 above it — we cut waste, not quality. With that ordering fixed, AI calls are the dominant variable
 cost, so credit optimization is a design constraint in every AI-touching spec, not an afterthought (cheapest model that clears the bar, batch over round-trips,

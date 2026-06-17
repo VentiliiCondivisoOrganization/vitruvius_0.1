@@ -4,7 +4,7 @@
 
 Vitruvius turns a **video of an assembly/montage process** into an **editable, step-by-step
 instruction manual** (IKEA-style), then lets a human review and export it. The positioning is
-deliberate: *"AI-generated draft instructions with a guided human revision editor."* It is **not**
+deliberate: _"AI-generated draft instructions with a guided human revision editor."_ It is **not**
 a fully automatic, perfect manual generator. Every AI output carries a confidence value and source
 notes, and a human confirms/corrects before export.
 
@@ -88,10 +88,10 @@ trade-offs are decisions 8–10 in [`DECISIONS.md`](./DECISIONS.md).
   cheapest model that clears the bar, one structured call over many round-trips, chunk only what
   needs it, cache on content hash, and attribute spend per manual so it's measurable.
 - **Provider-pluggable agents + BYO license (future, out of MVP scope).** All model access goes
-  through `packages/ai` and the pipeline depends on agent *interfaces*, never a concrete provider.
+  through `packages/ai` and the pipeline depends on agent _interfaces_, never a concrete provider.
   That single seam later becomes an agent registry so a self-hoster can choose which agents to run
   and attach their own license/keys — without touching anything upstream.
-- **The Critic.** Accuracy review is a *separate* agent (spec 10), never the generator grading
+- **The Critic.** Accuracy review is a _separate_ agent (spec 10), never the generator grading
   itself. It only scores and flags (recalibrates `confidence`, raises concrete `critique`), keeping
   the editor's trust signal independent of what produced the draft.
 - **Meta-learning.** Reusable, core-scope knowledge from a run (and from confirmed human edits) is

@@ -1,0 +1,10 @@
+# Prettier already honors .gitignore by default (its --ignore-path reads both
+# .gitignore and .prettierignore), so build output, caches, env files, and
+# .claude/worktrees are covered there — no need to repeat them here.
+#
+# This file is only for paths that ARE committed but must not be reformatted.
+
+# Lockfiles — owned by the package manager, never hand-formatted.
+pnpm-lock.yaml
+package-lock.json
+yarn.lock

@@ -28,7 +28,7 @@ the `@vitruvius/core` zod schemas before it is trusted.
 ## Credit optimization (cross-cutting)
 
 **Accuracy, confidence, and reliability are the constraint; credits are minimized within it, never
-above it.** Optimize away *waste* — redundant calls, over-sized models on easy steps, re-billing
+above it.** Optimize away _waste_ — redundant calls, over-sized models on easy steps, re-billing
 identical inputs — never quality. If a cheaper path would lower accuracy or weaken the confidence
 signal, it is not the cheaper path; it is the wrong path.
 

@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+
+# Build output & caches (every stack)
+**/dist/
+**/build/
+**/.svelte-kit/
+**/.turbo/
+**/coverage/
+.turbo/
+
+# Lockfiles — owned by the package manager
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Generated / minified
+**/*.min.js
+**/*.min.css
+
+# Environment files
+.env
+.env.*
+
+# Supabase local state (db package)
+**/supabase/.branches/
+**/supabase/.temp/
+
+# Claude Code agent worktrees (full repo checkouts) & local settings
+.claude/worktrees/
+.claude/settings.local.json

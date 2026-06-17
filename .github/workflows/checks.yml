@@ -41,6 +41,30 @@ jobs:
             exit 1
           fi
 
+  format:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Prepare
+        uses: ./.github/actions/prepare
+
+      # Prettier's content-based cache: only changed files are re-checked.
+      - name: Restore Prettier cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ./node_modules/.cache/prettier/.prettier-cache
+          key: ${{ runner.os }}-prettier-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-prettier-
+
+      - name: Check formatting
+        run: pnpm format:check
+
   lint:
     runs-on: ubuntu-24.04
     permissions:
@@ -53,6 +77,15 @@ jobs:
 
       - name: Prepare
         uses: ./.github/actions/prepare
+
+      # Turbo's content-hashed cache: unchanged packages skip ESLint entirely.
+      # `lint` runs per-package (incl. apps/web's own config) via turbo.
+      - name: Restore Turbo cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-lint-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-turbo-lint-
 
       - name: Lint
         run: pnpm lint
@@ -115,7 +148,7 @@ jobs:
   # branch protection rule never has to change.
   checks-pass:
     if: always()
-    needs: ['pr-title', 'lint', 'typecheck', 'build']
+    needs: ['pr-title', 'format', 'lint', 'typecheck', 'build']
     runs-on: ubuntu-24.04
     permissions:
       contents: read

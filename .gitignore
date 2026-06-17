@@ -4,6 +4,10 @@ build/
 dist/
 .turbo/
 *.tsbuildinfo
+
+# Formatter / linter caches
+.eslintcache
+.cache/
 .env
 .env.local
 .DS_Store

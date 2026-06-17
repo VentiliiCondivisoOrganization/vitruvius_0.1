@@ -81,8 +81,8 @@ redefines them; untrusted/AI output is validated against the core zod schemas.
 
 ## Cross-cutting concerns (the AI layer)
 
-These run through every AI-touching spec; the conceptual home is [`AI.md`](./AI.md) and the
-trade-offs are decisions 8–10 in [`DECISIONS.md`](./DECISIONS.md).
+These run through every AI-touching spec; the conceptual home is [`ai-layer.md`](./ai-layer.md) and the
+trade-offs are decisions 8–10 in [`decisions.md`](./decisions.md).
 
 - **Credit optimization.** AI calls are the dominant variable cost. Credits are a first-class budget:
   cheapest model that clears the bar, one structured call over many round-trips, chunk only what

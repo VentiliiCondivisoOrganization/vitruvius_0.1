@@ -1,31 +1,10 @@
-# Dependencies
-node_modules
+# Prettier already honors .gitignore by default (its --ignore-path reads both
+# .gitignore and .prettierignore), so build output, caches, env files, and
+# .claude/worktrees are covered there — no need to repeat them here.
+#
+# This file is only for paths that ARE committed but must not be reformatted.
 
-# Build output & caches (every stack)
-**/dist/
-**/build/
-**/.svelte-kit/
-**/.turbo/
-**/coverage/
-.turbo/
-
-# Lockfiles — owned by the package manager
+# Lockfiles — owned by the package manager, never hand-formatted.
 pnpm-lock.yaml
 package-lock.json
 yarn.lock
-
-# Generated / minified
-**/*.min.js
-**/*.min.css
-
-# Environment files
-.env
-.env.*
-
-# Supabase local state (db package)
-**/supabase/.branches/
-**/supabase/.temp/
-
-# Claude Code agent worktrees (full repo checkouts) & local settings
-.claude/worktrees/
-.claude/settings.local.json

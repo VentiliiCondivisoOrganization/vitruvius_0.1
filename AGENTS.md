@@ -51,6 +51,23 @@
   If a check can't run in plain CI yet (needs Docker/a live service), scaffold it commented-out
   with a note on what would enable it, rather than leaving it unmentioned.
 
+## Pull requests
+- **Title is a Conventional Commit with a lowercase description**: `type(scope): summary`
+  — e.g. `feat(db): add manuals table`, `ci: structure checks workflow`. Match the repo's
+  existing history; the `pr-title` CI job enforces the shape.
+  - Types: `feat fix perf refactor style docs test chore build ci deps revert`.
+  - Scope is a package/app name (`core`, `db`, `web`, `engine`, `ai`, `media`, `export`, `ci`,
+    `deps`) or a short lowercase area; optional but encouraged.
+  - A change that breaks the `@vitruvius/core` contract or the DB schema gets a `!`
+    (`feat(core)!: …`) and a `BREAKING CHANGE:` block in the body.
+- **Body follows [`.github/pull_request_template.md`](.github/pull_request_template.md)** — the
+  exact headings `# Motivation` / `# Changes` / `# Validation`, all three filled in even for a
+  tiny PR. Write what the diff can't say (the why, trade-offs, what you left out of scope); don't
+  narrate the diff and don't hard-wrap lines. `# Validation` names the commands you actually ran.
+- **One logical change per PR** (see Scope discipline). If you're writing "and also", split.
+- **Never force-push or amend a pushed PR branch** unless the user asks for that exact operation
+  by name. Add a new commit instead — squash-merge tidies history at merge time.
+
 ## Output
 - Summarise changed files, assumptions, and risks.
 - Report the commands you ran and their results.

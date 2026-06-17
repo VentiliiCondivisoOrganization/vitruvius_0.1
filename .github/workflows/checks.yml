@@ -36,7 +36,7 @@ jobs:
           pattern='^(feat|fix|perf|deps|revert|docs|style|chore|refactor|test|build|ci)(\([a-z0-9._/-]+\))?!?: .+$'
 
           if [[ ! "$PR_TITLE" =~ $pattern ]]; then
-            echo "::error::PR title must be a Conventional Commit title, e.g. 'feat(db): Add manuals table' or 'ci: Add checks workflow'."
+            echo "::error::PR title must be a Conventional Commit title with a lowercase description, e.g. 'feat(db): add manuals table' or 'ci: structure checks workflow'. See AGENTS.md § Pull requests."
             echo "::error::Got: $PR_TITLE"
             exit 1
           fi

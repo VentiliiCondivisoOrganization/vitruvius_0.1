@@ -49,7 +49,7 @@ chunk only what needs it, cache on content hash, attribute spend per manual). To
 open, **all model access goes through `packages/ai`** and the pipeline depends on agent _interfaces_,
 never a concrete provider — that seam later becomes an agent registry so a company can self-host,
 choose which agents to run, and attach their own license/keys. The registry itself is **out of MVP
-scope**; the MVP ships one hosted provider under our key. See [`AI.md`](./AI.md).
+scope**; the MVP ships one hosted provider under our key. See [`ai-layer.md`](./ai-layer.md).
 
 ### 9. Accuracy review is a decoupled Critic agent
 

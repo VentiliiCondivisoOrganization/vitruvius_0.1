@@ -2,8 +2,8 @@
 
 How Vitruvius uses AI agents, how it keeps that usage cheap, how it checks its own
 accuracy, and how it learns over time. This is the conceptual home for everything that lives
-behind [`packages/ai`](../packages/ai). The work units are in [`specs/`](../specs) (05, 06, 10, 11);
-the resolved trade-offs are in [`DECISIONS.md`](./DECISIONS.md) (8–10).
+behind [`packages/ai`](../../packages/ai). The work units are in [`specs/`](../../specs) (05, 06, 10, 11);
+the resolved trade-offs are in [`decisions.md`](./decisions.md) (8–10).
 
 Vitruvius's positioning is _AI-generated draft + guided human revision_ — not a fully automatic
 generator. Everything below serves that: spend the fewest credits to produce a draft that is honest
@@ -15,12 +15,12 @@ The pipeline is a sequence of distinct **agents**, each a single responsibility 
 `packages/ai`. They are deliberately separate so they can be priced, swapped, and (later) configured
 independently.
 
-| Agent          | Spec                                 | Responsibility                                                                                                    |
-| -------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| **Segmenter**  | [05](../specs/05-ai-segment.md)      | Split the video into ordered steps with time bounds, `confidence`, `sourceNotes`.                                 |
-| **Instructor** | [06](../specs/06-ai-instructions.md) | Fill operative fields per step (title, instruction, tools, parts, warnings, alternatives).                        |
-| **Critic**     | [10](../specs/10-ai-critic.md)       | Independently review the draft for accuracy; adjust `confidence`, flag weak steps. Decoupled from the generators. |
-| **Learnings**  | [11](../specs/11-learnings.md)       | Capture reusable domain knowledge from a run and feed it back into future runs.                                   |
+| Agent          | Spec                                    | Responsibility                                                                                                    |
+| -------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Segmenter**  | [05](../../specs/05-ai-segment.md)      | Split the video into ordered steps with time bounds, `confidence`, `sourceNotes`.                                 |
+| **Instructor** | [06](../../specs/06-ai-instructions.md) | Fill operative fields per step (title, instruction, tools, parts, warnings, alternatives).                        |
+| **Critic**     | [10](../../specs/10-ai-critic.md)       | Independently review the draft for accuracy; adjust `confidence`, flag weak steps. Decoupled from the generators. |
+| **Learnings**  | [11](../../specs/11-learnings.md)       | Capture reusable domain knowledge from a run and feed it back into future runs.                                   |
 
 All agents run **in the engine only**, never in the web app, and every output is validated against
 the `@vitruvius/core` zod schemas before it is trusted.
@@ -47,7 +47,7 @@ first-class budget**, not an afterthought — in every spec, every prompt, every
 - **Fail cheap.** Validate inexpensively before spending on the expensive stage; never run the
   Instructor on segments the Segmenter already rejected.
 - **Measure it.** Every agent call should be attributable to a manual so credit spend per manual is
-  observable (see `INFRA.md`). You can't optimize what you don't count.
+  observable (see `infra.md`). You can't optimize what you don't count.
 
 ## Provider-pluggable agents + bring-your-own-license (future, out of MVP scope)
 
@@ -64,7 +64,7 @@ use and attach their own license/keys**. To keep that future cheap, the MVP must
   (Segmenter / Instructor / Critic) to a provider + model + credential, resolved at engine startup.
   Self-hosters swap the registry; nothing upstream changes.
 
-When this graduates from "future" to "now", it gets its own spec and a `DECISIONS.md` revision.
+When this graduates from "future" to "now", it gets its own spec and a `decisions.md` revision.
 
 ## The Critic — unbiased accuracy review (spec 10)
 

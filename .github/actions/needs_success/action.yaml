@@ -16,11 +16,15 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    # This action IS the merge gate, so it must fail closed: `set -euo pipefail`
+    # makes a `jq` error (malformed JSON, jq missing) abort the step instead of
+    # leaving an empty result that would falsely read as "all green".
     - name: 'Check that we have inputs'
       shell: bash
       run: |
-        all_jobs="$(echo "$NEEDS" | jq 'to_entries[]')"
-        [[ "$all_jobs" != "" ]] || {
+        set -euo pipefail
+        all_jobs="$(printf '%s' "$NEEDS" | jq 'to_entries[]')"
+        [[ -n "$all_jobs" ]] || {
            echo "ERROR: No needs found"
            exit 1
         }
@@ -29,12 +33,14 @@ runs:
     - name: "Check that all jobs in 'needs' are successful"
       shell: bash
       run: |
-        unsuccessful_jobs="$(echo "$NEEDS" | jq 'to_entries[] | select(.value.result != "success")')"
-        if  [[ "$unsuccessful_jobs" == "" ]]
-        then echo "Congratulations, you may pass."
-        else echo "You shall not pass:  Some required tests did not succeed:"
-             echo "$unsuccessful_jobs"
-             exit 1
+        set -euo pipefail
+        unsuccessful_jobs="$(printf '%s' "$NEEDS" | jq 'to_entries[] | select(.value.result != "success")')"
+        if [[ -z "$unsuccessful_jobs" ]]; then
+          echo "All required jobs succeeded."
+        else
+          echo "Some required jobs did not succeed:"
+          printf '%s\n' "$unsuccessful_jobs"
+          exit 1
         fi
       env:
         NEEDS: ${{ inputs.needs }}

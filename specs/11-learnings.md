@@ -5,8 +5,8 @@
 **Depends on:** 01-core, 02-db, 06-ai-instructions.
 
 > Closes the loop: generate → critique → human-correct → learn → generate better and cheaper.
-> See [`docs/AI.md`](../docs/AI.md) ("Meta-learning") and decision 10 in
-> [`docs/DECISIONS.md`](../docs/DECISIONS.md). Only knowledge serving the core scope earns a place.
+> See [`docs/ai/ai-layer.md`](../docs/ai/ai-layer.md) ("Meta-learning") and decision 10 in
+> [`docs/ai/decisions.md`](../docs/ai/decisions.md). Only knowledge serving the core scope earns a place.
 
 ## Inputs
 
@@ -32,7 +32,7 @@
 ## Out of scope
 
 - Fine-tuning or training custom models (this is prompt-level priming only).
-- Cross-tenant sharing of learnings (a self-host/BYO concern; future, see `docs/AI.md`).
+- Cross-tenant sharing of learnings (a self-host/BYO concern; future, see `docs/ai/ai-layer.md`).
 - A management UI for learnings.
 
 ## Acceptance criteria

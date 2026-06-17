@@ -18,7 +18,7 @@
 - A Gemini call that returns `ManualStep[]` with time bounds, confidence, and source notes.
 - Validate the model output with `manualStepSchema` from `@vitruvius/core`.
 - Chunk long / fast sections so fast action sequences are not missed.
-- **Credit discipline** (see [`docs/AI.md`](../docs/AI.md)): cheapest model that clears the bar;
+- **Credit discipline** (see [`docs/ai/ai-layer.md`](../docs/ai/ai-layer.md)): cheapest model that clears the bar;
   one structured call over per-segment round-trips; sub-chunk only fast/ambiguous sections; cache on
   a content hash of the media artifact + prompt version.
 - Prime the prompt with relevant prior **learnings** (spec 11) when available — improves accuracy and

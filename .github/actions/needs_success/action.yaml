@@ -7,11 +7,14 @@ description: |
   instead you wish the current job to fail if any job needed by
   the current one fails, you need to:
 
-  - set the current job to always run. (use: `if: $ {{ always() }}`)
-  - check the result of all the needed jobs. (use this action)
+  - set the current job to always run (give it a job-level `if: always()`)
+  - check the result of all the needed jobs (use this action)
+
+  Pass the needs context to this action's `needs` input as JSON — i.e. the
+  toJson(needs) expression wrapped in a GitHub expression block.
 inputs:
   needs:
-    description: "JSON describing the needed jobs.  (use: `'$ {{ toJson(needs) }}'`)"
+    description: 'JSON-encoded results of the needed jobs (the toJson(needs) expression).'
     required: true
 runs:
   using: 'composite'

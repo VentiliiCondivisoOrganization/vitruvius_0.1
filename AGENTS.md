@@ -74,9 +74,10 @@
 
 ## Pull requests
 
-- **Title is a Conventional Commit with a lowercase description**: `type(scope): summary`
-  — e.g. `feat(db): add manuals table`, `ci: structure checks workflow`. Match the repo's
-  existing history; the `pr-title` CI job enforces the shape.
+- **Title is a Conventional Commit with a required scope**: `type(scope): summary`
+  — e.g. `feat(db): add manuals table`, `ci(checks): structure workflow`. A lowercase
+  description matches the repo's history but isn't enforced; the `pr-title` CI job enforces
+  the type and the scope.
   - Types: `feat fix perf refactor style docs test chore build ci deps revert`.
   - **Scope is required** (the `pr-title` job rejects a scopeless title): a package/app name
     (`core`, `db`, `web`, `engine`, `ai`, `media`, `export`), `ci` for infra, `deps` for bumps,

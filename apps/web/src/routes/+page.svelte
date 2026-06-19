@@ -1,7 +1,11 @@
 <script lang="ts">
-	import { MANUAL_STATUS } from '@vitruvius/core';
+	import { enhance } from '$app/forms';
+	import type { ActionData } from './$types';
 
-	// The contract is the source of truth even for the placeholder UI.
+	let { form }: { form: ActionData } = $props();
+
+	let submitting = $state(false);
+
 	const pipeline = [
 		'Upload video',
 		'Segment into steps',
@@ -19,11 +23,50 @@
 			AI-drafted assembly manuals, finished by a human.
 		</h1>
 		<p class="text-lg text-slate-600">
-			Turn a video of an assembly process into an editable, step-by-step instruction manual. Every
-			AI output carries a confidence value and source notes — a human confirms and corrects before
-			export. Not a fully automatic generator.
+			Upload a video of an assembly process. We store it and queue it for processing — the draft
+			manual and the guided editor come next.
 		</p>
 	</header>
+
+	<section class="space-y-4">
+		<h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Upload a video</h2>
+		<form
+			method="POST"
+			enctype="multipart/form-data"
+			class="space-y-4"
+			use:enhance={() => {
+				submitting = true;
+				return async ({ update }) => {
+					try {
+						await update();
+					} finally {
+						// Always re-enable the button, even if the submission rejects.
+						submitting = false;
+					}
+				};
+			}}
+		>
+			<label for="video" class="block text-sm font-medium text-slate-700">Video file</label>
+			<input
+				id="video"
+				type="file"
+				name="video"
+				accept="video/*"
+				required
+				class="block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1 file:text-slate-100"
+			/>
+			<button
+				type="submit"
+				disabled={submitting}
+				class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-slate-100 disabled:opacity-50"
+			>
+				{submitting ? 'Uploading…' : 'Upload and queue'}
+			</button>
+			{#if form?.error}
+				<p class="text-sm text-red-600">{form.error}</p>
+			{/if}
+		</form>
+	</section>
 
 	<section class="space-y-3">
 		<h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Pipeline</h2>
@@ -37,16 +80,7 @@
 		</ol>
 	</section>
 
-	<section class="space-y-2">
-		<h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Manual statuses</h2>
-		<div class="flex flex-wrap gap-2 font-mono text-xs">
-			{#each MANUAL_STATUS as status (status)}
-				<span class="rounded bg-slate-900 px-2 py-1 text-slate-100">{status}</span>
-			{/each}
-		</div>
-	</section>
-
 	<footer class="text-sm text-slate-400">
-		Bootstrap foundation only — upload, processing, editor and export arrive in specs 03–09.
+		Upload + queue is live (spec 03). Processing, editor and export arrive in specs 04–09.
 	</footer>
 </main>

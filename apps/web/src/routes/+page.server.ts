@@ -5,6 +5,19 @@ import type { Actions } from './$types';
 
 const VIDEO_BUCKET = 'videos';
 
+// A storage key we control, derived only from the manual id plus a sanitized
+// extension — never from the raw (user-controlled) filename, which could contain
+// path separators or odd characters. The original name is kept as the title.
+function storageKey(id: string, filename: string): string {
+	const ext =
+		filename
+			.split('.')
+			.pop()
+			?.toLowerCase()
+			.replace(/[^a-z0-9]/g, '') ?? '';
+	return ext ? `${id}/source.${ext}` : `${id}/source`;
+}
+
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
 		const form = await request.formData();
@@ -17,9 +30,8 @@ export const actions: Actions = {
 			return fail(400, { error: 'That file is not a video.' });
 		}
 
-		// The manual id is the storage prefix, so the row and the object stay linked.
 		const id = crypto.randomUUID();
-		const path = `${id}/${file.name}`;
+		const path = storageKey(id, file.name);
 
 		const { error: uploadError } = await locals.db.storage
 			.from(VIDEO_BUCKET)
@@ -40,8 +52,16 @@ export const actions: Actions = {
 			updatedAt: now
 		};
 
-		await saveManual(locals.db, manual);
-		await enqueueJob(locals.db, { manualId: id, type: 'process' });
+		try {
+			await saveManual(locals.db, manual);
+			await enqueueJob(locals.db, { manualId: id, type: 'process' });
+		} catch (err) {
+			// Don't leave an orphaned object behind if persisting the manual or
+			// queuing the job fails. Best-effort: ignore cleanup errors.
+			await locals.db.storage.from(VIDEO_BUCKET).remove([path]);
+			const message = err instanceof Error ? err.message : 'unknown error';
+			return fail(500, { error: `Could not start processing: ${message}` });
+		}
 
 		redirect(303, `/manuals/${id}`);
 	}

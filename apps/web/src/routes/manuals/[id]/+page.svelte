@@ -1,15 +1,18 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { MANUAL_STATUS, type ManualStatus } from '@vitruvius/core';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	const manual = $derived(data.manual);
 
-	// Steps below the current status are done; the current one is in progress.
-	const stages = ['uploaded', 'processing', 'ready'] as const;
+	// Derive the happy-path pipeline from the contract so it can't drift; `failed`
+	// is a terminal state shown on its own, not a stage. Steps below the current
+	// status are done; the current one is in progress.
+	const stages: readonly ManualStatus[] = MANUAL_STATUS.filter((s) => s !== 'failed');
 	const failed = $derived(manual.status === 'failed');
-	const currentIndex = $derived(stages.indexOf(manual.status as (typeof stages)[number]));
+	const currentIndex = $derived(stages.indexOf(manual.status));
 </script>
 
 <main class="mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-8 px-6 py-16">

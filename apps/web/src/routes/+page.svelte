@@ -37,12 +37,18 @@
 			use:enhance={() => {
 				submitting = true;
 				return async ({ update }) => {
-					await update();
-					submitting = false;
+					try {
+						await update();
+					} finally {
+						// Always re-enable the button, even if the submission rejects.
+						submitting = false;
+					}
 				};
 			}}
 		>
+			<label for="video" class="block text-sm font-medium text-slate-700">Video file</label>
 			<input
+				id="video"
 				type="file"
 				name="video"
 				accept="video/*"

@@ -10,5 +10,6 @@ to lives here.
 | Touch the AI pipeline (agents, credit budget, Critic, learnings) | [ai-layer.md](ai-layer.md)                    |
 | Set things up or run them locally (env vars, services)           | [infra.md](infra.md)                          |
 | Know _why_ something is the way it is                            | [decisions.md](decisions.md)                  |
+| Check client request vs current specs (alignment assessment)     | [client-alignment-assessment.md](client-alignment-assessment.md) |
 | Open a PR — title, body, CI, formatting                          | [pr-and-ci.md](pr-and-ci.md)                  |
 | Implement an assigned task                                       | the matching spec in [`specs/`](../../specs/) |

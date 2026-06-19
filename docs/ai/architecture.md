@@ -19,6 +19,7 @@ vitruvius/
 │   ├── core/       FROZEN CONTRACT — types + zod schemas + enums (single source of truth)
 │   ├── db/         Supabase client + typed queries + migrations + the jobs queue helpers
 │   ├── media/      ffmpeg wrappers (keyframes, audio, scene detection, clip splitting)
+│   ├── cad/        digital-model ingest — STEP/mesh → BOM + assembly tree + views (optional; spec 12)
 │   ├── ai/         Gemini calls (segmentation, instruction writing)
 │   └── export/     HTML template + Playwright print-to-PDF
 ├── docs/           Centralized architecture / infra / decisions
@@ -57,7 +58,10 @@ manuals.status                      → packages/ai   (distill learnings)
    segmentation + instructions) → `packages/ai` (the **Critic**, an unbiased accuracy review that
    recalibrates `confidence`) → `packages/ai` (distill reusable **learnings**), saves the manual via
    `packages/db`, moving `manuals.status` from `processing` to `ready` or `failed`. Generation is
-   primed with relevant prior learnings before it starts.
+   primed with relevant prior learnings before it starts. When a **digital model** (CAD/mesh) was
+   uploaded with the video, `packages/cad` (spec 12) parses it into a BOM + assembly tree + canonical
+   views that also prime generation — auxiliary, never required: a run with no model proceeds on
+   video alone.
 3. **Web (editor):** a human reviews/corrects the generated steps; each step exposes its
    `confidence`, `reviewStatus`, and `sourceNotes`.
 4. **Export:** the web app enqueues an `export` job; the engine renders the manual to HTML and

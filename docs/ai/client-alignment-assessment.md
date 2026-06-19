@@ -24,14 +24,14 @@ passo (dalla BOM quando disponibile), **revisione obbligatoria** con modifica vi
 
 ### Verdetto
 
-| Dimensione | Giudizio |
-| --- | --- |
-| Intento di prodotto | **Parzialmente allineato** — stessa direzione (video → manuale IKEA, bozza AI + revisione), profondità del deliverable diversa |
-| Architettura monorepo (web / engine / `@vitruvius/core`) | **Allineata** — valida come fondazione; non serve ripartire da zero |
-| Contratto dati (`@vitruvius/core`) | **Insufficiente** — richiede breaking change su `ManualStep` e modelli BOM/CAD/versioni |
-| Pipeline AI attuale | **Insufficiente** — mancano agenti per illustrazioni, mapping BOM strutturato, compositing CAD+AI |
-| Editor / UX | **Parzialmente allineato** — revisione guidata sì; prompt editing, disambiguazione BOM e layout visivo no |
-| Prima consegna cliente (stack completo) | **Non realizzabile** sulle spec attuali senza estensione sostanziale |
+| Dimensione                                               | Giudizio                                                                                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Intento di prodotto                                      | **Parzialmente allineato** — stessa direzione (video → manuale IKEA, bozza AI + revisione), profondità del deliverable diversa |
+| Architettura monorepo (web / engine / `@vitruvius/core`) | **Allineata** — valida come fondazione; non serve ripartire da zero                                                            |
+| Contratto dati (`@vitruvius/core`)                       | **Insufficiente** — richiede breaking change su `ManualStep` e modelli BOM/CAD/versioni                                        |
+| Pipeline AI attuale                                      | **Insufficiente** — mancano agenti per illustrazioni, mapping BOM strutturato, compositing CAD+AI                              |
+| Editor / UX                                              | **Parzialmente allineato** — revisione guidata sì; prompt editing, disambiguazione BOM e layout visivo no                      |
+| Prima consegna cliente (stack completo)                  | **Non realizzabile** sulle spec attuali senza estensione sostanziale                                                           |
 
 **In una frase:** Vitruvius oggi è un generatore di **bozze testuali con keyframe dal video**;
 il cliente vuole un generatore di **manuali illustrati industriali** (schematiche stampabili,
@@ -39,19 +39,19 @@ BOM/CAD, disambiguazione, prompt editing).
 
 ### Decisioni chiave (risolte in grill-me)
 
-| # | Domanda | Scelta |
-| --- | --- | --- |
-| 1 | Formato output | Illustrazioni schematiche (AI o CAD); istruzioni grafiche con poche scritte; modifica via prompt prima del PDF |
-| 2 | Senza CAD | Illustrazioni AI dal video, qualità stampabile **senza ritocco manuale sulle immagini** |
-| 3 | Con CAD + video | **CAD** per geometria e numerazione; **AI** per layout (frecce, callout, composizione IKEA/LEGO) |
-| 4 | Gate pre-PDF | **Revisione sempre obbligatoria** — nessun PDF senza approvazione esplicita |
-| 5 | Scope prompt editing | **Tutto:** testo, illustrazioni, struttura passi (split/merge/riordino via editor + prompt) |
-| 6 | Rigore BOM | Mismatch evidenziati in revisione; risoluzione obbligatoria prima dell'approvazione; codice + descrizione BOM per componente per step; UI di scelta se ambiguo |
-| 7 | Confini dei passi | **Solo video** segmenta timeline; BOM arricchisce le parti per ogni segmento |
-| 8 | Ruolo audio | **Supplementare** — aiuta mapping BOM e disambiguazione, non guida i confini dei passi |
-| 9 | Solo video | Manuale **completo** con nomi generici ("vite", "staffa"), non bozza incompleta |
-| 10 | BOM/CAD caricati dopo | **Arricchimento incrementale + versioning** (v1 solo video → v2 con BOM/CAD) |
-| 11 | Prima consegna | **Stack completo** end-to-end (video + BOM + CAD + disambiguazione + compositing + versioning) |
+| #   | Domanda               | Scelta                                                                                                                                                         |
+| --- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Formato output        | Illustrazioni schematiche (AI o CAD); istruzioni grafiche con poche scritte; modifica via prompt prima del PDF                                                 |
+| 2   | Senza CAD             | Illustrazioni AI dal video, qualità stampabile **senza ritocco manuale sulle immagini**                                                                        |
+| 3   | Con CAD + video       | **CAD** per geometria e numerazione; **AI** per layout (frecce, callout, composizione IKEA/LEGO)                                                               |
+| 4   | Gate pre-PDF          | **Revisione sempre obbligatoria** — nessun PDF senza approvazione esplicita                                                                                    |
+| 5   | Scope prompt editing  | **Tutto:** testo, illustrazioni, struttura passi (split/merge/riordino via editor + prompt)                                                                    |
+| 6   | Rigore BOM            | Mismatch evidenziati in revisione; risoluzione obbligatoria prima dell'approvazione; codice + descrizione BOM per componente per step; UI di scelta se ambiguo |
+| 7   | Confini dei passi     | **Solo video** segmenta timeline; BOM arricchisce le parti per ogni segmento                                                                                   |
+| 8   | Ruolo audio           | **Supplementare** — aiuta mapping BOM e disambiguazione, non guida i confini dei passi                                                                         |
+| 9   | Solo video            | Manuale **completo** con nomi generici ("vite", "staffa"), non bozza incompleta                                                                                |
+| 10  | BOM/CAD caricati dopo | **Arricchimento incrementale + versioning** (v1 solo video → v2 con BOM/CAD)                                                                                   |
+| 11  | Prima consegna        | **Stack completo** end-to-end (video + BOM + CAD + disambiguazione + compositing + versioning)                                                                 |
 
 ### Cosa tenere da Vitruvius
 
@@ -155,22 +155,22 @@ Non esiste:
 
 ### 3. Confronto punto per punto
 
-| Requisito cliente | Vitruvius oggi | Gap |
-| --- | --- | --- |
-| Video di montaggio | Input principale (spec 03) | Nessuno |
-| Audio operatore (opzionale) | Estratto (spec 04); usato come evidenza in `sourceNotes` | Implementazione stub; ruolo supplementare per BOM mapping da formalizzare |
-| SolidWorks / CAD | Non previsto | **Import CAD, render viste, pipeline compositing** |
-| BOM | Non previsto | **Import BOM, PartRef per step, validazione, disambiguazione** |
-| Illustrazioni schematiche IKEA/LEGO | Keyframe video | **Agente illustratore + layout export** |
-| Poche scritte, grafica al centro | Testo ricco per step (`instruction`, tools, warnings…) | **Ridisegnare modello testo** (`caption` breve vs `instruction` verbosa) |
-| Qualità stampabile immagini senza ritocco manuale | Non definito; keyframe grezzi | **Quality bar + agente illustratore** |
-| CAD + AI (geometria + layout) | Non previsto | **Spec compositing CAD base + AI overlay** |
-| Codice + descrizione BOM per step | `parts: string[]` generici | **`PartRef` strutturato + UI disambiguazione** |
-| Revisione obbligatoria pre-PDF | Allineato (editor + status manual) | Gate esplicito "approved" prima di export da rafforzare |
-| Modifica via prompt | Out of scope (spec 08) | **Nuovo job type / agente regenerate** |
-| Solo video = manuale completo | Parzialmente (bozza revisionabile) | Allineare messaging: output completo con nomi generici |
-| BOM/CAD tardivi → arricchimento + versioning | Non previsto | **Versioning manuali + job enrich** |
-| Stack completo alla prima consegna | MVP bootstrap (stub) | **Estensione sostanziale delle spec** |
+| Requisito cliente                                 | Vitruvius oggi                                           | Gap                                                                       |
+| ------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Video di montaggio                                | Input principale (spec 03)                               | Nessuno                                                                   |
+| Audio operatore (opzionale)                       | Estratto (spec 04); usato come evidenza in `sourceNotes` | Implementazione stub; ruolo supplementare per BOM mapping da formalizzare |
+| SolidWorks / CAD                                  | Non previsto                                             | **Import CAD, render viste, pipeline compositing**                        |
+| BOM                                               | Non previsto                                             | **Import BOM, PartRef per step, validazione, disambiguazione**            |
+| Illustrazioni schematiche IKEA/LEGO               | Keyframe video                                           | **Agente illustratore + layout export**                                   |
+| Poche scritte, grafica al centro                  | Testo ricco per step (`instruction`, tools, warnings…)   | **Ridisegnare modello testo** (`caption` breve vs `instruction` verbosa)  |
+| Qualità stampabile immagini senza ritocco manuale | Non definito; keyframe grezzi                            | **Quality bar + agente illustratore**                                     |
+| CAD + AI (geometria + layout)                     | Non previsto                                             | **Spec compositing CAD base + AI overlay**                                |
+| Codice + descrizione BOM per step                 | `parts: string[]` generici                               | **`PartRef` strutturato + UI disambiguazione**                            |
+| Revisione obbligatoria pre-PDF                    | Allineato (editor + status manual)                       | Gate esplicito "approved" prima di export da rafforzare                   |
+| Modifica via prompt                               | Out of scope (spec 08)                                   | **Nuovo job type / agente regenerate**                                    |
+| Solo video = manuale completo                     | Parzialmente (bozza revisionabile)                       | Allineare messaging: output completo con nomi generici                    |
+| BOM/CAD tardivi → arricchimento + versioning      | Non previsto                                             | **Versioning manuali + job enrich**                                       |
+| Stack completo alla prima consegna                | MVP bootstrap (stub)                                     | **Estensione sostanziale delle spec**                                     |
 
 ### 4. Decisioni di design risolte (transcript grill-me)
 
@@ -265,34 +265,34 @@ Il modello attuale va esteso (indicativo, non implementato):
 
 ```typescript
 type BomItem = {
-  id: string;
-  code: string;
-  description: string;
-  quantity?: number;
+	id: string;
+	code: string;
+	description: string;
+	quantity?: number;
 };
 
 type PartRef = {
-  bomItemId: string;
-  code: string;
-  description: string;
-  confidence: number;
-  candidates?: PartRef[]; // popolato quando ambiguo — UI disambiguazione in revisione
+	bomItemId: string;
+	code: string;
+	description: string;
+	confidence: number;
+	candidates?: PartRef[]; // popolato quando ambiguo — UI disambiguazione in revisione
 };
 
 type ManualStep = {
-  // ... campi esistenti da rivedere ...
-  illustrationUrl: string; // output primario per stampa (schematica)
-  keyframeUrl?: string; // evidenza sorgente, non output stampa
-  parts: PartRef[]; // sostituisce parts: string[]
-  caption: string; // testo breve; sostituisce instruction verbosa come campo principale
+	// ... campi esistenti da rivedere ...
+	illustrationUrl: string; // output primario per stampa (schematica)
+	keyframeUrl?: string; // evidenza sorgente, non output stampa
+	parts: PartRef[]; // sostituisce parts: string[]
+	caption: string; // testo breve; sostituisce instruction verbosa come campo principale
 };
 
 type InstructionManual = {
-  // ... campi esistenti ...
-  version: number;
-  parentVersionId?: string; // per catena v1 → v2 arricchimento incrementale
-  bom?: BomItem[];
-  cadSourceRef?: string;
+	// ... campi esistenti ...
+	version: number;
+	parentVersionId?: string; // per catena v1 → v2 arricchimento incrementale
+	bom?: BomItem[];
+	cadSourceRef?: string;
 };
 ```
 
@@ -300,37 +300,37 @@ Questi cambiamenti impattano schema zod, DB, mapper, export template, e tutte le
 
 #### 5.2 Nuovi agenti / package (proposta)
 
-| Agente / modulo | Responsabilità |
-| --- | --- |
-| **Illustrator** | Genera schematiche AI da video/keyframe (percorso solo video) |
-| **CAD Renderer** | Import modelli, render viste per passo |
-| **Compositor** | Overlay AI su render CAD (frecce, callout, layout IKEA) |
-| **BOM Mapper** | Associa segmenti video a righe BOM; produce `PartRef` + candidati ambigui |
-| **Regenerator** | Risponde a prompt utente in revisione (testo, layout, illustrazione, struttura) |
+| Agente / modulo  | Responsabilità                                                                  |
+| ---------------- | ------------------------------------------------------------------------------- |
+| **Illustrator**  | Genera schematiche AI da video/keyframe (percorso solo video)                   |
+| **CAD Renderer** | Import modelli, render viste per passo                                          |
+| **Compositor**   | Overlay AI su render CAD (frecce, callout, layout IKEA)                         |
+| **BOM Mapper**   | Associa segmenti video a righe BOM; produce `PartRef` + candidati ambigui       |
+| **Regenerator**  | Risponde a prompt utente in revisione (testo, layout, illustrazione, struttura) |
 
 Tutti dietro `packages/ai` (o `packages/cad`, `packages/bom` se il scope lo giustifica), engine-only,
 output validato con zod.
 
 #### 5.3 Nuove spec proposte
 
-| Spec | Obiettivo |
-| --- | --- |
-| **12-bom-import** | Parsing BOM, persistenza, schema `BomItem` |
-| **13-cad-import** | Ingest SolidWorks/equivalente, render viste |
-| **14-ai-illustrate** | Schematiche AI + compositing CAD+AI |
-| **15-disambiguation** | Modello candidati + UI scelta in revisione |
-| **16-prompt-regenerate** | Job rigenerazione per prompt in editor |
+| Spec                     | Obiettivo                                            |
+| ------------------------ | ---------------------------------------------------- |
+| **12-bom-import**        | Parsing BOM, persistenza, schema `BomItem`           |
+| **13-cad-import**        | Ingest SolidWorks/equivalente, render viste          |
+| **14-ai-illustrate**     | Schematiche AI + compositing CAD+AI                  |
+| **15-disambiguation**    | Modello candidati + UI scelta in revisione           |
+| **16-prompt-regenerate** | Job rigenerazione per prompt in editor               |
 | **17-manual-versioning** | Versioni manuali, arricchimento incrementale v1 → v2 |
 
 #### 5.4 Spec esistenti da aggiornare
 
-| Spec | Modifica |
-| --- | --- |
-| **01-core** | Nuovi tipi BOM, PartRef, versioning, illustrationUrl |
-| **06-ai-instructions** | Testo minimo (`caption`); PartRef invece di stringhe |
-| **08-web-editor** | Disambiguazione BOM, prompt editing, gate approvazione pre-export |
-| **09-export** | Layout IKEA/LEGO con illustrazioni schematiche; **rimuovere** "schematic out of scope" |
-| **10-ai-critic** | Validazione mismatch BOM, flag ambiguità |
+| Spec                   | Modifica                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| **01-core**            | Nuovi tipi BOM, PartRef, versioning, illustrationUrl                                   |
+| **06-ai-instructions** | Testo minimo (`caption`); PartRef invece di stringhe                                   |
+| **08-web-editor**      | Disambiguazione BOM, prompt editing, gate approvazione pre-export                      |
+| **09-export**          | Layout IKEA/LEGO con illustrazioni schematiche; **rimuovere** "schematic out of scope" |
+| **10-ai-critic**       | Validazione mismatch BOM, flag ambiguità                                               |
 
 #### 5.5 Pipeline dati target (con stack completo)
 
@@ -354,13 +354,13 @@ Arricchimento v1 → v2 (BOM/CAD aggiunti dopo):
 
 ### 6. Rischi e assunzioni
 
-| Rischio | Mitigazione |
-| --- | --- |
-| **Qualità stampabile** illustrazioni AI senza ritocco manuale | Definire criteri misurabili (risoluzione, leggibilità callout, coerenza stile); fallback prompt regenerate in revisione |
-| **Import CAD** SolidWorks — formati, licenze, automazione render | Validare early con file reali cliente; possibile servizio dedicato nell'engine container |
-| **Disambiguazione BOM** — accuracy mapping video → BOM | Critic + audio supplementare + UI scelta obbligatoria per candidati multipli |
-| **Stack completo alla prima consegna** — scope ampio | Sviluppo interno a vertical slice; contratto dati esteso fin da subito per evitare rewrite |
-| **Breaking change** su `@vitruvius/core` | Marcare con `!` in PR e migration DB coordinata |
+| Rischio                                                          | Mitigazione                                                                                                             |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Qualità stampabile** illustrazioni AI senza ritocco manuale    | Definire criteri misurabili (risoluzione, leggibilità callout, coerenza stile); fallback prompt regenerate in revisione |
+| **Import CAD** SolidWorks — formati, licenze, automazione render | Validare early con file reali cliente; possibile servizio dedicato nell'engine container                                |
+| **Disambiguazione BOM** — accuracy mapping video → BOM           | Critic + audio supplementare + UI scelta obbligatoria per candidati multipli                                            |
+| **Stack completo alla prima consegna** — scope ampio             | Sviluppo interno a vertical slice; contratto dati esteso fin da subito per evitare rewrite                              |
+| **Breaking change** su `@vitruvius/core`                         | Marcare con `!` in PR e migration DB coordinata                                                                         |
 
 ### 7. Raccomandazioni
 

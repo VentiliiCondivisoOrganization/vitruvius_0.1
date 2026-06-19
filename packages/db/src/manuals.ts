@@ -31,3 +31,10 @@ export async function saveManual(client: DbClient, manual: InstructionManual): P
 	const { error } = await client.rpc('save_manual', { p_manual: manual });
 	if (error) throw new Error(`saveManual: ${error.message}`);
 }
+
+// Delete a manual and everything that references it (steps and jobs cascade via
+// their foreign keys). Used to roll back a half-created manual.
+export async function deleteManual(client: DbClient, id: string): Promise<void> {
+	const { error } = await client.from('manuals').delete().eq('id', id);
+	if (error) throw new Error(`deleteManual: ${error.message}`);
+}

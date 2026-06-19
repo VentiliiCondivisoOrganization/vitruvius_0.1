@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { InstructionManual } from '@vitruvius/core';
-import { enqueueJob, saveManual } from '@vitruvius/db';
+import { deleteManual, enqueueJob, saveManual } from '@vitruvius/db';
 import type { Actions } from './$types';
 
 const VIDEO_BUCKET = 'videos';
@@ -56,9 +56,13 @@ export const actions: Actions = {
 			await saveManual(locals.db, manual);
 			await enqueueJob(locals.db, { manualId: id, type: 'process' });
 		} catch (err) {
-			// Don't leave an orphaned object behind if persisting the manual or
-			// queuing the job fails. Best-effort: ignore cleanup errors.
-			await locals.db.storage.from(VIDEO_BUCKET).remove([path]);
+			// Roll back both side effects so a failed request can't leave an orphaned
+			// object or a manual row with no queued job. Best-effort: a manual may not
+			// exist yet (if saveManual was what failed) and cleanup errors are ignored.
+			await Promise.allSettled([
+				deleteManual(locals.db, id),
+				locals.db.storage.from(VIDEO_BUCKET).remove([path])
+			]);
 			const message = err instanceof Error ? err.message : 'unknown error';
 			return fail(500, { error: `Could not start processing: ${message}` });
 		}

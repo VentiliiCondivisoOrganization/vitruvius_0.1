@@ -1,6 +1,6 @@
-import { randomUUID } from 'node:crypto';
 import { manualStepSchema, type ManualStep } from '@vitruvius/core';
 import type { Keyframe } from '@vitruvius/media';
+import { randomUUID } from 'node:crypto';
 import type { RawSegment } from './types.js';
 
 export function pickKeyframeForStep(keyframes: Keyframe[], startMs: number, endMs: number): string {

@@ -51,14 +51,14 @@ db:stop`. Get the local URL + keys with `pnpm supabase status`. The same migrati
 
 ## Environment variables
 
-| Var                         | Consumed by           | Purpose                                                    |
-| --------------------------- | --------------------- | ---------------------------------------------------------- |
-| `PUBLIC_SUPABASE_URL`       | web (client + server) | Supabase project URL                                       |
-| `PUBLIC_SUPABASE_ANON_KEY`  | web (client + server) | Public anon key for browser clients                        |
-| `SUPABASE_SERVICE_ROLE_KEY` | engine (server)       | Privileged DB/Storage access for the worker                |
-| `GEMINI_API_KEY`            | engine → `packages/ai` | Gemini calls (segment, instructions, critic)            |
+| Var                         | Consumed by            | Purpose                                                      |
+| --------------------------- | ---------------------- | ------------------------------------------------------------ |
+| `PUBLIC_SUPABASE_URL`       | web (client + server)  | Supabase project URL                                         |
+| `PUBLIC_SUPABASE_ANON_KEY`  | web (client + server)  | Public anon key for browser clients                          |
+| `SUPABASE_SERVICE_ROLE_KEY` | engine (server)        | Privileged DB/Storage access for the worker                  |
+| `GEMINI_API_KEY`            | engine → `packages/ai` | Gemini calls (segment, instructions, critic)                 |
 | `GEMINI_SEGMENT_MODEL`      | engine → `packages/ai` | Optional segment model override (default `gemini-2.0-flash`) |
-| `ENGINE_POLL_INTERVAL_MS`   | engine                | Poll cadence for claiming jobs (default 2000)              |
+| `ENGINE_POLL_INTERVAL_MS`   | engine                 | Poll cadence for claiming jobs (default 2000)                |
 
 ## AI cost & configuration (mostly future)
 

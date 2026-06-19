@@ -8,10 +8,7 @@ export type SegmentProviderContext = {
 
 export interface SegmentProvider {
 	readonly name: string;
-	segmentWindow(
-		window: SegmentWindow,
-		context: SegmentProviderContext
-	): Promise<RawSegment[]>;
+	segmentWindow(window: SegmentWindow, context: SegmentProviderContext): Promise<RawSegment[]>;
 }
 
 export type SegmentProviderFactory = () => SegmentProvider;

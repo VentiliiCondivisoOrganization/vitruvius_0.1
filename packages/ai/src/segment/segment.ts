@@ -1,18 +1,14 @@
 import type { Keyframe, SceneBoundary } from '@vitruvius/media';
-import type { RawSegment, SegmentInput, SegmentWindow } from './types.js';
+import { getSegmentProvider } from '../providers/segment-provider.js';
 import { getCachedSegments, segmentCacheKey, setCachedSegments } from './cache.js';
 import { planSubChunks } from './chunk-plan.js';
 import { normalizeSegments } from './normalize.js';
-import { getSegmentProvider } from '../providers/segment-provider.js';
+import type { RawSegment, SegmentInput, SegmentWindow } from './types.js';
 
 const DEFAULT_LOW_CONFIDENCE = 0.55;
 const DEFAULT_MIN_SUB_CHUNK_MS = 2_500;
 
-function sliceWindow(
-	input: SegmentInput,
-	startMs: number,
-	endMs: number
-): SegmentWindow {
+function sliceWindow(input: SegmentInput, startMs: number, endMs: number): SegmentWindow {
 	const keyframes = input.keyframes.filter((kf) => kf.atMs >= startMs && kf.atMs < endMs);
 	const scenes = input.scenes
 		.filter((sc) => sc.startMs < endMs && sc.endMs > startMs)
@@ -26,10 +22,7 @@ function sliceWindow(
 	return { startMs, endMs, keyframes, scenes };
 }
 
-async function segmentWithCache(
-	input: SegmentInput,
-	window: SegmentWindow
-): Promise<RawSegment[]> {
+async function segmentWithCache(input: SegmentInput, window: SegmentWindow): Promise<RawSegment[]> {
 	const learnings = input.learnings ?? [];
 	const key = segmentCacheKey({
 		promptVersion: 'segment-v1',
@@ -63,9 +56,7 @@ function mergeSubChunkResults(
 
 	let merged = [...original];
 	for (const rep of replacements) {
-		merged = merged.filter(
-			(seg) => !(seg.startMs >= rep.startMs && seg.endMs <= rep.endMs)
-		);
+		merged = merged.filter((seg) => !(seg.startMs >= rep.startMs && seg.endMs <= rep.endMs));
 		merged.push(...rep.steps);
 	}
 	return merged;
@@ -102,6 +93,10 @@ export async function segmentIntoRawSteps(input: SegmentInput): Promise<RawSegme
 }
 
 /** Narrow keyframes to a window — exported for tests. */
-export function keyframesInWindow(keyframes: Keyframe[], startMs: number, endMs: number): Keyframe[] {
+export function keyframesInWindow(
+	keyframes: Keyframe[],
+	startMs: number,
+	endMs: number
+): Keyframe[] {
 	return keyframes.filter((kf) => kf.atMs >= startMs && kf.atMs < endMs);
 }

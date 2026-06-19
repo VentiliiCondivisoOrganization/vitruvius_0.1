@@ -1,12 +1,17 @@
 import type { RawSegment } from './types.js';
 
 /** Sort, de-overlap, clamp to video bounds, and re-number segments. */
-export function normalizeSegments(
-	segments: RawSegment[],
-	videoDurationMs: number
-): RawSegment[] {
+export function normalizeSegments(segments: RawSegment[], videoDurationMs: number): RawSegment[] {
 	if (segments.length === 0) {
-		return [{ order: 0, startMs: 0, endMs: videoDurationMs, confidence: 0.4, sourceNotes: ['fallback: full video as one step'] }];
+		return [
+			{
+				order: 0,
+				startMs: 0,
+				endMs: videoDurationMs,
+				confidence: 0.4,
+				sourceNotes: ['fallback: full video as one step']
+			}
+		];
 	}
 
 	const sorted = [...segments].sort((a, b) => a.startMs - b.startMs);
@@ -20,7 +25,15 @@ export function normalizeSegments(
 	}
 
 	if (clamped.length === 0) {
-		return [{ order: 0, startMs: 0, endMs: videoDurationMs, confidence: 0.4, sourceNotes: ['fallback: full video as one step'] }];
+		return [
+			{
+				order: 0,
+				startMs: 0,
+				endMs: videoDurationMs,
+				confidence: 0.4,
+				sourceNotes: ['fallback: full video as one step']
+			}
+		];
 	}
 
 	// Resolve overlaps: earlier step wins; trim the later start.
@@ -40,7 +53,10 @@ export function normalizeSegments(
 			...merged[0]!,
 			startMs: 0,
 			order: 0,
-			sourceNotes: ['inferred start: video opening before first detected action', ...merged[0]!.sourceNotes]
+			sourceNotes: [
+				'inferred start: video opening before first detected action',
+				...merged[0]!.sourceNotes
+			]
 		});
 	}
 

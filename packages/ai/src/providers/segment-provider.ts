@@ -1,9 +1,9 @@
+import type { Keyframe } from '@vitruvius/media';
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
-import type { Keyframe } from '@vitruvius/media';
-import type { RawSegment, SegmentWindow } from '../segment/types.js';
 import { buildSegmentPrompt } from '../segment/prompt.js';
 import { segmentResponseSchema } from '../segment/schema.js';
+import type { RawSegment, SegmentWindow } from '../segment/types.js';
 import type { SegmentProvider, SegmentProviderContext } from './types.js';
 
 /** Deterministic fallback when no API key is configured — uses ffmpeg scene boundaries. */
@@ -12,9 +12,7 @@ export class HeuristicSegmentProvider implements SegmentProvider {
 
 	segmentWindow(window: SegmentWindow, _context: SegmentProviderContext): Promise<RawSegment[]> {
 		const scenes =
-			window.scenes.length > 0
-				? window.scenes
-				: [{ startMs: window.startMs, endMs: window.endMs }];
+			window.scenes.length > 0 ? window.scenes : [{ startMs: window.startMs, endMs: window.endMs }];
 
 		const steps: RawSegment[] = scenes.map((scene, index) => ({
 			order: index,
@@ -32,9 +30,7 @@ export class HeuristicSegmentProvider implements SegmentProvider {
 	}
 }
 
-type GeminiPart =
-	| { text: string }
-	| { inlineData: { mimeType: string; data: string } };
+type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
 
 type GeminiGenerateRequest = {
 	contents: { role: string; parts: GeminiPart[] }[];

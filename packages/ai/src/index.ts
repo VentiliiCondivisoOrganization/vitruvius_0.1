@@ -1,16 +1,17 @@
 import type { ManualStep } from '@vitruvius/core';
-import type { SegmentInput } from './segment/types.js';
 import { rawSegmentToManualStep } from './segment/map-step.js';
 import { segmentIntoRawSteps } from './segment/segment.js';
+import type { SegmentInput } from './segment/types.js';
 
-export type { SegmentInput, SegmentMediaContext, SegmentOptions } from './segment/types.js';
-export { clearSegmentCache } from './segment/cache.js';
 export {
+	GeminiSegmentProvider,
 	getSegmentProvider,
+	HeuristicSegmentProvider,
 	resetSegmentProviderFactory,
 	setSegmentProviderFactory
 } from './providers/segment-provider.js';
-export { HeuristicSegmentProvider, GeminiSegmentProvider } from './providers/segment-provider.js';
+export { clearSegmentCache } from './segment/cache.js';
+export type { SegmentInput, SegmentMediaContext, SegmentOptions } from './segment/types.js';
 
 /** Map a local keyframe path to a public URL — default identity until Storage upload exists. */
 export type KeyframeUrlMapper = (fileRef: string) => string;

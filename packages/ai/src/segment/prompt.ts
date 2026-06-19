@@ -1,5 +1,5 @@
-import type { SegmentWindow } from './types.js';
 import { SEGMENT_PROMPT_VERSION } from './cache.js';
+import type { SegmentWindow } from './types.js';
 
 export function buildSegmentPrompt(
 	window: SegmentWindow,
@@ -11,9 +11,7 @@ export function buildSegmentPrompt(
 			? `\nPrior learnings (reusable heuristics — apply when relevant):\n${learnings.map((l) => `- ${l}`).join('\n')}\n`
 			: '';
 
-	const sceneLines = window.scenes
-		.map((s) => `- ${s.startMs}ms → ${s.endMs}ms`)
-		.join('\n');
+	const sceneLines = window.scenes.map((s) => `- ${s.startMs}ms → ${s.endMs}ms`).join('\n');
 
 	const keyframeLines = window.keyframes
 		.map((kf) => `- still at ${kf.atMs}ms (${kf.fileRef})`)

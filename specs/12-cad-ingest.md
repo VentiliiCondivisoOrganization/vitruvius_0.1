@@ -17,7 +17,7 @@ Many real montage jobs ship with the part's digital model — a STEP/OBJ/STL exp
 ## Outputs
 
 - A `DigitalModel` artifact (new `@vitruvius/core` type, zod-validated): a normalized **bill of materials** (`BomItem[]`: part name, quantity, source id), an **assembly tree** (parent → child occurrences), source metadata (originating system, units, schema), and optional **canonical view** image refs (e.g. ISO / per-part renders) for priming.
-- A boolean/enum on the manual recording whether a usable model was present, so the Critic and editor can see that a run was model-primed.
+- `digitalModelStatus` on the manual (new `@vitruvius/core` enum: `primed` | `absent` | `unsupported` | `failed`) recording whether a usable model was present, so the Critic and editor can see that a run was model-primed.
 
 ## In scope
 
@@ -41,7 +41,7 @@ Many real montage jobs ship with the part's digital model — a STEP/OBJ/STL exp
 
 - Given a sample STEP assembly, returns a `DigitalModel` whose BOM lists the named parts (rail, carriage, end seal, `M4`, …) with quantities, plus the assembly tree; non-ASCII part names are decoded.
 - Given a sample `.obj`, returns geometry stats and (when the kernel is present) at least one canonical view ref.
-- When no model / an unsupported file is supplied, the function returns "absent" and the engine pipeline still completes from video alone.
+- When no model / an unsupported file is supplied, `digitalModelStatus` is `absent` / `unsupported` (respectively) and the engine pipeline still completes from video alone.
 - Output is `DigitalModel`-schema-valid; nothing leaks a concrete CAD-kernel type past the package boundary.
 
 ## Validation

@@ -11,5 +11,6 @@ to lives here.
 | Set things up or run them locally (env vars, services)           | [infra.md](infra.md)                                             |
 | Know _why_ something is the way it is                            | [decisions.md](decisions.md)                                     |
 | Check client request vs current specs (alignment assessment)     | [client-alignment-assessment.md](client-alignment-assessment.md) |
+| See what is implemented vs stubbed                               | [implementation-progress.md](implementation-progress.md)         |
 | Open a PR — title, body, CI, formatting                          | [pr-and-ci.md](pr-and-ci.md)                                     |
 | Implement an assigned task                                       | the matching spec in [`specs/`](../../specs/)                    |

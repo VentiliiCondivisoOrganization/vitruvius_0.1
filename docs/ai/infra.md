@@ -45,18 +45,20 @@ db:stop`. Get the local URL + keys with `pnpm supabase status`. The same migrati
 
 ### Google Gemini
 
-- Runtime AI for video understanding (segmentation + instruction writing), called from the engine
-  only via `GEMINI_API_KEY`. Not wired in the bootstrap — stubbed in `packages/ai`.
+- Runtime AI for video understanding (segmentation, instruction writing), called from the engine
+  only via `packages/ai` and `GEMINI_API_KEY`. The **Segmenter** (spec 05) uses Gemini when a key is
+  present; otherwise it degrades to ffmpeg scene-boundary heuristics for local dev and CI.
 
 ## Environment variables
 
-| Var                         | Consumed by           | Purpose                                                    |
-| --------------------------- | --------------------- | ---------------------------------------------------------- |
-| `PUBLIC_SUPABASE_URL`       | web (client + server) | Supabase project URL                                       |
-| `PUBLIC_SUPABASE_ANON_KEY`  | web (client + server) | Public anon key for browser clients                        |
-| `SUPABASE_SERVICE_ROLE_KEY` | engine (server)       | Privileged DB/Storage access for the worker                |
-| `GEMINI_API_KEY`            | engine (server)       | Gemini video understanding (segment, instructions, critic) |
-| `ENGINE_POLL_INTERVAL_MS`   | engine                | Poll cadence for claiming jobs (default 2000)              |
+| Var                         | Consumed by            | Purpose                                                      |
+| --------------------------- | ---------------------- | ------------------------------------------------------------ |
+| `PUBLIC_SUPABASE_URL`       | web (client + server)  | Supabase project URL                                         |
+| `PUBLIC_SUPABASE_ANON_KEY`  | web (client + server)  | Public anon key for browser clients                          |
+| `SUPABASE_SERVICE_ROLE_KEY` | engine (server)        | Privileged DB/Storage access for the worker                  |
+| `GEMINI_API_KEY`            | engine → `packages/ai` | Gemini calls (segment, instructions, critic)                 |
+| `GEMINI_SEGMENT_MODEL`      | engine → `packages/ai` | Optional segment model override (default `gemini-2.0-flash`) |
+| `ENGINE_POLL_INTERVAL_MS`   | engine                 | Poll cadence for claiming jobs (default 2000)                |
 
 ## AI cost & configuration (mostly future)
 

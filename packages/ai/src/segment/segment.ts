@@ -1,8 +1,9 @@
-import type { Keyframe, SceneBoundary } from '@vitruvius/media';
+import type { Keyframe } from '@vitruvius/media';
 import { getSegmentProvider } from '../providers/segment-provider.js';
 import { getCachedSegments, segmentCacheKey, setCachedSegments } from './cache.js';
 import { planSubChunks } from './chunk-plan.js';
 import { normalizeSegments } from './normalize.js';
+import { scenesToIntervals } from './scenes.js';
 import type { RawSegment, SegmentInput, SegmentWindow } from './types.js';
 
 const DEFAULT_LOW_CONFIDENCE = 0.55;
@@ -10,14 +11,7 @@ const DEFAULT_MIN_SUB_CHUNK_MS = 2_500;
 
 function sliceWindow(input: SegmentInput, startMs: number, endMs: number): SegmentWindow {
 	const keyframes = input.keyframes.filter((kf) => kf.atMs >= startMs && kf.atMs < endMs);
-	const scenes = input.scenes
-		.filter((sc) => sc.startMs < endMs && sc.endMs > startMs)
-		.map(
-			(sc): SceneBoundary => ({
-				startMs: Math.max(sc.startMs, startMs),
-				endMs: Math.min(sc.endMs, endMs)
-			})
-		);
+	const scenes = scenesToIntervals(input.scenes, startMs, endMs);
 
 	return { startMs, endMs, keyframes, scenes };
 }

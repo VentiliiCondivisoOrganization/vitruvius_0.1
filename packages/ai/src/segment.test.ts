@@ -17,11 +17,9 @@ const baseInput: SegmentInput = {
 		{ atMs: 3000, fileRef: '/tmp/frame_0002.jpg' },
 		{ atMs: 6000, fileRef: '/tmp/frame_0003.jpg' }
 	],
-	scenes: [
-		{ startMs: 0, endMs: 3000 },
-		{ startMs: 3000, endMs: 6000 },
-		{ startMs: 6000, endMs: 9000 }
-	],
+	// Point-based boundaries from @vitruvius/media (0ms implicit): cuts at 3000ms and
+	// 6000ms partition the 9000ms video into three scene intervals.
+	scenes: [{ atMs: 3000 }, { atMs: 6000 }],
 	clips: [],
 	audio: null,
 	learnings: ['narrator says "click" when a clip seats']

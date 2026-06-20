@@ -34,10 +34,20 @@ export type RawSegment = {
 	label?: string;
 };
 
+/**
+ * A scene expressed as a closed interval. `@vitruvius/media` reports scene changes as
+ * points (`SceneBoundary.atMs` — where a new scene begins, 0ms implicit), so the
+ * segmenter derives these intervals per window before handing them to a provider.
+ */
+export type SceneInterval = {
+	startMs: number;
+	endMs: number;
+};
+
 /** A time window passed to a provider for primary or sub-chunk segmentation. */
 export type SegmentWindow = {
 	startMs: number;
 	endMs: number;
 	keyframes: Keyframe[];
-	scenes: SceneBoundary[];
+	scenes: SceneInterval[];
 };

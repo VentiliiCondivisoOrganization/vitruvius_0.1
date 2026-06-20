@@ -28,6 +28,20 @@ export type InstructionManual = {
 	updatedAt: string; // ISO 8601
 };
 
+// A reusable, generalizable heuristic distilled from a finished run (spec 11) —
+// e.g. a tool/part naming convention, an audio cue, or a recurring warning. Not a
+// per-video transcript line. Primed back into future generation prompts.
+export type Learning = {
+	id: string;
+	scope: string; // a tag grouping related learnings for retrieval (e.g. 'warning', 'tool')
+	text: string; // the generalizable heuristic itself
+	sourceManualId: string; // the run this was distilled from
+	createdAt: string; // ISO 8601
+};
+
+// A Learning before persistence — id and createdAt are assigned by the database.
+export type NewLearning = Omit<Learning, 'id' | 'createdAt'>;
+
 // The unit of work the web app enqueues and the engine consumes.
 export type Job = {
 	id: string;

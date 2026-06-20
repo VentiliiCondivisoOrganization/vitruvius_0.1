@@ -1,8 +1,10 @@
-import type { ManualStep } from '@vitruvius/core';
+import type { ManualStep, NewLearning } from '@vitruvius/core';
 import { critiqueSteps as runCritiqueSteps } from './critique/critique.js';
 import type { CritiqueInput } from './critique/types.js';
 import { enrichSteps } from './instruct/instruct.js';
 import type { InstructInput } from './instruct/types.js';
+import { distillLearnings as runDistillLearnings } from './learnings/distill.js';
+import type { DistillInput } from './learnings/types.js';
 import { rawSegmentToManualStep } from './segment/map-step.js';
 import { segmentIntoRawSteps } from './segment/segment.js';
 import type { SegmentInput } from './segment/types.js';
@@ -11,6 +13,8 @@ export { clearCritiqueCache } from './critique/cache.js';
 export type { CritiqueInput, CritiqueOptions } from './critique/types.js';
 export { clearInstructCache } from './instruct/cache.js';
 export type { InstructInput, InstructOptions } from './instruct/types.js';
+export { isReusableLearning } from './learnings/distill.js';
+export type { DistillInput } from './learnings/types.js';
 export {
 	createCritiqueProvider,
 	GeminiCritiqueProvider,
@@ -27,6 +31,14 @@ export {
 	resetInstructProviderFactory,
 	setInstructProviderFactory
 } from './providers/instruct-provider.js';
+export {
+	createLearningsProvider,
+	GeminiLearningsProvider,
+	getLearningsProvider,
+	HeuristicLearningsProvider,
+	resetLearningsProviderFactory,
+	setLearningsProviderFactory
+} from './providers/learnings-provider.js';
 export {
 	GeminiSegmentProvider,
 	getSegmentProvider,
@@ -71,4 +83,13 @@ export async function writeInstructions(input: InstructInput): Promise<ManualSte
  */
 export async function critiqueSteps(input: CritiqueInput): Promise<ManualStep[]> {
 	return runCritiqueSteps(input);
+}
+
+/**
+ * Learnings distiller (spec 11): extract durable, generalizable heuristics from a
+ * finished run, rejecting per-video noise and anything already known. Returns
+ * `NewLearning[]` ready to persist via `@vitruvius/db`'s `saveLearnings`.
+ */
+export async function distillLearnings(input: DistillInput): Promise<NewLearning[]> {
+	return runDistillLearnings(input);
 }

@@ -34,6 +34,14 @@ export type StepRow = {
 	critique: string[];
 };
 
+export type LearningRow = {
+	id: string;
+	scope: string;
+	text: string;
+	source_manual_id: string;
+	created_at: string;
+};
+
 export type JobRow = {
 	id: string;
 	manual_id: string;

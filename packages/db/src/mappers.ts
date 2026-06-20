@@ -1,10 +1,12 @@
 import {
 	instructionManualSchema,
 	jobSchema,
+	learningSchema,
 	type InstructionManual,
-	type Job
+	type Job,
+	type Learning
 } from '@vitruvius/core';
-import type { JobRow, ManualRow, StepRow } from './types.js';
+import type { JobRow, LearningRow, ManualRow, StepRow } from './types.js';
 
 // All reads cross the trust boundary through these mappers: snake_case row →
 // camelCase core type → validated by the core zod schema. A schema drift between
@@ -40,6 +42,18 @@ export function rowToManual(manual: ManualRow, steps: StepRow[]): InstructionMan
 	};
 
 	return instructionManualSchema.parse(candidate);
+}
+
+export function rowToLearning(learning: LearningRow): Learning {
+	const candidate = {
+		id: learning.id,
+		scope: learning.scope,
+		text: learning.text,
+		sourceManualId: learning.source_manual_id,
+		createdAt: learning.created_at
+	};
+
+	return learningSchema.parse(candidate);
 }
 
 export function rowToJob(job: JobRow): Job {

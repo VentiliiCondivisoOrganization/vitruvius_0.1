@@ -18,56 +18,75 @@ notes**, and a human confirms or corrects each step before export.
 
 ## How it works
 
-The pipeline runs as a chain of small stages — **each node has one clear job.** A SvelteKit web app
-handles upload, review, and export; a separate containerized engine does the heavy lifting. They
-never talk directly — only through the database and the shared `@vitruvius/core` contract.
+The pipeline runs as a chain of small stages — **each node has one clear job, with a defined input,
+output, and goal.** A SvelteKit web app handles upload, review, and export; a separate containerized
+engine does the heavy lifting. They never talk directly — only through the database and the shared
+`@vitruvius/core` contract.
+
+🤖 = the node calls AI (Gemini, behind `packages/ai`). Everything else is deterministic.
 
 ```mermaid
 flowchart TD
-    U["🎥 1 · Upload (web)<br/>store video, create manual row,<br/>enqueue a process job"]
-    --> Q{{"📋 jobs table<br/>(Postgres queue)"}}
+    U["🎥 1 · Upload (web)<br/>video (+ optional 3D model)<br/>→ manual row + process job"]
+    --> Q{{"📋 jobs table · Postgres queue"}}
+
+    CAD["📐 0 · Digital model · packages/cad<br/>STEP / OBJ / STL from<br/>SolidWorks · Inventor · Fusion<br/>→ BOM + assembly tree + views<br/>(deterministic, optional)"]
 
     Q --> C["⚙️ 2 · Claim job (engine)<br/>FOR UPDATE SKIP LOCKED"]
-    C --> M["🎞️ 3 · Media · ffmpeg<br/>keyframes · audio · scene splits"]
-    M --> S["✂️ 4 · Segment · AI<br/>cut the run into discrete steps"]
-    S --> W["✍️ 5 · Write · AI<br/>draft each step<br/>+ confidence + source notes"]
-    W --> Cr["🔍 6 · Critic · AI<br/>independent accuracy review,<br/>recalibrates confidence (never rewrites)"]
-    Cr --> L["🧠 7 · Distill learnings · AI<br/>reusable knowledge → primes future runs"]
-    L --> Save["💾 8 · Save manual<br/>status → ready"]
+    C --> M["🎞️ 3 · Media · ffmpeg<br/>video → keyframes · audio · scenes"]
+    M --> S["🤖 4 · Segment<br/>media → timed steps<br/>(startMs/endMs, confidence, sourceNotes)"]
+    S --> W["🤖 5 · Write<br/>steps → instruction, tools,<br/>parts, warnings (keeps confidence)"]
+    W --> Cr["🤖 6 · Critic<br/>steps → recalibrated confidence<br/>+ critique flags (never rewrites)"]
+    Cr --> L["🤖 7 · Distill learnings<br/>run → reusable heuristics store"]
+    L --> Save["💾 8 · Save manual<br/>status → ready / failed"]
+
+    CAD -. primes .-> S
+    CAD -. primes .-> W
+    L -. primes future runs .-> S
 
     Save --> E["🧑‍🔧 9 · Editor (web)<br/>human confirms / corrects each step"]
-    E --> X["📄 10 · Export<br/>enqueue export job → HTML → PDF"]
+    E -. corrections feed .-> L
+    E --> X["📄 10 · Export<br/>manual → HTML → PDF"]
     X --> Q
-    X --> D["⬇️ Download manual"]
+    X --> D["⬇️ Download manual (PDF)"]
 
-    style U fill:#1e293b,stroke:#38bdf8,color:#fff
-    style E fill:#1e293b,stroke:#38bdf8,color:#fff
-    style D fill:#14532d,stroke:#4ade80,color:#fff
-    style Q fill:#3b0764,stroke:#c084fc,color:#fff
-    style X fill:#1e293b,stroke:#38bdf8,color:#fff
+    classDef web fill:#1e293b,stroke:#38bdf8,color:#fff
+    classDef det fill:#0f2942,stroke:#64748b,color:#fff
+    classDef ai fill:#3b0764,stroke:#c084fc,color:#fff
+    classDef cad fill:#422006,stroke:#f59e0b,color:#fff
+    classDef out fill:#14532d,stroke:#4ade80,color:#fff
+    class U,E web
+    class C,M,Save,X det
+    class S,W,Cr,L ai
+    class CAD cad
+    class Q det
+    class D out
 ```
 
 > Stages **2–8** run inside the engine container. The web app only ever **enqueues** jobs and
-> **polls** `manuals.status` — it never imports the engine or calls AI directly.
+> **polls** `manuals.status` — it never imports the engine or calls AI directly. The dotted edges are
+> _priming_: the optional 3D model and the learnings store feed context into the AI nodes; confirmed
+> human edits feed back into learnings, closing the loop.
 
-### Each node, one job
+### Each node — input → output, and goal
 
-| #   | Stage         | Where           | What it does                                                                                                                                             |
-| --- | ------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Upload**    | web             | Stores the video in Storage, creates a `manuals` row (`uploaded`), enqueues a `process` job.                                                             |
-| 2   | **Claim job** | engine          | Atomically claims a queued job (`FOR UPDATE SKIP LOCKED`) — no Redis.                                                                                    |
-| 3   | **Media**     | engine · ffmpeg | Extracts keyframes, audio, and scene/clip splits from the raw video.                                                                                     |
-| 4   | **Segment**   | engine · AI     | Cuts the continuous footage into discrete assembly steps.                                                                                                |
-| 5   | **Write**     | engine · AI     | Drafts each step's instruction, attaching a **confidence** and **source notes**.                                                                         |
-| 6   | **Critic**    | engine · AI     | A _separate_ agent reviews accuracy and recalibrates `confidence` — it never rewrites the steps, so the trust signal stays independent of the generator. |
-| 7   | **Learnings** | engine · AI     | Distills reusable, core-scope knowledge into a store that **primes future runs** (better accuracy, fewer credits).                                       |
-| 8   | **Save**      | engine          | Persists the manual; moves `manuals.status` `processing → ready` (or `failed`).                                                                          |
-| 9   | **Editor**    | web             | A human reviews each step — `confidence`, `reviewStatus`, `sourceNotes` — and confirms or corrects.                                                      |
-| 10  | **Export**    | web → engine    | Web enqueues an `export` job; engine renders HTML and prints a PDF (Playwright), stored for download.                                                    |
+| #   | Stage (where)                                  | 🤖 AI         | Input → Output                                                                                                                                      | Goal & internal process                                                                                                                                                                                                                                                                                                                                         |
+| --- | ---------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | **Digital model** · engine · `packages/cad`    | No · optional | Optional **STEP / OBJ / STL** export (SolidWorks, Inventor, Fusion) → `DigitalModel` (BOM + assembly tree + canonical views) + `digitalModelStatus` | The video alone forces the AI to guess part names and fastener sizes; a CAD export already names them exactly. Deterministically parses the STEP product structure into a bill of materials + assembly tree, decodes part names, renders canonical views — then **primes** Segment & Write. No AI, near-zero cost. A run with no model proceeds on video alone. |
+| 1   | **Upload** · web                               | No            | Video file (+ optional model) → `manuals` row (`uploaded`) + a `process` job                                                                        | Store the upload in Supabase Storage, register the manual, enqueue work. Web's only job in processing — it never interprets anything itself.                                                                                                                                                                                                                    |
+| 2   | **Claim job** · engine                         | No            | Queued `jobs` row → one leased job                                                                                                                  | Atomically lease a single job with `FOR UPDATE SKIP LOCKED` so parallel workers never grab the same one. No Redis.                                                                                                                                                                                                                                              |
+| 3   | **Media** · engine · ffmpeg                    | No            | Video path → keyframes, audio track, scene boundaries, split clips (timestamps + file refs)                                                         | Deterministic ffmpeg extraction — turn raw footage into structured artifacts the AI can reason over. No interpretation here.                                                                                                                                                                                                                                    |
+| 4   | **Segment** · engine · `packages/ai`           | **Yes** 🤖    | Media artifacts (+ CAD + learnings priming) → `ManualStep[]` with `startMs`/`endMs`, `confidence`, `sourceNotes`                                    | One structured Gemini call cuts the continuous run into discrete steps with time bounds; sub-chunks only fast/ambiguous sections; caches on a content hash.                                                                                                                                                                                                     |
+| 5   | **Write** · engine · `packages/ai`             | **Yes** 🤖    | Segmented steps → enriched steps (`title`, `instruction`, `tools`, `parts`, `warnings`, `alternatives`)                                             | Fill the operative wording per step in one structured call, preserving `sourceNotes`/`confidence` so every field stays traceable to evidence.                                                                                                                                                                                                                   |
+| 6   | **Critic** · engine · `packages/ai`            | **Yes** 🤖    | Enriched steps → same steps with recalibrated `confidence` + `critique[]`                                                                           | A _separate_ agent (cheap, text-only, no re-watch) judges whether each instruction is actually supported by its source notes; lowers confidence and flags gaps. Scores only — **never rewrites**. The generator must not grade itself.                                                                                                                          |
+| 7   | **Distill learnings** · engine · `packages/ai` | **Yes** 🤖    | Finished + human-corrected run → `Learning` rows                                                                                                    | Extract reusable, generalizable heuristics (tool/part conventions, audio cues) — not per-video transcripts — and store them to prime future runs. Closes the loop: generate → critique → human-correct → learn.                                                                                                                                                 |
+| 8   | **Save** · engine                              | No            | Validated `ManualStep[]` → persisted manual; `status: processing → ready / failed`                                                                  | Persist via `packages/db` and flip the status so the web app's poll picks it up.                                                                                                                                                                                                                                                                                |
+| 9   | **Editor** · web                               | No · human    | Ready manual → confirmed / corrected steps                                                                                                          | The guided-revision core of the product: a human reviews each step with its `confidence`, `reviewStatus`, `sourceNotes`, and `critique`, then confirms or corrects. Corrections feed back to learnings.                                                                                                                                                         |
+| 10  | **Export** · web → engine                      | No            | Approved manual → PDF in Storage                                                                                                                    | Web enqueues an `export` job; the engine renders the HTML template and prints to PDF with Playwright, stored for download.                                                                                                                                                                                                                                      |
 
-> 🧩 **Planned lane (spec 12):** when a digital model (CAD/mesh) accompanies the video, `packages/cad`
-> parses it into a BOM + assembly tree + canonical views that _also_ prime generation. Auxiliary,
-> never required — a run with no model proceeds on video alone.
+> 📐 **The digital-model lane (spec 12)** is the dedicated CAD/SolidWorks path. It is _auxiliary
+> priming_, never required: when a 3D model ships with the video it sharpens part names and lets the
+> Critic calibrate against ground truth; when it doesn't, the pipeline runs unchanged on video alone.
 
 ---
 

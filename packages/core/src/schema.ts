@@ -30,6 +30,17 @@ export const instructionManualSchema = z.object({
 	updatedAt: z.string()
 });
 
+export const learningSchema = z.object({
+	id: z.string(),
+	scope: z.string().min(1),
+	text: z.string().min(1),
+	sourceManualId: z.string(),
+	createdAt: z.string()
+});
+
+// A Learning before persistence — id and createdAt are assigned by the database.
+export const newLearningSchema = learningSchema.omit({ id: true, createdAt: true });
+
 export const jobSchema = z.object({
 	id: z.string(),
 	manualId: z.string(),

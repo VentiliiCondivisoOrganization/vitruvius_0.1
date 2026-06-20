@@ -148,13 +148,11 @@ export function parseStep(text: string): StepParseResult {
 	const dataBody = sectionBetween(`DATA;${data}`, 'DATA;', 'ENDSEC;') || data;
 
 	const entities = parseEntities(dataBody);
-	const byId = new Map<string, Entity>();
-	for (const e of entities) byId.set(e.id, e);
 
 	const { schema, system } = parseHeader(header);
 	const units = parseUnits(dataBody);
 
-	// product id -> display name. Prefer PRODUCT.name; fall back to PRODUCT_DEFINITION.
+	// product id -> display name, taken from PRODUCT.name.
 	const productName = new Map<string, string>();
 	for (const e of entities) {
 		if (e.type === 'PRODUCT') {

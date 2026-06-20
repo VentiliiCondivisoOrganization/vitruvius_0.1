@@ -68,13 +68,17 @@ export async function ingestModel(
 		return digitalModelSchema.parse(emptyModel('failed', ''));
 	}
 
-	const cached = getCached(contentHash);
+	// Key on the content hash AND the output dir: rendered `views` carry absolute paths
+	// under `options.outDir`, so a cache keyed on content alone could hand back views
+	// pointing at a different call's directory (or `[]` from a prior no-render call).
+	const cacheKey = `${contentHash}:${options.outDir ?? ''}`;
+	const cached = getCached(cacheKey);
 	if (cached) return cached;
 
 	try {
 		const model = await parseSupported(classification.format, modelPath, contentHash, options);
 		const validated = digitalModelSchema.parse(model);
-		setCached(contentHash, validated);
+		setCached(cacheKey, validated);
 		return validated;
 	} catch (err) {
 		log.warn(`[cad] failed to parse ${modelPath}: ${String(err)}`);

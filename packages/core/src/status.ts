@@ -12,8 +12,9 @@ export type JobStatus = (typeof JOB_STATUS)[number];
 export const JOB_TYPE = ['process', 'export'] as const;
 export type JobType = (typeof JOB_TYPE)[number];
 
-// Whether an auxiliary digital model (CAD/mesh) primed a run, recorded on the manual so
-// the Critic and editor can see a run was model-primed (spec 12-cad-ingest):
+// Whether an auxiliary digital model (CAD/mesh) primed a run (spec 12-cad-ingest). This
+// enum is the vocabulary for that outcome; wiring it onto the manual so the Critic and
+// editor can see a run was model-primed lands with the engine CAD integration:
 //   primed      — a usable model was parsed and fed to the AI as priming context
 //   absent      — no model accompanied the upload
 //   unsupported — a model was supplied but its format is recognized-but-unsupported

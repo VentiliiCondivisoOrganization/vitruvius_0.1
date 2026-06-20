@@ -56,7 +56,11 @@ export function decodeStepString(raw: string): string {
 				}
 				const hex = raw.slice(j, j + width);
 				if (hex.length < width || !/^[0-9A-Fa-f]+$/.test(hex)) break;
-				decoded += String.fromCodePoint(Number.parseInt(hex, 16));
+				const code = Number.parseInt(hex, 16);
+				// \X2\ chunks are UTF-16 code units: a non-BMP char arrives as a surrogate
+				// pair across two chunks, so use fromCharCode (fromCodePoint throws on a lone
+				// surrogate). \X4\ chunks are full UTF-32 code points.
+				decoded += width === 4 ? String.fromCharCode(code) : String.fromCodePoint(code);
 				j += width;
 			}
 			out += decoded;

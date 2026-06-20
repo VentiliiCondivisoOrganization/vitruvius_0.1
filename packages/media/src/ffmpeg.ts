@@ -56,7 +56,7 @@ export function runFfprobe(args: readonly string[]): Promise<{ stdout: string; s
 
 /** Container duration in whole milliseconds, via ffprobe. */
 export async function probeDurationMs(videoPath: string): Promise<number> {
-	const { stdout } = await runFfprobe([
+	const args = [
 		'-v',
 		'error',
 		'-show_entries',
@@ -64,10 +64,11 @@ export async function probeDurationMs(videoPath: string): Promise<number> {
 		'-of',
 		'default=nokey=1:noprint_wrappers=1',
 		videoPath
-	]);
+	];
+	const { stdout } = await runFfprobe(args);
 	const seconds = Number.parseFloat(stdout.trim());
 	if (!Number.isFinite(seconds)) {
-		throw new FfmpegError(FFPROBE_BIN, [videoPath], `could not parse duration from: ${stdout}`);
+		throw new FfmpegError(FFPROBE_BIN, args, `could not parse duration from: ${stdout}`);
 	}
 	return Math.round(seconds * 1000);
 }

@@ -29,13 +29,24 @@
 	let steps = $state<ManualStep[]>([]);
 	let dirty = $state(false);
 	let saving = $state(false);
-	// Track the last-saved snapshot so the UI can show a clean "Saved" state and
-	// reset when the server confirms.
+	// The manual id the local `steps` were seeded from. SvelteKit can reuse this
+	// component instance across `/manuals/[id]` navigations, so we must detect an id
+	// change and re-seed even if the previous manual had unsaved edits — otherwise the
+	// new manual's header would show (and could submit) the old manual's steps.
+	let seededId = $state<string | null>(null);
 	$effect(() => {
-		// Re-seed whenever the underlying manual id changes (navigation) or after a
-		// successful save re-runs the load. Only resets when not mid-edit.
+		const m = manual;
+		if (m.id !== seededId) {
+			// New manual (navigation): always reset, discarding any stale edit state.
+			steps = structuredClone($state.snapshot(m.steps)) as ManualStep[];
+			seededId = m.id;
+			dirty = false;
+			return;
+		}
+		// Same manual: re-seed after a successful save re-runs the load, but never
+		// clobber an in-progress edit.
 		if (!dirty && !saving) {
-			steps = structuredClone($state.snapshot(manual.steps)) as ManualStep[];
+			steps = structuredClone($state.snapshot(m.steps)) as ManualStep[];
 		}
 	});
 

@@ -30,6 +30,13 @@ export const actions: Actions = {
 		const current = await getManual(locals.db, params.id);
 		if (!current) error(404, 'Manual not found');
 
+		// Only a finished manual is editable. saveManual replaces the whole step set, so
+		// accepting edits while the manual is uploaded/processing would race the engine
+		// (or resurrect a failed one). Reject anything not `ready`.
+		if (current.status !== 'ready') {
+			return fail(409, { error: 'This manual is not ready for editing.' });
+		}
+
 		const raw = (await request.formData()).get('payload');
 		if (typeof raw !== 'string') return fail(400, { error: 'Missing edit payload.' });
 

@@ -1,8 +1,20 @@
 import type { ManualStep } from '@vitruvius/core';
+import { enrichSteps } from './instruct/instruct.js';
+import type { InstructInput } from './instruct/types.js';
 import { rawSegmentToManualStep } from './segment/map-step.js';
 import { segmentIntoRawSteps } from './segment/segment.js';
 import type { SegmentInput } from './segment/types.js';
 
+export { clearInstructCache } from './instruct/cache.js';
+export type { InstructInput, InstructOptions } from './instruct/types.js';
+export {
+	createInstructProvider,
+	GeminiInstructProvider,
+	getInstructProvider,
+	HeuristicInstructProvider,
+	resetInstructProviderFactory,
+	setInstructProviderFactory
+} from './providers/instruct-provider.js';
 export {
 	GeminiSegmentProvider,
 	getSegmentProvider,
@@ -31,7 +43,11 @@ export async function segmentVideoIntoSteps(
 	return rawSteps.map((seg) => rawSegmentToManualStep(seg, input.keyframes, mapKeyframeUrl));
 }
 
-// Spec 06 — not implemented in this PR.
-export async function writeInstructions(_steps: ManualStep[]): Promise<ManualStep[]> {
-	throw new Error('not implemented');
+/**
+ * Instruction Writer agent (spec 06): enrich segmented `ManualStep[]` with operative
+ * fields (`title`, `instruction`, `tools`, `parts`, `warnings`, `alternatives`) in one
+ * structured call, preserving each step's `sourceNotes`, `confidence`, and time bounds.
+ */
+export async function writeInstructions(input: InstructInput): Promise<ManualStep[]> {
+	return enrichSteps(input);
 }

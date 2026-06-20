@@ -1,9 +1,7 @@
-import type { Keyframe } from '@vitruvius/media';
-import { readFile } from 'node:fs/promises';
-import { basename } from 'node:path';
 import { buildSegmentPrompt } from '../segment/prompt.js';
 import { segmentResponseSchema } from '../segment/schema.js';
 import type { RawSegment, SegmentWindow } from '../segment/types.js';
+import { loadKeyframeParts, pickKeyframesForCall, type GeminiPart } from './keyframe-parts.js';
 import type { SegmentProvider, SegmentProviderContext } from './types.js';
 
 /** Deterministic fallback when no API key is configured — uses ffmpeg scene boundaries. */
@@ -29,8 +27,6 @@ export class HeuristicSegmentProvider implements SegmentProvider {
 		return Promise.resolve(steps);
 	}
 }
-
-type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
 
 type GeminiGenerateRequest = {
 	contents: { role: string; parts: GeminiPart[] }[];
@@ -104,38 +100,6 @@ export class GeminiSegmentProvider implements SegmentProvider {
 			)
 		}));
 	}
-}
-
-function pickKeyframesForCall(keyframes: Keyframe[], max: number): Keyframe[] {
-	if (keyframes.length <= max) return keyframes;
-	const stride = Math.ceil(keyframes.length / max);
-	return keyframes.filter((_, i) => i % stride === 0).slice(0, max);
-}
-
-async function loadKeyframeParts(keyframes: Keyframe[]): Promise<GeminiPart[]> {
-	const parts: GeminiPart[] = [];
-	for (const kf of keyframes) {
-		try {
-			const bytes = await readFile(kf.fileRef);
-			parts.push({
-				inlineData: {
-					mimeType: mimeFromPath(kf.fileRef),
-					data: bytes.toString('base64')
-				}
-			});
-			parts.push({ text: `Keyframe at ${kf.atMs}ms (${basename(kf.fileRef)})` });
-		} catch {
-			parts.push({ text: `(keyframe unavailable at ${kf.atMs}ms: ${kf.fileRef})` });
-		}
-	}
-	return parts;
-}
-
-function mimeFromPath(path: string): string {
-	const ext = path.split('.').pop()?.toLowerCase();
-	if (ext === 'png') return 'image/png';
-	if (ext === 'webp') return 'image/webp';
-	return 'image/jpeg';
 }
 
 export function createSegmentProvider(): SegmentProvider {

@@ -119,5 +119,3 @@ Useful workspace scripts: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm tes
 - Infrastructure & env vars: [`docs/ai/infra.md`](docs/ai/infra.md)
 - Decisions (ADR-lite): [`docs/ai/decisions.md`](docs/ai/decisions.md)
 - Task specs: [`specs/`](specs/) — one vertical slice per file (`01`–`12`).
-  </content>
-  </invoke>

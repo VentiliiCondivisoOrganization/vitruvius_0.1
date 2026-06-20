@@ -52,21 +52,21 @@ flowchart TD
 
 ### Each node, one job
 
-| # | Stage | Where | What it does |
-| - | ----- | ----- | ------------ |
-| 1 | **Upload** | web | Stores the video in Storage, creates a `manuals` row (`uploaded`), enqueues a `process` job. |
-| 2 | **Claim job** | engine | Atomically claims a queued job (`FOR UPDATE SKIP LOCKED`) — no Redis. |
-| 3 | **Media** | engine · ffmpeg | Extracts keyframes, audio, and scene/clip splits from the raw video. |
-| 4 | **Segment** | engine · AI | Cuts the continuous footage into discrete assembly steps. |
-| 5 | **Write** | engine · AI | Drafts each step's instruction, attaching a **confidence** and **source notes**. |
-| 6 | **Critic** | engine · AI | A *separate* agent reviews accuracy and recalibrates `confidence` — it never rewrites the steps, so the trust signal stays independent of the generator. |
-| 7 | **Learnings** | engine · AI | Distills reusable, core-scope knowledge into a store that **primes future runs** (better accuracy, fewer credits). |
-| 8 | **Save** | engine | Persists the manual; moves `manuals.status` `processing → ready` (or `failed`). |
-| 9 | **Editor** | web | A human reviews each step — `confidence`, `reviewStatus`, `sourceNotes` — and confirms or corrects. |
-| 10 | **Export** | web → engine | Web enqueues an `export` job; engine renders HTML and prints a PDF (Playwright), stored for download. |
+| #   | Stage         | Where           | What it does                                                                                                                                             |
+| --- | ------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Upload**    | web             | Stores the video in Storage, creates a `manuals` row (`uploaded`), enqueues a `process` job.                                                             |
+| 2   | **Claim job** | engine          | Atomically claims a queued job (`FOR UPDATE SKIP LOCKED`) — no Redis.                                                                                    |
+| 3   | **Media**     | engine · ffmpeg | Extracts keyframes, audio, and scene/clip splits from the raw video.                                                                                     |
+| 4   | **Segment**   | engine · AI     | Cuts the continuous footage into discrete assembly steps.                                                                                                |
+| 5   | **Write**     | engine · AI     | Drafts each step's instruction, attaching a **confidence** and **source notes**.                                                                         |
+| 6   | **Critic**    | engine · AI     | A _separate_ agent reviews accuracy and recalibrates `confidence` — it never rewrites the steps, so the trust signal stays independent of the generator. |
+| 7   | **Learnings** | engine · AI     | Distills reusable, core-scope knowledge into a store that **primes future runs** (better accuracy, fewer credits).                                       |
+| 8   | **Save**      | engine          | Persists the manual; moves `manuals.status` `processing → ready` (or `failed`).                                                                          |
+| 9   | **Editor**    | web             | A human reviews each step — `confidence`, `reviewStatus`, `sourceNotes` — and confirms or corrects.                                                      |
+| 10  | **Export**    | web → engine    | Web enqueues an `export` job; engine renders HTML and prints a PDF (Playwright), stored for download.                                                    |
 
 > 🧩 **Planned lane (spec 12):** when a digital model (CAD/mesh) accompanies the video, `packages/cad`
-> parses it into a BOM + assembly tree + canonical views that *also* prime generation. Auxiliary,
+> parses it into a BOM + assembly tree + canonical views that _also_ prime generation. Auxiliary,
 > never required — a run with no model proceeds on video alone.
 
 ---
@@ -119,5 +119,5 @@ Useful workspace scripts: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm tes
 - Infrastructure & env vars: [`docs/ai/infra.md`](docs/ai/infra.md)
 - Decisions (ADR-lite): [`docs/ai/decisions.md`](docs/ai/decisions.md)
 - Task specs: [`specs/`](specs/) — one vertical slice per file (`01`–`12`).
-</content>
-</invoke>
+  </content>
+  </invoke>

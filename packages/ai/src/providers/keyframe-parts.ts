@@ -33,7 +33,11 @@ export async function loadKeyframeParts(keyframes: Keyframe[]): Promise<GeminiPa
 }
 
 export function mimeFromPath(path: string): string {
-	const ext = path.split('.').pop()?.toLowerCase();
+	// Strip a file:// prefix and any query string / fragment (e.g. signed-URL params)
+	// so the extension is read from the real filename, not "...png?X-Amz-Signature=...".
+	const withoutScheme = path.startsWith('file://') ? path.slice('file://'.length) : path;
+	const cleaned = withoutScheme.split(/[?#]/)[0] ?? withoutScheme;
+	const ext = cleaned.split('.').pop()?.toLowerCase();
 	if (ext === 'png') return 'image/png';
 	if (ext === 'webp') return 'image/webp';
 	return 'image/jpeg';

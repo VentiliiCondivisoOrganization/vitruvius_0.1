@@ -54,4 +54,20 @@ describe('mergeInstruction', () => {
 		const merged = mergeInstruction(original, { ...raw, title: '   ' });
 		expect(merged.title).toBe('Step 3');
 	});
+
+	it('preserves the original instruction when the model returns whitespace', () => {
+		const withInstruction = { ...original, instruction: 'existing instruction' };
+		const merged = mergeInstruction(withInstruction, { ...raw, instruction: '   ' });
+		expect(merged.instruction).toBe('existing instruction');
+	});
+
+	it('trims and drops blank entries from operative lists', () => {
+		const merged = mergeInstruction(original, {
+			...raw,
+			tools: ['  mallet  ', '   ', ''],
+			parts: ['shelf', '  ']
+		});
+		expect(merged.tools).toEqual(['mallet']);
+		expect(merged.parts).toEqual(['shelf']);
+	});
 });

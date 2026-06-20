@@ -5,6 +5,8 @@ import { rawSegmentToManualStep } from './segment/map-step.js';
 import { segmentIntoRawSteps } from './segment/segment.js';
 import type { SegmentInput } from './segment/types.js';
 
+export { clearInstructCache } from './instruct/cache.js';
+export type { InstructInput, InstructOptions } from './instruct/types.js';
 export {
 	createInstructProvider,
 	GeminiInstructProvider,
@@ -20,8 +22,6 @@ export {
 	resetSegmentProviderFactory,
 	setSegmentProviderFactory
 } from './providers/segment-provider.js';
-export { clearInstructCache } from './instruct/cache.js';
-export type { InstructInput, InstructOptions } from './instruct/types.js';
 export { clearSegmentCache } from './segment/cache.js';
 export type { SegmentInput, SegmentMediaContext, SegmentOptions } from './segment/types.js';
 

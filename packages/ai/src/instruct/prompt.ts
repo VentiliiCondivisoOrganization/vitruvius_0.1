@@ -34,7 +34,9 @@ Rules:
 Prompt version: ${INSTRUCT_PROMPT_VERSION}`;
 
 	const user = `Write instructions for these ${steps.length} segmented step(s).
-Keyframe stills for the steps are attached in time order.
+Keyframe stills are attached for some steps and each is labelled with its step order.
+Match a still to a step only by that label; a step with no attached still has no image — do
+not assume an unlabelled image belongs to it.
 ${learningsBlock}
 Steps:
 ${stepLines}

@@ -2,8 +2,8 @@ import type { ManualStep } from '@vitruvius/core';
 import { getInstructProvider } from '../providers/instruct-provider.js';
 import {
 	getCachedInstructions,
-	instructCacheKey,
 	INSTRUCT_PROMPT_VERSION,
+	instructCacheKey,
 	setCachedInstructions
 } from './cache.js';
 import { mergeInstruction } from './merge.js';

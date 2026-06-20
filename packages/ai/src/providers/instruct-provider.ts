@@ -3,8 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { buildInstructPrompt } from '../instruct/prompt.js';
 import { instructionResponseSchema } from '../instruct/schema.js';
 import type { RawInstruction } from '../instruct/types.js';
-import { mimeFromPath, type GeminiPart } from './keyframe-parts.js';
 import type { InstructProvider, InstructProviderContext } from './instruct-types.js';
+import { mimeFromPath, type GeminiPart } from './keyframe-parts.js';
 
 /**
  * Deterministic fallback when no API key is configured. Derives a minimal, fully
@@ -107,7 +107,9 @@ export class GeminiInstructProvider implements InstructProvider {
 			withKeyframes.length > MAX_KEYFRAMES_PER_CALL
 				? Math.ceil(withKeyframes.length / MAX_KEYFRAMES_PER_CALL)
 				: 1;
-		const sampled = withKeyframes.filter((_, i) => i % stride === 0).slice(0, MAX_KEYFRAMES_PER_CALL);
+		const sampled = withKeyframes
+			.filter((_, i) => i % stride === 0)
+			.slice(0, MAX_KEYFRAMES_PER_CALL);
 
 		const parts: GeminiPart[] = [];
 		for (const step of sampled) {
@@ -125,7 +127,9 @@ export class GeminiInstructProvider implements InstructProvider {
 	}
 
 	private async readKeyframe(keyframeUrl: string): Promise<string> {
-		const ref = keyframeUrl.startsWith('file://') ? keyframeUrl.slice('file://'.length) : keyframeUrl;
+		const ref = keyframeUrl.startsWith('file://')
+			? keyframeUrl.slice('file://'.length)
+			: keyframeUrl;
 		if (/^https?:\/\//.test(ref)) {
 			const res = await this.fetchFn(ref);
 			if (!res.ok) throw new Error(`keyframe fetch failed (${res.status})`);

@@ -15,7 +15,9 @@ export const manualStepSchema = z.object({
 	confidence: z.number().min(0).max(1),
 	reviewStatus: z.enum(STEP_REVIEW_STATUS),
 	sourceNotes: z.array(z.string()),
-	alternatives: z.array(z.string())
+	alternatives: z.array(z.string()),
+	// Critic (spec 10) flags. Defaulted so pre-Critic steps and stored rows parse unchanged.
+	critique: z.array(z.string()).default([])
 });
 
 export const instructionManualSchema = z.object({

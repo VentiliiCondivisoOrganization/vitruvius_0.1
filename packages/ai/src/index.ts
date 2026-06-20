@@ -1,12 +1,24 @@
 import type { ManualStep } from '@vitruvius/core';
+import { critiqueSteps as runCritiqueSteps } from './critique/critique.js';
+import type { CritiqueInput } from './critique/types.js';
 import { enrichSteps } from './instruct/instruct.js';
 import type { InstructInput } from './instruct/types.js';
 import { rawSegmentToManualStep } from './segment/map-step.js';
 import { segmentIntoRawSteps } from './segment/segment.js';
 import type { SegmentInput } from './segment/types.js';
 
+export { clearCritiqueCache } from './critique/cache.js';
+export type { CritiqueInput, CritiqueOptions } from './critique/types.js';
 export { clearInstructCache } from './instruct/cache.js';
 export type { InstructInput, InstructOptions } from './instruct/types.js';
+export {
+	createCritiqueProvider,
+	GeminiCritiqueProvider,
+	getCritiqueProvider,
+	HeuristicCritiqueProvider,
+	resetCritiqueProviderFactory,
+	setCritiqueProviderFactory
+} from './providers/critique-provider.js';
 export {
 	createInstructProvider,
 	GeminiInstructProvider,
@@ -50,4 +62,13 @@ export async function segmentVideoIntoSteps(
  */
 export async function writeInstructions(input: InstructInput): Promise<ManualStep[]> {
 	return enrichSteps(input);
+}
+
+/**
+ * Critic agent (spec 10): an independent, text-only review of the enriched `ManualStep[]`.
+ * Recalibrates `confidence` (lowering it where evidence is weak) and fills `critique` with
+ * concrete flags, never rewriting the instruction text.
+ */
+export async function critiqueSteps(input: CritiqueInput): Promise<ManualStep[]> {
+	return runCritiqueSteps(input);
 }

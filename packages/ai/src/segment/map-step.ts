@@ -43,7 +43,8 @@ export function rawSegmentToManualStep(
 		confidence: seg.confidence,
 		reviewStatus: 'hypothesis',
 		sourceNotes: seg.sourceNotes,
-		alternatives: []
+		alternatives: [],
+		critique: []
 	};
 
 	return manualStepSchema.parse(step);

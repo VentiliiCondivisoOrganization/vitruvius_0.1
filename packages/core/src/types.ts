@@ -15,6 +15,7 @@ export type ManualStep = {
 	reviewStatus: StepReviewStatus;
 	sourceNotes: string[]; // why the AI proposed this (timestamps, audio cues, visual evidence)
 	alternatives: string[]; // alternative phrasings/options the editor can choose from
+	critique: string[]; // Critic (spec 10) flags: what is unsupported/missing; empty when well-supported
 };
 
 export type InstructionManual = {

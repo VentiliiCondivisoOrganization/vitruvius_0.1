@@ -153,12 +153,58 @@ jobs:
       - name: Test
         run: pnpm --filter @vitruvius/media test
 
+  # `@vitruvius/cad` parse path (STEP product-structure + mesh geometry stats) is pure
+  # in-process parsing of short fixtures — no native CAD kernel, no binaries — so it runs
+  # in plain CI like the media parse path. The kernel-dependent canonical-view RENDER test
+  # self-skips here (no kernel) and is exercised by the commented-out `render-cad` job
+  # below, which needs the engine container.
+  test-cad:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Prepare
+        uses: ./.github/actions/prepare
+
+      - name: Test
+        run: pnpm --filter @vitruvius/cad test
+
+  # Canonical-view RENDER smoke test (spec 12-cad-ingest). DISABLED in plain CI: rendering
+  # needs a CAD/mesh kernel — a heavy native dependency that ships in the engine container
+  # (see apps/engine/Dockerfile), not on the GitHub-hosted runner. Enable by building/
+  # running this inside that Docker image (which provides the kernel) and setting
+  # VITRUVIUS_CAD_KERNEL=1 so the guarded render test in cad.test.ts runs. When enabled,
+  # add `render-cad` to the `checks-pass` needs list below.
+  #
+  # render-cad:
+  #   runs-on: ubuntu-24.04
+  #   permissions:
+  #     contents: read
+  #   container:
+  #     image: ghcr.io/<org>/vitruvius-engine:latest # ships the CAD/mesh kernel
+  #   env:
+  #     VITRUVIUS_CAD_KERNEL: '1'
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+  #       with:
+  #         persist-credentials: false
+  #     - name: Prepare
+  #       uses: ./.github/actions/prepare
+  #     - name: Render test
+  #       run: pnpm --filter @vitruvius/cad test
+
   # Aggregate gate. This is the single status check the `main` ruleset requires,
   # so adding/removing a job above only means editing its `needs` list — the
   # branch protection rule never has to change.
   checks-pass:
     if: always()
-    needs: ['pr-title', 'format', 'lint', 'typecheck', 'build', 'test-media']
+    needs: ['pr-title', 'format', 'lint', 'typecheck', 'build', 'test-media', 'test-cad']
     runs-on: ubuntu-24.04
     permissions:
       contents: read

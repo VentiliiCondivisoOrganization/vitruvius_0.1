@@ -144,6 +144,22 @@ importers:
         specifier: ^3.0.0
         version: 3.2.6(@types/node@24.7.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
+  packages/cad:
+    dependencies:
+      '@vitruvius/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: 24.7.0
+        version: 24.7.0
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.6(@types/node@24.7.0)(jiti@2.7.0)(lightningcss@1.32.0)
+
   packages/core:
     dependencies:
       zod:

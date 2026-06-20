@@ -58,10 +58,10 @@ manuals.status                      → packages/ai   (distill learnings)
    segmentation + instructions) → `packages/ai` (the **Critic**, an unbiased accuracy review that
    recalibrates `confidence`) → `packages/ai` (distill reusable **learnings**), saves the manual via
    `packages/db`, moving `manuals.status` from `processing` to `ready` or `failed`. Generation is
-   primed with relevant prior learnings before it starts. A **planned** lane (spec 12, not yet
-   implemented) adds `packages/cad`: when a digital model (CAD/mesh) accompanies the video it will be
-   parsed into a BOM + assembly tree + canonical views that also prime generation — auxiliary, never
-   required, so a run with no model proceeds on video alone.
+   primed with relevant prior learnings before it starts. `packages/cad` (spec 12) adds an auxiliary
+   lane: when a digital model (CAD/mesh) accompanies the video it is parsed — deterministically, no AI
+   credits — into a BOM + assembly tree + (kernel-permitting) canonical views that also prime
+   generation. It is auxiliary, never required, so a run with no model proceeds on video alone.
 3. **Web (editor):** a human reviews/corrects the generated steps; each step exposes its
    `confidence`, `reviewStatus`, and `sourceNotes`.
 4. **Export:** the web app enqueues an `export` job; the engine renders the manual to HTML and

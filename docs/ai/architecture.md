@@ -8,25 +8,73 @@ deliberate: _"AI-generated draft instructions with a guided human revision edito
 a fully automatic, perfect manual generator. Every AI output carries a confidence value and source
 notes, and a human confirms/corrects before export.
 
+The [client alignment assessment](./client-alignment-assessment.md) (grill-me, 2026-06) extends the
+**target deliverable** toward illustrated IKEA/LEGO manuals: schematic print images
+(`illustrationUrl`), structured BOM per step (`PartRef`), optional CAD priming (spec 12), prompt
+regeneration in revision, and export gated on human confirmation. That target lands in **two
+engineering phases** — see [Pipeline](#pipeline-baseline-vs-target) below. Spec baseline `01`–`12`
+is implemented or in progress; extensions `13`, `14`, `16`, `17` are specified, not yet coded.
+
 ## Repository structure
 
 ```
 vitruvius/
 ├── apps/
-│   ├── web/        SvelteKit — UI + thin server routes (upload, status, editor, export trigger)
+│   ├── web/        SvelteKit — UI + thin server routes (upload, status, editor, export/regenerate trigger)
 │   └── engine/     Standalone worker container — claims jobs and runs the pipeline
 ├── packages/
 │   ├── core/       FROZEN CONTRACT — types + zod schemas + enums (single source of truth)
 │   ├── db/         Supabase client + typed queries + migrations + the jobs queue helpers
 │   ├── media/      ffmpeg wrappers (keyframes, audio, scene detection, clip splitting)
-│   ├── cad/        (planned — spec 12) digital-model ingest — STEP/mesh → BOM + assembly tree + views
-│   ├── ai/         Gemini calls (segmentation, instruction writing)
-│   └── export/     HTML template + Playwright print-to-PDF
-├── docs/           Centralized architecture / infra / decisions
-└── specs/          One spec per vertical slice (the unit of agent work)
+│   ├── cad/        (spec 12) digital-model ingest — STEP/mesh → BOM + assembly tree + views
+│   ├── ai/         Agent interfaces (segment, instruct, critique, illustrate — spec 05–06, 10–11, 14)
+│   └── export/     HTML template + Playwright print-to-PDF (spec 09)
+├── docs/ai/        Architecture, AI layer, decisions, client assessment, progress
+└── specs/          One spec per vertical slice — baseline 01–12; extensions 13, 14, 16, 17
 ```
 
-## Runtime data flow
+## Pipeline: baseline vs target
+
+### Baseline (specs 01–12 — current design)
+
+What the repo documents and is building toward first:
+
+```
+upload video [+ optional digital model]
+  → (12) packages/cad: DigitalModel priming [optional]
+  → (04) packages/media: keyframes, audio, scenes, clips
+  → (05) Segmenter: video-first timeline → ManualStep[] + sourceNotes
+  → (06) Instructor: title, instruction, tools, parts, warnings, alternatives
+  → (10) Critic: instruction ↔ sourceNotes (text-only; never rewrites)
+  → (11) Learnings: distill + prime future runs
+  → save manual → editor (08) → export (09, keyframes today)
+```
+
+### Target phase 1 (client deliverable — specs 13, 14 tier 1, 16, 17 + extensions 08/09)
+
+Documented in the [client alignment assessment](./client-alignment-assessment.md) §5.5:
+
+```
+upload: video [+ audio] [+ BOM file] [+ CAD/mesh]
+  → cad-ingest (12) + bom-file-parse (13) [optional]
+  → media (04) → segment (05) → bom-map (13) → instruct (06)
+  → critic (10) → illustrate (14 tier 1: Illustrator | Compositor-lite)
+  → learnings (11) → editor (08) → export (09, schematic PDF)
+```
+
+- **BOM layer (13):** deterministic match first, AI only for ambiguous rows → `PartRef[]` with
+  `candidateBomItemIds`. Not a duplicate Instructor.
+- **Critic (10) unchanged:** BOM consistency = deterministic flags + export gate, not Critic scope.
+- **Export gate:** all steps `reviewStatus: confirmed`, no open BOM candidates (spec 08/09).
+- **Regenerate (16):** new `JOB_TYPE: regenerate` with scope `text` | `illustration` | `layout` |
+  `structure` — reuses Instructor / Illustrator, not a separate “Regenerator” agent.
+
+### Target phase 2 (grill-me compositing CAD per passo)
+
+**Compositor-full** — geometric overlay per step on CAD renders — requires video↔geometry pose
+alignment (research; explicitly out of scope for spec 12). Does not block phase 1.
+
+## Runtime data flow (baseline)
 
 ```
 apps/web                          apps/engine                         apps/web
@@ -53,19 +101,15 @@ manuals.status                      → packages/ai   (distill learnings)
 ```
 
 1. **Web (upload):** stores the video in Supabase Storage, creates a `manuals` row (status
-   `uploaded`), and enqueues a `process` job row.
-2. **Engine (process):** claims the job, runs `packages/media` (ffmpeg) → `packages/ai` (Gemini
-   segmentation + instructions) → `packages/ai` (the **Critic**, an unbiased accuracy review that
-   recalibrates `confidence`) → `packages/ai` (distill reusable **learnings**), saves the manual via
-   `packages/db`, moving `manuals.status` from `processing` to `ready` or `failed`. Generation is
-   primed with relevant prior learnings before it starts. A **planned** lane (spec 12, not yet
-   implemented) adds `packages/cad`: when a digital model (CAD/mesh) accompanies the video it will be
-   parsed into a BOM + assembly tree + canonical views that also prime generation — auxiliary, never
-   required, so a run with no model proceeds on video alone.
-3. **Web (editor):** a human reviews/corrects the generated steps; each step exposes its
-   `confidence`, `reviewStatus`, and `sourceNotes`.
-4. **Export:** the web app enqueues an `export` job; the engine renders the manual to HTML and
-   prints it to PDF with Playwright, storing the result in Supabase Storage for download.
+   `uploaded`), and enqueues a `process` job row. Target: optional digital model + BOM file (spec 13).
+2. **Engine (process):** claims the job, runs the pipeline (see baseline above). Spec 12 adds
+   optional `packages/cad` priming — auxiliary, never required. Target phase 1 inserts bom-map and
+   illustrate stages after instruct and before/after critic per assessment §5.5.
+3. **Web (editor):** human reviews steps (`confidence`, `reviewStatus`, `sourceNotes`, `critique`).
+   Target: resolve `PartRef.candidateBomItemIds` (same UX pattern as `alternatives`), enqueue
+   `regenerate` jobs (spec 16).
+4. **Export:** web enqueues `export`; engine renders PDF. Target: schematic layout via
+   `illustrationUrl` + `caption`; reject export if gate rules fail (spec 09).
 
 ## The boundary rule
 
@@ -79,25 +123,40 @@ without touching the web app. ffmpeg, Gemini, and Playwright live in the engine,
 
 ## The contract-first rule
 
-`@vitruvius/core` defines `ManualStep`, `InstructionManual`, and `Job` (plus the status/enum
-constants and matching zod schemas). Everything communicates through these shapes. No other package
-redefines them; untrusted/AI output is validated against the core zod schemas.
+`@vitruvius/core` defines `ManualStep`, `InstructionManual`, and `Job` (plus status enums and zod
+schemas). Everything communicates through these shapes.
+
+**Bootstrap today (spec 01):** `keyframeUrl`, `instruction`, `parts: string[]`, etc.
+
+**Planned extensions** (coordinated breaking change — specs 10–12, 13–17; see
+[assessment §5.1](./client-alignment-assessment.md)):
+
+- `critique`, `Learning`, `DigitalModel` / `BomItem` (specs 10–12)
+- `PartRef`, `illustrationUrl`, `caption` alongside `instruction`, manual versioning (specs 13–17)
+- `JOB_TYPE`: add `regenerate` (spec 16)
+- `BomItem.partName` vs `BomItem.bomCode` — CAD-derived names vs client distinta codes
+
+No other package redefines these shapes; untrusted/AI output is validated against core zod schemas.
 
 ## Cross-cutting concerns (the AI layer)
 
-These run through every AI-touching spec; the conceptual home is [`ai-layer.md`](./ai-layer.md) and the
-trade-offs are decisions 8–10 in [`decisions.md`](./decisions.md).
+These run through every AI-touching spec; the conceptual home is [`ai-layer.md`](./ai-layer.md) and
+the trade-offs are decisions 8–12 in [`decisions.md`](./decisions.md).
 
-- **Credit optimization.** AI calls are the dominant variable cost. Credits are a first-class budget:
-  cheapest model that clears the bar, one structured call over many round-trips, chunk only what
-  needs it, cache on content hash, and attribute spend per manual so it's measurable.
-- **Provider-pluggable agents + BYO license (future, out of MVP scope).** All model access goes
-  through `packages/ai` and the pipeline depends on agent _interfaces_, never a concrete provider.
-  That single seam later becomes an agent registry so a self-hoster can choose which agents to run
-  and attach their own license/keys — without touching anything upstream.
-- **The Critic.** Accuracy review is a _separate_ agent (spec 10), never the generator grading
-  itself. It only scores and flags (recalibrates `confidence`, raises concrete `critique`), keeping
-  the editor's trust signal independent of what produced the draft.
-- **Meta-learning.** Reusable, core-scope knowledge from a run (and from confirmed human edits) is
-  distilled into a learnings store (spec 11) and injected back into future runs — improving accuracy
-  and cutting credits.
+- **Credit optimization.** Cheapest model that clears the bar; one structured call over round-trips;
+  chunk only what needs it; cache on content hash; attribute spend per manual. Image generation (spec 14) must batch and cache — see assessment risks.
+- **Provider-pluggable agents + BYO license (future, out of MVP scope).** All model access through
+  `packages/ai`; pipeline depends on agent _interfaces_, never a concrete provider.
+- **The Critic (spec 10).** Separate agent; scores `instruction` against `sourceNotes` only. Does
+  **not** validate BOM or illustrations — that stays deterministic (spec 13) or export gate (spec 09).
+- **Meta-learning (spec 11).** Reusable heuristics from runs and confirmed edits; primes Segmenter and
+  Instructor.
+- **Deterministic lanes.** Spec 12 (`packages/cad`) and BOM file parsing (spec 13) prefer local
+  compute over AI credits when the input file already states the answer.
+
+## Related docs
+
+- [Client alignment assessment](./client-alignment-assessment.md) — grill-me decisions, gap analysis, spec 13+
+- [Implementation progress](./implementation-progress.md) — what is coded vs spec-only
+- [AI layer](./ai-layer.md) — agent roster and credit discipline
+- [README pipeline diagram](../../README.md) — baseline flowchart; phase 1 nodes marked planned there

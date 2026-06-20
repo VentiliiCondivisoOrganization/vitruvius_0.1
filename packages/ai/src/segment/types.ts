@@ -14,8 +14,6 @@ export type SegmentMediaContext = {
 export type SegmentOptions = {
 	learnings?: string[];
 	manualId?: string;
-	/** Scene-change sensitivity forwarded to sub-chunk planning. Default 0.35. */
-	sceneThreshold?: number;
 	/** Re-segment windows whose model confidence falls below this. Default 0.55. */
 	lowConfidenceThreshold?: number;
 	/** Minimum step length (ms) before a low-confidence window is sub-chunked. Default 2500. */

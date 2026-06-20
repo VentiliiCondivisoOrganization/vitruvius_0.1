@@ -9,13 +9,13 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function dispatch(job: Job): Promise<void> {
+async function dispatch(db: DbClient, job: Job): Promise<void> {
 	switch (job.type) {
 		case 'process':
-			await handleProcessJob(job);
+			await handleProcessJob(db, job);
 			return;
 		case 'export':
-			await handleExportJob(job);
+			await handleExportJob(db, job);
 			return;
 	}
 }
@@ -25,7 +25,7 @@ async function tick(db: DbClient): Promise<void> {
 	if (!job) return;
 
 	try {
-		await dispatch(job);
+		await dispatch(db, job);
 		await completeJob(db, job.id);
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);

@@ -16,8 +16,12 @@ CREATE TABLE learnings (
 	created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Retrieval hot path: most-recent learnings within a scope (relevantLearnings).
+-- Retrieval hot paths (relevantLearnings): most-recent learnings within a scope,
+-- and most-recent across all scopes when no scope is given. The scope-prefixed
+-- index can't serve the unscoped ORDER BY created_at, so it gets its own index.
 CREATE INDEX learnings_scope_created_at_idx ON learnings (scope, created_at DESC);
+
+CREATE INDEX learnings_created_at_idx ON learnings (created_at DESC);
 
 ALTER TABLE learnings enable ROW level security;
 

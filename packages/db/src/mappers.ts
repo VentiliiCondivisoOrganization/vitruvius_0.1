@@ -34,7 +34,8 @@ export function rowToManual(manual: ManualRow, steps: StepRow[]): InstructionMan
 				confidence: step.confidence,
 				reviewStatus: step.review_status,
 				sourceNotes: step.source_notes,
-				alternatives: step.alternatives
+				alternatives: step.alternatives,
+				critique: step.critique
 			}))
 	};
 

@@ -87,7 +87,14 @@ branch-protection rule never changes.
 | `lint`        | `pnpm lint` — ESLint per package via turbo (incl. `apps/web`). |
 | `typecheck`   | `pnpm typecheck`.                                              |
 | `build`       | `pnpm build`.                                                  |
+| `test-media`  | `pnpm --filter @vitruvius/media test` — installs ffmpeg first. |
 | `checks-pass` | Aggregator — fails if any needed job didn't succeed.           |
+
+Tests are gated **per package**, not via the repo-wide `pnpm test`: a suite is added
+as its own job once it runs without external services. `@vitruvius/media` qualifies
+(it only needs the ffmpeg/ffprobe binaries, installed in the job). `@vitruvius/db`
+does **not** yet — its Vitest run needs a live Supabase (Docker) instance (see
+[`specs/02-db.md`](../../specs/02-db.md)), so it stays ungated until CI provisions one.
 
 `main` is protected: PR-only, squash-only, review threads resolved, and gated by a **merge
 queue**. The workflow runs on `pull_request` and `merge_group`, so keep both triggers.

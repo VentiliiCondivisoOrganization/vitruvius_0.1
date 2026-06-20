@@ -1,22 +1,21 @@
-// TODO(spec 04-media): implement the ffmpeg wrappers (keyframe extraction, audio
-// extraction, scene-change detection, clip splitting). Runs inside the engine
-// container only — never imported by apps/web.
+// packages/media — ffmpeg/ffprobe extraction utilities for the engine pipeline.
+// Engine-only: ffmpeg lives in the engine container, never in apps/web. Every function
+// shells out to the system binaries and returns structured results (timestamps + file
+// refs), not raw ffmpeg output. AI interpretation of these frames/audio is specs 05–06.
 
-export type Keyframe = { atMs: number; fileRef: string };
-export type Clip = { startMs: number; endMs: number; fileRef: string };
-
-export async function extractKeyframes(_videoPath: string): Promise<Keyframe[]> {
-	throw new Error('not implemented');
-}
-
-export async function extractAudio(_videoPath: string): Promise<{ fileRef: string }> {
-	throw new Error('not implemented');
-}
-
-export async function detectScenes(_videoPath: string): Promise<Clip[]> {
-	throw new Error('not implemented');
-}
-
-export async function splitIntoClips(_videoPath: string): Promise<Clip[]> {
-	throw new Error('not implemented');
-}
+export { extractAudio } from './audio.js';
+export { splitIntoClips } from './clips.js';
+export { FfmpegError, probeDurationMs } from './ffmpeg.js';
+export { extractKeyframes } from './keyframes.js';
+export { detectScenes } from './scenes.js';
+export type {
+	AudioOptions,
+	AudioTrack,
+	Clip,
+	ClipOptions,
+	Keyframe,
+	KeyframeOptions,
+	OutputDirOption,
+	SceneBoundary,
+	SceneOptions
+} from './types.js';

@@ -33,6 +33,8 @@
 ## Out of scope
 
 - Rewriting instructions (that is the Instructor, spec 06). The Critic only scores and flags.
+- **BOM mismatch, `PartRef` ambiguity, illustration quality** — spec 13 deterministic flags + spec 08
+  UI + spec 09 export gate (decision 12). Do not expand the Critic prompt to cover these.
 - Expensive re-segmentation of flagged steps (a later, opt-in escalation; not the MVP).
 - Editor UI for the critique field (the editor, spec 08, already surfaces `confidence`/`sourceNotes`).
 

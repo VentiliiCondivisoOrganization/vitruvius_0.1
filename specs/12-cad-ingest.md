@@ -37,6 +37,10 @@ Many real montage jobs ship with the part's digital model — a STEP/OBJ/STL exp
 - Any import into `apps/web` — this package is engine-only, like `packages/media`.
 - Redefining shared shapes locally — the `DigitalModel`/`BomItem` types live in `@vitruvius/core`.
 
+**Relationship to spec 14:** canonical views here are for **AI priming** and **Compositor-lite**
+(static layout). Per-step posed renders and Compositor-full overlay are spec 14 tier 2 — not an
+expansion of this spec.
+
 ## Acceptance criteria
 
 - Given a sample STEP assembly, returns a `DigitalModel` whose BOM lists the named parts (rail, carriage, end seal, `M4`, …) with quantities, plus the assembly tree; non-ASCII part names are decoded.

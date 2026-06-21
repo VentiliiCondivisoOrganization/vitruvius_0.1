@@ -12,5 +12,6 @@ to lives here.
 | Know _why_ something is the way it is                            | [decisions.md](decisions.md)                                     |
 | Check client request vs current specs (alignment assessment)     | [client-alignment-assessment.md](client-alignment-assessment.md) |
 | See what is implemented vs stubbed                               | [implementation-progress.md](implementation-progress.md)         |
+| Know who owns which lane (Antonio, Giovanni, Stefano)            | [team-organization.md](team-organization.md)                     |
 | Open a PR — title, body, CI, formatting                          | [pr-and-ci.md](pr-and-ci.md)                                     |
 | Implement an assigned task                                       | the matching spec in [`specs/`](../../specs/)                    |

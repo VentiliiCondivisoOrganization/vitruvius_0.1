@@ -17,9 +17,9 @@ export async function disambiguateBomSteps(
 }
 
 export {
-	HeuristicBomDisambiguateProvider,
 	createBomDisambiguateProvider,
 	getBomDisambiguateProvider,
+	HeuristicBomDisambiguateProvider,
 	resetBomDisambiguateProviderFactory,
 	setBomDisambiguateProviderFactory
 } from '../providers/bom-disambiguate-provider.js';

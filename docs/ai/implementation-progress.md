@@ -2,18 +2,17 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-21 (spec 13 BOM map layer on `feat/bom-map`)._
-_Last updated: 2026-06-21 (core PartRef contract + implementation-progress sync)._
+_Last updated: 2026-06-21 (spec 13 BOM map in PR #34; PartRef contract merged #33)._
 
 ## Client alignment roadmap
 
 Full analysis: [client-alignment-assessment.md](./client-alignment-assessment.md).
 
-| Phase        | Deliverable                                                             | Specs                                      | Status                                         |
-| ------------ | ----------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------- |
-| **Baseline** | Video-first pipeline, editor, keyframe PDF                              | 01–12                                      | **Done** on `main` (PRs #21–#30)               |
-| **Phase 1**  | BOM layer, schematic illustrations, regenerate, versioning, export gate | 13, 14 (tier 1), 16, 17 + extensions 08/09 | **13 in PR** (`feat/bom-map`); core contract in merge queue (#33) |
-| **Phase 2**  | Compositor-full (CAD overlay per step)                                  | 14 tier 2                                  | Blocked on pose alignment research             |
+| Phase        | Deliverable                                                             | Specs                                      | Status                                          |
+| ------------ | ----------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------- |
+| **Baseline** | Video-first pipeline, editor, keyframe PDF                              | 01–12                                      | **Done** on `main` (PRs #21–#30)                |
+| **Phase 1**  | BOM layer, schematic illustrations, regenerate, versioning, export gate | 13, 14 (tier 1), 16, 17 + extensions 08/09 | **13 in PR #34**; PartRef contract merged (#33) |
+| **Phase 2**  | Compositor-full (CAD overlay per step)                                  | 14 tier 2                                  | Blocked on pose alignment research              |
 
 ## Shipped on `main` (baseline 01–12)
 
@@ -57,20 +56,20 @@ Branch `feat/bom-map` (stacked on #33):
 
 ### Next vertical slices (phase 1)
 
-| Spec                 | Package / app          | Depends on                          |
-| -------------------- | ---------------------- | ----------------------------------- |
-| 14-ai-illustrate     | `@vitruvius/ai`        | Core + instruct/critic pipeline     |
-| 16-regenerate-job    | web + engine           | Core `JOB_TYPE: regenerate` (later) |
-| 17-manual-versioning | core + db              | Core versioning fields (later)      |
+| Spec                 | Package / app   | Depends on                          |
+| -------------------- | --------------- | ----------------------------------- |
+| 14-ai-illustrate     | `@vitruvius/ai` | Core + instruct/critic pipeline     |
+| 16-regenerate-job    | web + engine    | Core `JOB_TYPE: regenerate` (later) |
+| 17-manual-versioning | core + db       | Core versioning fields (later)      |
 
 ## Spec status matrix
 
-| Spec                 | Status                                      |
-| -------------------- | ------------------------------------------- |
-| 01-core              | Bootstrap done; **PartRef extension in PR #33** |
-| 02-db                | Done; migrations 0006 (#33) + 0007 (#13 PR)     |
-| 03–12                | Done on `main`                                  |
-| 13-bom-map           | **Implemented** on `feat/bom-map` (PR pending)  |
-| 14-ai-illustrate     | Spec stub                                   |
-| 16-regenerate-job    | Spec stub                                   |
-| 17-manual-versioning | Spec stub                                   |
+| Spec                 | Status                                         |
+| -------------------- | ---------------------------------------------- |
+| 01-core              | Bootstrap done; PartRef extension merged (#33) |
+| 02-db                | Done; migrations 0006 (#33) + 0007 (#13 PR)    |
+| 03–12                | Done on `main`                                 |
+| 13-bom-map           | **Implemented** on `feat/bom-map` (PR pending) |
+| 14-ai-illustrate     | Spec stub                                      |
+| 16-regenerate-job    | Spec stub                                      |
+| 17-manual-versioning | Spec stub                                      |

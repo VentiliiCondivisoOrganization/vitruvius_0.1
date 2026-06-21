@@ -3,6 +3,7 @@
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
 _Last updated: 2026-06-21 (spec 13 BOM map layer on `feat/bom-map`)._
+_Last updated: 2026-06-21 (core PartRef contract + implementation-progress sync)._
 
 ## Client alignment roadmap
 

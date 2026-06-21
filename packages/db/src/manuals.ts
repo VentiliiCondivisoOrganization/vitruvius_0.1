@@ -1,4 +1,4 @@
-import type { InstructionManual } from '@vitruvius/core';
+import type { InstructionManual, ManualStatus } from '@vitruvius/core';
 import type { DbClient } from './client.js';
 import { rowToManual } from './mappers.js';
 import type { ManualRow, StepRow } from './types.js';
@@ -30,6 +30,18 @@ export async function getManual(client: DbClient, id: string): Promise<Instructi
 export async function saveManual(client: DbClient, manual: InstructionManual): Promise<void> {
 	const { error } = await client.rpc('save_manual', { p_manual: manual });
 	if (error) throw new Error(`saveManual: ${error.message}`);
+}
+
+// Update only the manual's lifecycle status (e.g. processing → ready / failed),
+// without touching its steps. The engine uses this to mark progress around the
+// pipeline; the trigger keeps updated_at fresh.
+export async function setManualStatus(
+	client: DbClient,
+	id: string,
+	status: ManualStatus
+): Promise<void> {
+	const { error } = await client.from('manuals').update({ status }).eq('id', id);
+	if (error) throw new Error(`setManualStatus: ${error.message}`);
 }
 
 // Delete a manual and everything that references it (steps and jobs cascade via

@@ -15,7 +15,8 @@
 	},
 	"dependencies": {
 		"@vitruvius/core": "workspace:*",
-		"@vitruvius/db": "workspace:*"
+		"@vitruvius/db": "workspace:*",
+		"@vitruvius/export": "workspace:*"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.1",

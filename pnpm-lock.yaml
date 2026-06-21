@@ -78,6 +78,9 @@ importers:
       '@vitruvius/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@vitruvius/export':
+        specifier: workspace:*
+        version: link:../../packages/export
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -144,6 +147,22 @@ importers:
         specifier: ^3.0.0
         version: 3.2.6(@types/node@24.7.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
+  packages/cad:
+    dependencies:
+      '@vitruvius/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: 24.7.0
+        version: 24.7.0
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.6(@types/node@24.7.0)(jiti@2.7.0)(lightningcss@1.32.0)
+
   packages/core:
     dependencies:
       zod:
@@ -181,10 +200,16 @@ importers:
       '@vitruvius/core':
         specifier: workspace:*
         version: link:../core
+      playwright-core:
+        specifier: ^1.49.0
+        version: 1.61.0
     devDependencies:
       typescript:
         specifier: 6.0.3
         version: 6.0.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.6(@types/node@24.7.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
   packages/media:
     dependencies:
@@ -1497,6 +1522,11 @@ packages:
   picomatch@4.0.4:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
+
+  playwright-core@1.61.0:
+    resolution: {integrity: sha512-caX7TrY3Ml6egyDX0WUcTHDxodl/b51y5wJOdCEA36QviK/s2g081hvmGs8eaE3DWb6NYZQ6BjO/QkNRPenoPA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   postcss-load-config@3.1.4:
     resolution: {integrity: sha512-6DiM4E7v4coTE4uzA8U//WhtPwyhiim3eyjEMFCnUpzbrkK9wJHgKDT2mR+HbtSrd/NubVaYTOpSpjUl8NQeRg==}
@@ -2958,6 +2988,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.4: {}
+
+  playwright-core@1.61.0: {}
 
   postcss-load-config@3.1.4(postcss@8.5.15):
     dependencies:

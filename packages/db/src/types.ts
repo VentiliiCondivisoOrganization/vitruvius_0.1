@@ -31,6 +31,7 @@ export type StepRow = {
 	review_status: StepReviewStatus;
 	source_notes: string[];
 	alternatives: string[];
+	critique: string[];
 };
 
 export type LearningRow = {

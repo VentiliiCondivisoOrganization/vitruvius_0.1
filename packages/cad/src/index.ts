@@ -7,6 +7,10 @@
 // redefined here. No concrete CAD-kernel type is exported: rendering is reached only
 // through the KernelRenderer interface, wired by the engine at runtime.
 
+export { mapBomToSteps, type BomMapInput, type BomMapResult } from './bom/map-steps.js';
+export { parseBomCsv, parseBomFile } from './bom/parse-csv.js';
+export { reconcileBom } from './bom/reconcile.js';
+export type { ParsedBomRow } from './bom/types.js';
 export { clearCache } from './cache.js';
 export { ingestModel } from './ingest.js';
 export type { IngestOptions } from './ingest.js';

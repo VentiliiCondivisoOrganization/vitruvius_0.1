@@ -52,6 +52,8 @@ export const instructionManualSchema = z.object({
 	id: z.string(),
 	title: z.string(),
 	videoUrl: z.string(),
+	bomFileUrl: z.string().default(''),
+	digitalModelUrl: z.string().default(''),
 	status: z.enum(MANUAL_STATUS),
 	steps: z.array(manualStepSchema),
 	bom: z.array(manualBomItemSchema).default([]),

@@ -93,3 +93,13 @@ export async function critiqueSteps(input: CritiqueInput): Promise<ManualStep[]>
 export async function distillLearnings(input: DistillInput): Promise<NewLearning[]> {
 	return runDistillLearnings(input);
 }
+
+export {
+	createBomDisambiguateProvider,
+	disambiguateBomSteps,
+	getBomDisambiguateProvider,
+	HeuristicBomDisambiguateProvider,
+	resetBomDisambiguateProviderFactory,
+	setBomDisambiguateProviderFactory
+} from './bom-map/disambiguate.js';
+export type { BomDisambiguateInput, BomDisambiguateOptions } from './bom-map/types.js';

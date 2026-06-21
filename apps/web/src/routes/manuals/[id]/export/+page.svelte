@@ -31,10 +31,17 @@
 				View HTML rendering →
 			</a>
 
+			{#if data.exportBlockedReason}
+				<p class="rounded bg-amber-50 px-3 py-2 text-sm text-amber-700">
+					Export blocked: {data.exportBlockedReason}
+				</p>
+			{/if}
+
 			<form method="POST" use:enhance class="space-y-2">
 				<button
 					type="submit"
-					class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+					disabled={Boolean(data.exportBlockedReason)}
+					class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
 				>
 					Generate PDF
 				</button>

@@ -23,8 +23,8 @@
 			AI-drafted assembly manuals, finished by a human.
 		</h1>
 		<p class="text-lg text-slate-600">
-			Upload a video of an assembly process. We store it and queue it for processing — the draft
-			manual and the guided editor come next.
+			Upload a video of an assembly process. Optionally attach a BOM CSV and/or a digital model for
+			structured part mapping (spec 13).
 		</p>
 	</header>
 
@@ -54,6 +54,28 @@
 				accept="video/*"
 				required
 				class="block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1 file:text-slate-100"
+			/>
+
+			<label for="bom" class="block text-sm font-medium text-slate-700">
+				BOM file <span class="font-normal text-slate-400">(optional CSV)</span>
+			</label>
+			<input
+				id="bom"
+				type="file"
+				name="bom"
+				accept=".csv,text/csv"
+				class="block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded file:border-0 file:bg-slate-800 file:px-3 file:py-1 file:text-slate-100"
+			/>
+
+			<label for="model" class="block text-sm font-medium text-slate-700">
+				Digital model <span class="font-normal text-slate-400">(optional STEP/OBJ/STL)</span>
+			</label>
+			<input
+				id="model"
+				type="file"
+				name="model"
+				accept=".step,.stp,.obj,.stl"
+				class="block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded file:border-0 file:bg-slate-800 file:px-3 file:py-1 file:text-slate-100"
 			/>
 			<button
 				type="submit"

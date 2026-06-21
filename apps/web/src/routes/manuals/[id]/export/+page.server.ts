@@ -1,4 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
+import { checkExportGate } from '@vitruvius/core';
 import { enqueueJob, getManual } from '@vitruvius/db';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -11,25 +12,25 @@ function exportObjectKey(manualId: string): string {
 }
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-	if (!UUID_RE.test(params.id)) error(404, 'Manual not found');
+	if (!UUID_RE.test(params.id)) fail(404, 'Manual not found');
 
 	const manual = await getManual(locals.db, params.id);
 	if (!manual) error(404, 'Manual not found');
 
-	// Offer the download only once the engine has stored the PDF. A signed URL is
-	// minted on demand; createSignedUrl errors (no data) when the object is absent.
+	const gate = checkExportGate(manual);
+
 	const { data } = await locals.db.storage
 		.from(EXPORT_BUCKET)
 		.createSignedUrl(exportObjectKey(manual.id), SIGNED_URL_TTL_S);
 
 	return {
 		manual: { id: manual.id, title: manual.title, status: manual.status },
-		downloadUrl: data?.signedUrl ?? null
+		downloadUrl: data?.signedUrl ?? null,
+		exportBlockedReason: gate.ok ? null : gate.reason
 	};
 };
 
 export const actions: Actions = {
-	// Enqueue an export job; the engine renders the PDF and stores it in Storage.
 	default: async ({ params, locals }) => {
 		if (!UUID_RE.test(params.id)) return fail(404, { error: 'Manual not found' });
 
@@ -37,6 +38,11 @@ export const actions: Actions = {
 		if (!manual) return fail(404, { error: 'Manual not found' });
 		if (manual.status !== 'ready') {
 			return fail(409, { error: 'Manual is not ready to export yet.' });
+		}
+
+		const gate = checkExportGate(manual);
+		if (!gate.ok) {
+			return fail(409, { error: gate.reason });
 		}
 
 		try {

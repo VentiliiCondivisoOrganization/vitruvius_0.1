@@ -70,4 +70,13 @@ describe('mergeInstruction', () => {
 		expect(merged.tools).toEqual(['mallet']);
 		expect(merged.parts).toEqual([partRefFromLabel('shelf')]);
 	});
+
+	it('preserves BOM-mapped parts when the instructor returns string labels', () => {
+		const withParts = {
+			...original,
+			parts: [partRefFromLabel('mapped rail')]
+		};
+		const merged = mergeInstruction(withParts, { ...raw, parts: ['ignored shelf'] });
+		expect(merged.parts).toEqual(withParts.parts);
+	});
 });

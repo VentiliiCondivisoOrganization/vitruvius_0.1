@@ -1,4 +1,5 @@
 import type { Job } from '@vitruvius/core';
+import { checkExportGate } from '@vitruvius/core';
 import { getManual, type DbClient } from '@vitruvius/db';
 import { renderManualPdf } from '@vitruvius/export';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
@@ -22,6 +23,11 @@ export async function handleExportJob(db: DbClient, job: Job): Promise<void> {
 	if (!manual) throw new Error(`manual ${job.manualId} not found`);
 	if (manual.status !== 'ready') {
 		throw new Error(`manual ${manual.id} is not ready (status: ${manual.status})`);
+	}
+
+	const gate = checkExportGate(manual);
+	if (!gate.ok) {
+		throw new Error(`export gate: ${gate.reason}`);
 	}
 
 	// Own the render directory here so it is always cleaned up — the long-running worker

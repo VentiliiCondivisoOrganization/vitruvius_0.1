@@ -30,6 +30,8 @@ describe('claimNextJob concurrency', () => {
 			id: manualId,
 			title: 'concurrency fixture',
 			videoUrl: 'https://example.test/video.mp4',
+			bomFileUrl: '',
+			digitalModelUrl: '',
 			status: 'uploaded',
 			steps: [],
 			bom: [],

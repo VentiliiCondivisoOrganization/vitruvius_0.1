@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { JOB_STATUS, JOB_TYPE, MANUAL_STATUS, STEP_REVIEW_STATUS } from './status.js';
+import {
+	DIGITAL_MODEL_STATUS,
+	JOB_STATUS,
+	JOB_TYPE,
+	MANUAL_STATUS,
+	STEP_REVIEW_STATUS
+} from './status.js';
 
 export const manualStepSchema = z.object({
 	id: z.string(),
@@ -40,6 +46,48 @@ export const learningSchema = z.object({
 
 // A Learning before persistence — id and createdAt are assigned by the database.
 export const newLearningSchema = learningSchema.omit({ id: true, createdAt: true });
+// Digital model (CAD/mesh) priming artifact — spec 12-cad-ingest. Mirrors the
+// DigitalModel/BomItem types; `@vitruvius/cad` validates its output against this.
+export const bomItemSchema = z.object({
+	name: z.string(),
+	quantity: z.number().int().nonnegative(),
+	sourceId: z.string()
+});
+
+export const assemblyNodeSchema = z.object({
+	sourceId: z.string(),
+	name: z.string(),
+	children: z.array(z.string())
+});
+
+export const digitalModelSourceSchema = z.object({
+	format: z.enum(['step', 'obj', 'stl']),
+	system: z.string().nullable(),
+	units: z.string().nullable(),
+	schema: z.string().nullable()
+});
+
+export const geometryStatsSchema = z.object({
+	vertexCount: z.number().int().nonnegative(),
+	triangleCount: z.number().int().nonnegative(),
+	boundingBox: z.tuple([z.number(), z.number(), z.number(), z.number(), z.number(), z.number()])
+});
+
+export const canonicalViewSchema = z.object({
+	target: z.string(),
+	angle: z.string(),
+	fileRef: z.string()
+});
+
+export const digitalModelSchema = z.object({
+	status: z.enum(DIGITAL_MODEL_STATUS),
+	source: digitalModelSourceSchema.nullable(),
+	bom: z.array(bomItemSchema),
+	assembly: z.array(assemblyNodeSchema),
+	geometry: geometryStatsSchema.nullable(),
+	views: z.array(canonicalViewSchema),
+	contentHash: z.string()
+});
 
 export const jobSchema = z.object({
 	id: z.string(),

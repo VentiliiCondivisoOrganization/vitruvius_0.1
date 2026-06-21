@@ -33,7 +33,7 @@ export function mergeInstruction(original: ManualStep, raw: RawInstruction): Man
 		// Keep the original instruction if the provider returns a blank one.
 		instruction: raw.instruction.trim() || original.instruction,
 		tools: cleanList(raw.tools),
-		parts: partRefsFromLabels(cleanList(raw.parts)),
+		parts: original.parts.length > 0 ? original.parts : partRefsFromLabels(cleanList(raw.parts)),
 		warnings: cleanList(raw.warnings),
 		alternatives: cleanList(raw.alternatives),
 		sourceNotes: mergeSourceNotes(original.sourceNotes, raw.addedSourceNotes)

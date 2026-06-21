@@ -50,6 +50,9 @@ importers:
       '@vitruvius/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@vitruvius/cad':
+        specifier: workspace:*
+        version: link:../../packages/cad
       '@vitruvius/core':
         specifier: workspace:*
         version: link:../../packages/core

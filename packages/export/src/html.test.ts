@@ -31,6 +31,8 @@ function manual(steps: ManualStep[], title = 'Test Manual'): InstructionManual {
 		id: '11111111-1111-1111-1111-111111111111',
 		title,
 		videoUrl: 'videos/x/source.mp4',
+		bomFileUrl: '',
+		digitalModelUrl: '',
 		status: 'ready',
 		steps,
 		bom: [],

@@ -54,6 +54,10 @@ export type InstructionManual = {
 	id: string;
 	title: string;
 	videoUrl: string;
+	/** Storage object key for an optional BOM file (spec 13). Empty when absent. */
+	bomFileUrl: string;
+	/** Storage object key for an optional digital model (spec 12). Empty when absent. */
+	digitalModelUrl: string;
 	status: ManualStatus;
 	steps: ManualStep[];
 	bom: ManualBomItem[];

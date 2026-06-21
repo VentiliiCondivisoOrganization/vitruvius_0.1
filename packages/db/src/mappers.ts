@@ -18,6 +18,8 @@ export function rowToManual(manual: ManualRow, steps: StepRow[]): InstructionMan
 		id: manual.id,
 		title: manual.title,
 		videoUrl: manual.video_url,
+		bomFileUrl: manual.bom_file_url ?? '',
+		digitalModelUrl: manual.digital_model_url ?? '',
 		status: manual.status,
 		bom: manual.bom ?? [],
 		createdAt: manual.created_at,

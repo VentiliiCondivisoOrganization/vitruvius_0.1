@@ -10,6 +10,8 @@ export type ManualRow = {
 	id: string;
 	title: string;
 	video_url: string;
+	bom_file_url: string;
+	digital_model_url: string;
 	status: ManualStatus;
 	bom: unknown;
 	created_at: string;

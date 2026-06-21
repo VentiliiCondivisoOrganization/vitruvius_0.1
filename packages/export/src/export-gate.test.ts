@@ -1,0 +1,65 @@
+import {
+	checkExportGate,
+	manualStepSchema,
+	partRefFromLabel,
+	type InstructionManual
+} from '@vitruvius/core';
+import { describe, expect, it } from 'vitest';
+
+function manual(steps: InstructionManual['steps']): InstructionManual {
+	return {
+		id: '11111111-1111-1111-1111-111111111111',
+		title: 'Test',
+		videoUrl: 'videos/x/source.mp4',
+		bomFileUrl: '',
+		digitalModelUrl: '',
+		status: 'ready',
+		steps,
+		bom: [],
+		createdAt: '2026-06-21T00:00:00.000Z',
+		updatedAt: '2026-06-21T00:00:00.000Z'
+	};
+}
+
+const baseStep = manualStepSchema.parse({
+	id: '22222222-2222-2222-2222-222222222222',
+	order: 0,
+	title: 'Step 1',
+	instruction: 'Do it',
+	caption: '',
+	startMs: 0,
+	endMs: 1000,
+	keyframeUrl: '',
+	illustrationUrl: '',
+	tools: [],
+	parts: [partRefFromLabel('rail')],
+	warnings: [],
+	confidence: 1,
+	reviewStatus: 'confirmed',
+	sourceNotes: [],
+	alternatives: [],
+	critique: []
+});
+
+describe('checkExportGate', () => {
+	it('passes when all steps are confirmed and BOM is resolved', () => {
+		expect(checkExportGate(manual([baseStep])).ok).toBe(true);
+	});
+
+	it('blocks when a step is not confirmed', () => {
+		const gate = checkExportGate(manual([{ ...baseStep, reviewStatus: 'hypothesis' }]));
+		expect(gate.ok).toBe(false);
+	});
+
+	it('blocks when BOM candidates are open', () => {
+		const gate = checkExportGate(
+			manual([
+				{
+					...baseStep,
+					parts: [{ ...partRefFromLabel('part'), candidateBomItemIds: ['a', 'b'] }]
+				}
+			])
+		);
+		expect(gate.ok).toBe(false);
+	});
+});

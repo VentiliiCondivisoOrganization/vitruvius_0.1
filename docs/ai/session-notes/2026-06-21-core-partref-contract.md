@@ -23,14 +23,14 @@ Fase 1 cliente (BOM, illustrazioni schematiche, regenerate, versioning) **docume
 
 ### Conflitto `BomItem` (assessment §5.1 vs spec 12)
 
-| Fonte | Shape |
-| ----- | ----- |
-| Spec 12 (implementata) | `BomItem { name, quantity, sourceId }` dentro `DigitalModel` |
+| Fonte                    | Shape                                                                               |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| Spec 12 (implementata)   | `BomItem { name, quantity, sourceId }` dentro `DigitalModel`                        |
 | Assessment §5.1 (sketch) | `BomItem { partName, bomCode, source }` unificato anche per `InstructionManual.bom` |
 
 **Scelta applicata:** due tipi distinti — **`BomItem`** resta per CAD (spec 12); nuovo **`ManualBomItem`** per la distinta a livello manuale (spec 13 reconcile). Evita breaking change su `packages/cad` già mergiato.
 
-*(Se in futuro si preferisce unificare/rinominare, va fatto in PR dedicato con `!` sul contratto core.)*
+_(Se in futuro si preferisce unificare/rinominare, va fatto in PR dedicato con `!` sul contratto core.)_
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Goal:** Write per-step operative instructions.
 **Package/app(s):** `packages/ai`.
-**Depends on:** 01-core, 05-ai-segment.
+**Depends on:** 01-core, 05-ai-segment, 13-bom-map (when `PartRef[]` lands).
 
 ## Inputs
 
@@ -13,6 +13,9 @@
 
 - Enriched `ManualStep[]` with `title`, `instruction`, `tools`, `parts`, `warnings`, and
   `alternatives` filled in — preserving `sourceNotes` and `confidence`.
+
+**Target (client alignment):** also `caption` (short text for export) and `parts: PartRef[]` from spec 13;
+prime with `DigitalModel` when spec 12 present.
 
 ## In scope
 

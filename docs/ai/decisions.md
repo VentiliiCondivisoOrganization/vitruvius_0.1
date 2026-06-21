@@ -66,3 +66,20 @@ Knowledge the pipeline discovers for its core scope (tool/part conventions, audi
 warnings) — and especially confirmed human edits — is distilled into a `learnings` store (spec 11)
 and injected back into future runs. This improves accuracy and cuts credits (the model reasons less
 from scratch). Only reusable, generalizable heuristics are stored — never per-video transcripts.
+
+### 11. Illustrated deliverable — two engineering phases
+
+The [client alignment assessment](./client-alignment-assessment.md) (grill-me) commits the product
+to IKEA/LEGO-style **schematic** output (`illustrationUrl`, structured BOM, export gate), not raw
+video keyframes. Engineering delivers in **phase 1** (BOM layer, Illustrator, Compositor-lite,
+regenerate job, versioning — specs 13, 14 tier 1, 16, 17) then **phase 2** (Compositor-full per-step
+CAD overlay), which depends on video↔geometry pose alignment research outside spec 12. Phase 2 must
+not block phase 1.
+
+### 12. Critic stays text-only; BOM and images use other layers
+
+The Critic (spec 10) continues to judge **`instruction` ↔ `sourceNotes` only**. BOM consistency,
+`PartRef` ambiguity, and illustration quality are **not** Critic responsibilities — they use the
+deterministic BOM layer (spec 13), editor resolution UX (spec 08, same pattern as `alternatives`),
+and export gate rules (spec 09). Optional deterministic flags from `digitalModelStatus` (spec 12)
+may run before the Critic but do not expand its prompt or scope.

@@ -4,8 +4,9 @@
 **Package/app(s):** `packages/core`.
 **Depends on:** none.
 
-> **Status: already satisfied by the bootstrap.** The contract was created during scaffolding.
-> This spec is "verify, document, and freeze" — no further implementation should be needed.
+> **Status: bootstrap satisfied** for the initial scaffold shapes. A **coordinated breaking change**
+> (specs 10–12, 13–17) will extend the contract — see
+> [client alignment assessment](../docs/ai/client-alignment-assessment.md) §5.1.
 
 ## Inputs
 
@@ -16,6 +17,15 @@ None (this package has no runtime inputs; it is pure types + schemas + enums).
 - Enums/const arrays: `MANUAL_STATUS`, `STEP_REVIEW_STATUS`, `JOB_STATUS`, `JOB_TYPE`.
 - Types: `ManualStep`, `InstructionManual`, `Job` (+ the derived status types).
 - Zod schemas: `manualStepSchema`, `instructionManualSchema`, `jobSchema`.
+
+**Planned extensions** (same PR family as specs 10–17):
+
+- `ManualStep`: `critique[]`, `illustrationUrl`, `caption`, `parts: PartRef[]`, optional `keyframeUrl`
+- `PartRef`: `candidateBomItemIds[]` (flat list)
+- `BomItem`, `DigitalModel`, `digitalModelStatus` (spec 12)
+- `Learning` (spec 11)
+- `InstructionManual`: `version`, `parentVersionId`, merged `bom[]`
+- `JOB_TYPE`: add `regenerate` (spec 16)
 
 ## In scope
 

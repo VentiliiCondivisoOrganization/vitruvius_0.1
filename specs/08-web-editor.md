@@ -4,6 +4,10 @@
 **Package/app(s):** `apps/web`, `packages/db`.
 **Depends on:** 02-db.
 
+> Client-alignment extensions (disambiguazione BOM, regenerate enqueue, export gate) are **in scope
+> for this spec** — not a separate spec 15. See
+> [client alignment assessment](../docs/ai/client-alignment-assessment.md).
+
 ## Inputs
 
 - A `ready` (or in-progress) `InstructionManual` loaded via `@vitruvius/db`.
@@ -22,16 +26,26 @@
 - Persist edits and update `reviewStatus`. Confirmed/corrected edits are the highest-quality signal
   for the learnings store (spec 11), though distillation itself runs in the engine, not here.
 
+**Target (client alignment):**
+
+- **BOM disambiguation:** when `PartRef.candidateBomItemIds` is set, require the user to pick one
+  option before export — same UX pattern as choosing among `alternatives`.
+- **Prompt regeneration:** enqueue `regenerate` jobs (spec 16) with scope `text` | `illustration` |
+  `layout` | `structure` — engine runs Instructor / Illustrator, not the web app.
+- **Export readiness:** surface blocking issues (unconfirmed steps, open BOM candidates) before the
+  user can enqueue export (spec 09 gate).
+
 ## Out of scope
 
-- AI re-generation.
-- Export (spec 09).
+- Running AI inside the web app (all regeneration via engine jobs).
+- Export rendering (spec 09) — but export **gate preconditions** are coordinated here.
 
 ## Acceptance criteria
 
 - A user can fully edit a generated manual.
 - Changes persist across reloads.
 - `reviewStatus` reflects edited / confirmed steps.
+- **Target:** unresolved `candidateBomItemIds` block export; resolved choice persists on reload.
 
 ## Validation
 

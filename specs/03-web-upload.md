@@ -28,6 +28,8 @@
 - The engine itself (spec 07).
 - The editor (spec 08) and export (spec 09).
 
+**Planned (spec 13):** optional BOM file upload alongside video; optional digital model file (see README / spec 12).
+
 ## Acceptance criteria
 
 - A user can upload a video.

@@ -82,11 +82,31 @@ flowchart TD
 | 7   | **Distill learnings** · engine · `packages/ai` | **Yes** 🤖    | Finished + human-corrected run → `Learning` rows                                                                                                    | Extract reusable, generalizable heuristics (tool/part conventions, audio cues) — not per-video transcripts — and store them to prime future runs. Closes the loop: generate → critique → human-correct → learn.                                                                                                                                                 |
 | 8   | **Save** · engine                              | No            | Validated `ManualStep[]` → persisted manual; `status: processing → ready / failed`                                                                  | Persist via `packages/db` and flip the status so the web app's poll picks it up.                                                                                                                                                                                                                                                                                |
 | 9   | **Editor** · web                               | No · human    | Ready manual → confirmed / corrected steps                                                                                                          | The guided-revision core of the product: a human reviews each step with its `confidence`, `reviewStatus`, `sourceNotes`, and `critique`, then confirms or corrects. Corrections feed back to learnings.                                                                                                                                                         |
-| 10  | **Export** · web → engine                      | No            | Approved manual → PDF in Storage                                                                                                                    | Web enqueues an `export` job; the engine renders the HTML template and prints to PDF with Playwright, stored for download.                                                                                                                                                                                                                                      |
+| 10  | **Export** · web → engine                      | No            | Confirmed manual → PDF in Storage                                                                                                                   | Web enqueues `export`; engine renders HTML → PDF. **Today:** keyframes (spec 09 bootstrap). **Target:** schematic layout via `illustrationUrl` + `caption`; gate rejects open BOM candidates or unconfirmed steps.                                                                                                                                              |
 
-> 📐 **The digital-model lane (spec 12)** is the dedicated CAD/SolidWorks path. It is _auxiliary
-> priming_, never required: when a 3D model ships with the video it sharpens part names and lets the
-> Critic calibrate against ground truth; when it doesn't, the pipeline runs unchanged on video alone.
+> 📐 **The digital-model lane (spec 12)** is auxiliary priming, never required: when a 3D model ships
+> with the video it sharpens part names; when it doesn't, the pipeline runs on video alone. It does
+> **not** produce per-step illustrated output — that is spec 14 (Illustrator / Compositor).
+
+### Product roadmap (client alignment)
+
+Grill-me decisions and gap analysis: [`docs/ai/client-alignment-assessment.md`](docs/ai/client-alignment-assessment.md).
+
+**Phase 1 (next specs)** — illustrated manual without pose alignment:
+
+| Addition        | Spec      | Role                                                                           |
+| --------------- | --------- | ------------------------------------------------------------------------------ |
+| BOM layer       | 13        | BOM file import + reconcile with CAD; `PartRef[]`; AI only if ambiguous        |
+| Illustrate      | 14 tier 1 | Illustrator (video-only path) + Compositor-lite (canonical CAD views + layout) |
+| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 |
+| Versioning      | 17        | v1 → v2 enrich on same timeline                                                |
+| Editor + export | 08, 09    | BOM disambiguation UI (like `alternatives`); schematic PDF; export gate        |
+
+**Phase 2** — Compositor-full (CAD geometry overlay per step) requires video↔CAD pose alignment
+(research; out of scope for spec 12).
+
+Target pipeline order: `… → bom-map → instruct → **critic** → illustrate → …` — Critic stays
+text-only. Details: [`docs/ai/architecture.md`](docs/ai/architecture.md).
 
 ---
 
@@ -137,4 +157,6 @@ Useful workspace scripts: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm tes
 - The AI layer (agents, credit budget, Critic, learnings, BYO-license future): [`docs/ai/ai-layer.md`](docs/ai/ai-layer.md)
 - Infrastructure & env vars: [`docs/ai/infra.md`](docs/ai/infra.md)
 - Decisions (ADR-lite): [`docs/ai/decisions.md`](docs/ai/decisions.md)
-- Task specs: [`specs/`](specs/) — one vertical slice per file (`01`–`12`).
+- Task specs: [`specs/`](specs/) — baseline `01`–`12`; client extensions `13`, `14`, `16`, `17`
+- Client alignment (grill-me): [`docs/ai/client-alignment-assessment.md`](docs/ai/client-alignment-assessment.md)
+- Implementation status: [`docs/ai/implementation-progress.md`](docs/ai/implementation-progress.md)

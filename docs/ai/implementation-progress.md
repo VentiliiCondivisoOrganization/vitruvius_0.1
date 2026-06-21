@@ -2,7 +2,7 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-21 (spec 13 BOM map in PR #34; PartRef contract merged #33)._
+_Last updated: 2026-06-21 (spec 13 in PR #34; PartRef contract on main via #33)._
 
 ## Client alignment roadmap
 

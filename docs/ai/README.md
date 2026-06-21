@@ -13,6 +13,7 @@ to lives here.
 | Check client request vs product design (alignment assessment)    | [client-alignment-assessment.md](client-alignment-assessment.md) |
 | See what is implemented vs spec-only                             | [implementation-progress.md](implementation-progress.md)         |
 | Session notes (decisions + PR context)                           | [session-notes/](session-notes/)                                 |
+| Know who owns which lane (Antonio, Giovanni, Stefano)            | [team-organization.md](team-organization.md)                     |
 | Open a PR — title, body, CI, formatting                          | [pr-and-ci.md](pr-and-ci.md)                                     |
 | Implement an assigned task                                       | the matching spec in [`specs/`](../../specs/)                    |
 

@@ -32,6 +32,7 @@ describe('claimNextJob concurrency', () => {
 			videoUrl: 'https://example.test/video.mp4',
 			status: 'uploaded',
 			steps: [],
+			bom: [],
 			createdAt: now,
 			updatedAt: now
 		};

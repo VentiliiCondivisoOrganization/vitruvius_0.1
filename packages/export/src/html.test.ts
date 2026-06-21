@@ -1,4 +1,4 @@
-import type { InstructionManual, ManualStep } from '@vitruvius/core';
+import { partRefFromLabel, type InstructionManual, type ManualStep } from '@vitruvius/core';
 import { describe, expect, it } from 'vitest';
 import { renderManualHtml } from './html.js';
 
@@ -12,13 +12,15 @@ function step(overrides: Partial<ManualStep> = {}): ManualStep {
 		endMs: 3000,
 		keyframeUrl: 'https://example.test/frames/a.jpg',
 		tools: ['screwdriver'],
-		parts: ['leg A'],
+		parts: [partRefFromLabel('leg A')],
 		warnings: ['Do not overtighten'],
 		confidence: 0.8,
 		reviewStatus: 'hypothesis',
 		sourceNotes: ['narrator: attach leg A'],
 		alternatives: [],
 		critique: [],
+		caption: '',
+		illustrationUrl: '',
 		...overrides
 	};
 }
@@ -31,6 +33,7 @@ function manual(steps: ManualStep[], title = 'Test Manual'): InstructionManual {
 		videoUrl: 'videos/x/source.mp4',
 		status: 'ready',
 		steps,
+		bom: [],
 		createdAt: now,
 		updatedAt: now
 	};

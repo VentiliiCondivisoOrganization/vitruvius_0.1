@@ -1,4 +1,4 @@
-import { manualStepSchema, type ManualStep } from '@vitruvius/core';
+import { manualStepSchema, partRefFromLabel, type ManualStep } from '@vitruvius/core';
 import { describe, expect, it } from 'vitest';
 import { mergeInstruction } from './merge.js';
 import type { RawInstruction } from './types.js';
@@ -68,6 +68,6 @@ describe('mergeInstruction', () => {
 			parts: ['shelf', '  ']
 		});
 		expect(merged.tools).toEqual(['mallet']);
-		expect(merged.parts).toEqual(['shelf']);
+		expect(merged.parts).toEqual([partRefFromLabel('shelf')]);
 	});
 });

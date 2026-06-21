@@ -11,6 +11,7 @@ export type ManualRow = {
 	title: string;
 	video_url: string;
 	status: ManualStatus;
+	bom: unknown;
 	created_at: string;
 	updated_at: string;
 };
@@ -21,11 +22,13 @@ export type StepRow = {
 	order: number;
 	title: string;
 	instruction: string;
+	caption: string;
 	start_ms: number;
 	end_ms: number;
 	keyframe_url: string;
+	illustration_url: string;
 	tools: string[];
-	parts: string[];
+	part_refs: unknown;
 	warnings: string[];
 	confidence: number;
 	review_status: StepReviewStatus;

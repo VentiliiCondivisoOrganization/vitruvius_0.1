@@ -48,6 +48,7 @@ export const actions: Actions = {
 			videoUrl: path,
 			status: 'uploaded',
 			steps: [],
+			bom: [],
 			createdAt: now,
 			updatedAt: now
 		};

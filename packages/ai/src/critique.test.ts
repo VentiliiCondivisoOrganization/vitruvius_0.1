@@ -1,4 +1,4 @@
-import { manualStepSchema, type ManualStep } from '@vitruvius/core';
+import { manualStepSchema, partRefFromLabel, type ManualStep } from '@vitruvius/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { clearCritiqueCache, critiqueSteps } from './index.js';
 import {
@@ -18,7 +18,7 @@ function makeStep(overrides: Partial<ManualStep> = {}): ManualStep {
 		endMs: 3000,
 		keyframeUrl: 'file:///tmp/frame_0001.jpg',
 		tools: ['screwdriver'],
-		parts: ['leg A'],
+		parts: [partRefFromLabel('leg A')],
 		warnings: [],
 		confidence: 0.8,
 		reviewStatus: 'hypothesis',

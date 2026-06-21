@@ -1,4 +1,4 @@
-import type { ManualStep } from '@vitruvius/core';
+import { partRefLabels, type ManualStep } from '@vitruvius/core';
 
 export const DISTILL_PROMPT_VERSION = 'distill-v1';
 
@@ -15,7 +15,7 @@ export function buildDistillPrompt(
 		.map((step) => {
 			const facts = [
 				step.tools.length ? `tools: ${step.tools.join(', ')}` : '',
-				step.parts.length ? `parts: ${step.parts.join(', ')}` : '',
+				step.parts.length ? `parts: ${partRefLabels(step.parts).join(', ')}` : '',
 				step.warnings.length ? `warnings: ${step.warnings.join('; ')}` : ''
 			]
 				.filter(Boolean)

@@ -1,4 +1,4 @@
-import type { ManualStep } from '@vitruvius/core';
+import { partRefLabels, type ManualStep } from '@vitruvius/core';
 import { CRITIQUE_PROMPT_VERSION } from './cache.js';
 
 export function buildCritiquePrompt(
@@ -15,7 +15,7 @@ export function buildCritiquePrompt(
 			const notes = step.sourceNotes.map((n) => `    - ${n}`).join('\n');
 			const lists = [
 				step.tools.length ? `tools: ${step.tools.join(', ')}` : '',
-				step.parts.length ? `parts: ${step.parts.join(', ')}` : '',
+				step.parts.length ? `parts: ${partRefLabels(step.parts).join(', ')}` : '',
 				step.warnings.length ? `warnings: ${step.warnings.join(', ')}` : ''
 			]
 				.filter(Boolean)

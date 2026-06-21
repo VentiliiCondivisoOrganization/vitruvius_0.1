@@ -12,6 +12,7 @@ to lives here.
 | Know _why_ something is the way it is                            | [decisions.md](decisions.md)                                     |
 | Check client request vs product design (alignment assessment)    | [client-alignment-assessment.md](client-alignment-assessment.md) |
 | See what is implemented vs spec-only                             | [implementation-progress.md](implementation-progress.md)         |
+| Session notes (decisions + PR context)                           | [session-notes/](session-notes/)                                   |
 | Open a PR — title, body, CI, formatting                          | [pr-and-ci.md](pr-and-ci.md)                                     |
 | Implement an assigned task                                       | the matching spec in [`specs/`](../../specs/)                    |
 

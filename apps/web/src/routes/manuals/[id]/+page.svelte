@@ -4,8 +4,10 @@
 	import {
 		MANUAL_STATUS,
 		STEP_REVIEW_STATUS,
+		emptyPartRef,
 		type ManualStatus,
 		type ManualStep,
+		type PartRef,
 		type StepReviewStatus
 	} from '@vitruvius/core';
 	import type { ActionData, PageData } from './$types';
@@ -102,7 +104,21 @@
 		touchStep(index);
 	}
 
-	type ListField = 'tools' | 'parts' | 'warnings';
+	type ListField = 'tools' | 'warnings';
+
+	function addPart(index: number): void {
+		steps[index]?.parts.push(emptyPartRef());
+		touchStep(index);
+	}
+	function removePart(index: number, partIndex: number): void {
+		steps[index]?.parts.splice(partIndex, 1);
+		touchStep(index);
+	}
+	function updatePartLabel(index: number, partIndex: number, value: string): void {
+		const part = steps[index]?.parts[partIndex];
+		if (part) part.label = value;
+		touchStep(index);
+	}
 
 	// ---- Alternatives -------------------------------------------------------
 	// Choosing an alternative promotes it to the instruction and keeps the former
@@ -137,7 +153,9 @@
 			reviewStatus: 'edited',
 			sourceNotes: [],
 			alternatives: [],
-			critique: []
+			critique: [],
+			caption: '',
+			illustrationUrl: ''
 		};
 		step.endMs = mid;
 		step.reviewStatus = step.reviewStatus === 'hypothesis' ? 'edited' : step.reviewStatus;
@@ -152,7 +170,7 @@
 		a.instruction = [a.instruction, b.instruction].filter(Boolean).join('\n\n');
 		a.endMs = Math.max(a.endMs, b.endMs);
 		a.tools = dedupe([...a.tools, ...b.tools]);
-		a.parts = dedupe([...a.parts, ...b.parts]);
+		a.parts = dedupePartRefs([...a.parts, ...b.parts]);
 		a.warnings = dedupe([...a.warnings, ...b.warnings]);
 		a.sourceNotes = [...a.sourceNotes, ...b.sourceNotes];
 		a.alternatives = [...a.alternatives, ...b.alternatives];
@@ -165,6 +183,20 @@
 
 	function dedupe(items: string[]): string[] {
 		return [...new Set(items.map((s) => s.trim()).filter(Boolean))];
+	}
+
+	function dedupePartRefs(items: PartRef[]): PartRef[] {
+		const seen: Record<string, true> = {};
+		const out: PartRef[] = [];
+		for (const item of items) {
+			const label = item.label.trim();
+			if (!label) continue;
+			const key = `${item.bomItemId ?? ''}:${label}`;
+			if (seen[key]) continue;
+			seen[key] = true;
+			out.push(item);
+		}
+		return out;
 	}
 
 	function moveStep(index: number, delta: number): void {
@@ -198,7 +230,9 @@
 			reviewStatus: 'edited',
 			sourceNotes: [],
 			alternatives: [],
-			critique: []
+			critique: [],
+			caption: '',
+			illustrationUrl: ''
 		});
 		markDirty();
 	}
@@ -441,7 +475,7 @@
 									</span>
 									<button
 										type="button"
-										onclick={() => addItem(i, 'parts')}
+										onclick={() => addPart(i)}
 										class="text-xs text-slate-500 hover:text-slate-800"
 									>
 										+ Add
@@ -452,13 +486,13 @@
 										<div class="flex items-center gap-2">
 											<input
 												type="text"
-												value={part}
-												oninput={(e) => updateItem(i, 'parts', pi, e.currentTarget.value)}
+												value={part.label}
+												oninput={(e) => updatePartLabel(i, pi, e.currentTarget.value)}
 												class="block w-full rounded border border-slate-300 px-2 py-1 text-sm text-slate-900"
 											/>
 											<button
 												type="button"
-												onclick={() => removeItem(i, 'parts', pi)}
+												onclick={() => removePart(i, pi)}
 												class="text-xs text-red-500 hover:text-red-700">×</button
 											>
 										</div>

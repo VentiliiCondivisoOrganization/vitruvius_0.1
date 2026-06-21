@@ -1,4 +1,4 @@
-import type { InstructionManual, ManualStep } from '@vitruvius/core';
+import { formatPartRef, type InstructionManual, type ManualStep } from '@vitruvius/core';
 
 // Minimal HTML escape for text interpolated into the template. Covers the five
 // characters that matter in element/attribute contexts; the output is a standalone
@@ -35,7 +35,7 @@ function renderStep(step: ManualStep, index: number): string {
 	${figure}
 	${instruction}
 	${renderList('Tools', step.tools)}
-	${renderList('Parts', step.parts)}
+	${renderList('Parts', step.parts.map(formatPartRef))}
 	${renderList('Warnings', step.warnings)}
 </section>`;
 }

@@ -22,9 +22,10 @@ None (this package has no runtime inputs; it is pure types + schemas + enums).
 
 - `ManualStep`: `critique[]`, `illustrationUrl`, `caption`, `parts: PartRef[]`, optional `keyframeUrl`
 - `PartRef`: `candidateBomItemIds[]` (flat list)
-- `BomItem`, `DigitalModel`, `digitalModelStatus` (spec 12)
+- `ManualBomItem` + `InstructionManual.bom[]` (spec 13 reconcile; distinct from CAD `BomItem` in spec 12)
+- `BomItem`, `DigitalModel`, `digitalModelStatus` (spec 12 — CAD priming)
 - `Learning` (spec 11)
-- `InstructionManual`: `version`, `parentVersionId`, merged `bom[]`
+- `InstructionManual`: `version`, `parentVersionId` (spec 17)
 - `JOB_TYPE`: add `regenerate` (spec 16)
 
 ## In scope

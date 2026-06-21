@@ -2,7 +2,7 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-20 (client assessment revision 2 → docs + spec 13–17 stubs)._
+_Last updated: 2026-06-21 (core PartRef contract + implementation-progress sync)._
 
 ## Client alignment roadmap
 
@@ -10,72 +10,57 @@ Full analysis: [client-alignment-assessment.md](./client-alignment-assessment.md
 
 | Phase        | Deliverable                                                             | Specs                                      | Status                                         |
 | ------------ | ----------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------- |
-| **Baseline** | Video-first pipeline, editor, keyframe PDF                              | 01–12                                      | In progress (04–05 in review; 06–12 spec/stub) |
-| **Phase 1**  | BOM layer, schematic illustrations, regenerate, versioning, export gate | 13, 14 (tier 1), 16, 17 + extensions 08/09 | Spec stubs written; not implemented            |
+| **Baseline** | Video-first pipeline, editor, keyframe PDF                              | 01–12                                      | **Done** on `main` (PRs #21–#30)               |
+| **Phase 1**  | BOM layer, schematic illustrations, regenerate, versioning, export gate | 13, 14 (tier 1), 16, 17 + extensions 08/09 | Spec stubs on `main`; contract extension in PR |
 | **Phase 2**  | Compositor-full (CAD overlay per step)                                  | 14 tier 2                                  | Blocked on pose alignment research             |
 
-## Session summary (2026-06-19 / 2026-06-20)
+## Shipped on `main` (baseline 01–12)
 
-Foundation work aligned with the client assessment (video-first segmentation, optional audio, human
-revision; target illustrated deliverable documented for phase 1+).
+| Spec               | Package / app       | PR  | Notes                                   |
+| ------------------ | ------------------- | --- | --------------------------------------- |
+| 01-core            | `@vitruvius/core`   | —   | Bootstrap contract                      |
+| 02-db              | `@vitruvius/db`     | —   | Postgres + `save_manual`                |
+| 03-web-upload      | `apps/web`          | —   | Video upload + job enqueue              |
+| 04-media           | `@vitruvius/media`  | #20 | ffmpeg wrappers                         |
+| 05-ai-segment      | `@vitruvius/ai`     | #21 | Segmenter agent                         |
+| 06-ai-instructions | `@vitruvius/ai`     | #24 | Instruction Writer                      |
+| 07-engine-worker   | `apps/engine`       | #27 | Full process pipeline                   |
+| 08-web-editor      | `apps/web`          | #28 | Guided revision editor                  |
+| 09-export          | `@vitruvius/export` | #30 | HTML → PDF (keyframes today)            |
+| 10-ai-critic       | `@vitruvius/ai`     | #25 | Text-only Critic                        |
+| 11-learnings       | `@vitruvius/ai`     | #26 | Distill + priming                       |
+| 12-cad-ingest      | `@vitruvius/cad`    | #29 | STEP/mesh priming (`BomItem` CAD shape) |
 
-| Deliverable                 | Spec                                          | PR / branch                                                                                            | Status           |
-| --------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------- |
-| Client alignment assessment | — (docs)                                      | [#18](https://github.com/VentiliiCondivisoOrganization/vitruvius/pull/18) + doc revision 2 (local)     | Merged / updated |
-| ffmpeg media extraction     | [04-media](../../specs/04-media.md)           | [#20](https://github.com/VentiliiCondivisoOrganization/vitruvius/pull/20) `feat/media-ffmpeg-wrappers` | In review        |
-| Segmenter agent             | [05-ai-segment](../../specs/05-ai-segment.md) | `feat/ai-segment` (based on media branch)                                                              | In review        |
+Docs alignment (assessment revision 2, spec stubs 13–17): [#31](https://github.com/VentiliiCondivisoOrganization/vitruvius/pull/31) merged.
 
-### Spec 04 — `@vitruvius/media`
+## In progress
 
-Engine-only ffmpeg wrappers:
+### Core contract extension (spec 01 → enables spec 13)
 
-- `extractKeyframes`, `extractAudio`, `detectScenes`, `splitIntoClips`
-- Structured outputs (timestamps + on-disk file refs); no AI interpretation
-- Vitest integration tests (ffmpeg-generated fixtures; skip when ffmpeg absent)
+Branch `feat/core-partref-contract`:
 
-Feeds the Segmenter with keyframes, scene boundaries, clips, and optional audio for downstream
-evidence in `sourceNotes` (BOM mapping → spec 13).
+- `PartRef[]` replaces `parts: string[]` on `ManualStep`
+- `ManualBomItem` + `InstructionManual.bom` (CAD `BomItem` unchanged for spec 12)
+- `caption`, `illustrationUrl` on steps (empty until spec 06/14)
+- DB migration `0006_part_refs.sql`
 
-### Spec 05 — Segmenter (`@vitruvius/ai`)
+### Next vertical slices (phase 1)
 
-`segmentVideoIntoSteps(input)` accepts media artifacts from spec 04 plus optional learnings (spec 11 hook):
-
-- **Provider-pluggable:** `GeminiSegmentProvider` when `GEMINI_API_KEY` is set; `HeuristicSegmentProvider` otherwise
-- **Video-first:** absolute timeline segmentation; BOM/CAD do not set step boundaries
-- **Credit discipline:** cache on content hash + prompt version; one primary call; sub-chunk only low-confidence windows
-- **Output:** schema-valid `ManualStep[]` with bounds, `confidence`, `sourceNotes`, `reviewStatus: hypothesis`
-
-### Still stubbed / next (baseline 06–12)
-
-| Spec               | Package                    | Notes                                                 |
-| ------------------ | -------------------------- | ----------------------------------------------------- |
-| 06-ai-instructions | `@vitruvius/ai`            | `writeInstructions`; target adds `caption`, `PartRef` |
-| 07-engine-worker   | `apps/engine`              | Wire baseline pipeline; extend for 13–14 in phase 1   |
-| 10-ai-critic       | `@vitruvius/ai`            | Text-only review — scope unchanged in phase 1         |
-| 11-learnings       | `@vitruvius/ai` + db       | Priming wired via `SegmentInput.learnings`            |
-| 12-cad-ingest      | `@vitruvius/cad` (planned) | Priming only — not illustrated deliverable            |
-
-### Planned (phase 1 — spec only today)
-
-| Spec                 | Package / app          | Notes                                    |
-| -------------------- | ---------------------- | ---------------------------------------- |
-| 13-bom-map           | `packages/cad` or peer | Deterministic-first BOM file + reconcile |
-| 14-ai-illustrate     | `@vitruvius/ai`        | Illustrator + Compositor-lite (tier 1)   |
-| 16-regenerate-job    | web + engine           | `JOB_TYPE: regenerate`                   |
-| 17-manual-versioning | `@vitruvius/core`, db  | v1 → v2 enrich                           |
+| Spec                 | Package / app          | Depends on                          |
+| -------------------- | ---------------------- | ----------------------------------- |
+| 13-bom-map           | `packages/cad` or peer | Core contract (above)               |
+| 14-ai-illustrate     | `@vitruvius/ai`        | Core + instruct/critic pipeline     |
+| 16-regenerate-job    | web + engine           | Core `JOB_TYPE: regenerate` (later) |
+| 17-manual-versioning | core + db              | Core versioning fields (later)      |
 
 ## Spec status matrix
 
-| Spec                 | Status                                        |
-| -------------------- | --------------------------------------------- |
-| 01-core              | Done (bootstrap); contract extensions pending |
-| 02-db                | Done                                          |
-| 03-web-upload        | Done                                          |
-| 04-media             | Implemented (PR #20)                          |
-| 05-ai-segment        | Implemented (`feat/ai-segment`)               |
-| 06–11                | Stub / not started                            |
-| 12-cad-ingest        | Spec only                                     |
-| 13-bom-map           | Spec stub                                     |
-| 14-ai-illustrate     | Spec stub                                     |
-| 16-regenerate-job    | Spec stub                                     |
-| 17-manual-versioning | Spec stub                                     |
+| Spec                 | Status                                      |
+| -------------------- | ------------------------------------------- |
+| 01-core              | Bootstrap done; **PartRef extension in PR** |
+| 02-db                | Done; migration 0006 pending with core PR   |
+| 03–12                | Done on `main`                              |
+| 13-bom-map           | Spec stub; blocked on core contract         |
+| 14-ai-illustrate     | Spec stub                                   |
+| 16-regenerate-job    | Spec stub                                   |
+| 17-manual-versioning | Spec stub                                   |

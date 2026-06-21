@@ -44,7 +44,9 @@ export function rawSegmentToManualStep(
 		reviewStatus: 'hypothesis',
 		sourceNotes: seg.sourceNotes,
 		alternatives: [],
-		critique: []
+		critique: [],
+		caption: '',
+		illustrationUrl: ''
 	};
 
 	return manualStepSchema.parse(step);

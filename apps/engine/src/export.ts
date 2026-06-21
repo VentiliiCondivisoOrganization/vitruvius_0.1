@@ -1,7 +1,9 @@
 import type { Job } from '@vitruvius/core';
 import { getManual, type DbClient } from '@vitruvius/db';
 import { renderManualPdf } from '@vitruvius/export';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const EXPORT_BUCKET = 'exports';
 
@@ -22,12 +24,19 @@ export async function handleExportJob(db: DbClient, job: Job): Promise<void> {
 		throw new Error(`manual ${manual.id} is not ready (status: ${manual.status})`);
 	}
 
-	const { fileRef } = await renderManualPdf(manual);
-	const pdf = await readFile(fileRef);
+	// Own the render directory here so it is always cleaned up — the long-running worker
+	// must not leak temp PDFs once they have been read and uploaded.
+	const outDir = await mkdtemp(join(tmpdir(), 'vitruvius-export-'));
+	try {
+		const { fileRef } = await renderManualPdf(manual, { outDir });
+		const pdf = await readFile(fileRef);
 
-	const { error } = await db.storage
-		.from(EXPORT_BUCKET)
-		.upload(exportObjectKey(manual.id), pdf, { contentType: 'application/pdf', upsert: true });
+		const { error } = await db.storage
+			.from(EXPORT_BUCKET)
+			.upload(exportObjectKey(manual.id), pdf, { contentType: 'application/pdf', upsert: true });
 
-	if (error) throw new Error(`store export PDF: ${error.message}`);
+		if (error) throw new Error(`store export PDF: ${error.message}`);
+	} finally {
+		await rm(outDir, { recursive: true, force: true }).catch(() => {});
+	}
 }

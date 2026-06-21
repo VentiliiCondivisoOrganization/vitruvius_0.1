@@ -14,6 +14,9 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 
 	const manual = await getManual(locals.db, params.id);
 	if (!manual) error(404, 'Manual not found');
+	// Only a finished manual renders meaningfully; non-ready ones would expose
+	// partial/empty output, so gate this the same way the export UI does.
+	if (manual.status !== 'ready') error(409, 'Manual is not ready to export');
 
 	return new Response(renderManualHtml(manual), {
 		headers: { 'content-type': 'text/html; charset=utf-8' }

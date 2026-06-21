@@ -27,11 +27,19 @@ export async function renderManualPdf(
 ): Promise<{ fileRef: string }> {
 	const html = renderManualHtml(manual);
 
+	// playwright-core ships no bundled browser, so an executable must be configured.
+	// Validate up front for an actionable failure in the worker logs rather than an
+	// opaque Playwright launch error.
+	const executablePath = options.executablePath ?? process.env.PLAYWRIGHT_CHROMIUM_PATH;
+	if (!executablePath) {
+		throw new Error(
+			'renderManualPdf: no Chromium executable configured — set PLAYWRIGHT_CHROMIUM_PATH ' +
+				'(provided by the engine container) or pass options.executablePath.'
+		);
+	}
+
 	const { chromium } = await import('playwright-core');
-	const browser = await chromium.launch({
-		executablePath: options.executablePath ?? process.env.PLAYWRIGHT_CHROMIUM_PATH,
-		args: ['--no-sandbox']
-	});
+	const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] });
 
 	try {
 		const page = await browser.newPage();

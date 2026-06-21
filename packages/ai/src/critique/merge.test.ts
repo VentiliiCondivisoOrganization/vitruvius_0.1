@@ -1,4 +1,4 @@
-import { manualStepSchema, type ManualStep } from '@vitruvius/core';
+import { manualStepSchema, partRefFromLabel, type ManualStep } from '@vitruvius/core';
 import { describe, expect, it } from 'vitest';
 import { mergeCritique } from './merge.js';
 
@@ -11,7 +11,7 @@ const original: ManualStep = manualStepSchema.parse({
 	endMs: 9000,
 	keyframeUrl: 'file:///tmp/frame_0003.jpg',
 	tools: ['mallet'],
-	parts: ['shelf'],
+	parts: [partRefFromLabel('shelf')],
 	warnings: ['do not force'],
 	confidence: 0.6,
 	reviewStatus: 'hypothesis',

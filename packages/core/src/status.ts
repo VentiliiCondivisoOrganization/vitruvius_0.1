@@ -21,3 +21,7 @@ export type JobType = (typeof JOB_TYPE)[number];
 //   failed      — a supported model was supplied but could not be parsed
 export const DIGITAL_MODEL_STATUS = ['primed', 'absent', 'unsupported', 'failed'] as const;
 export type DigitalModelStatus = (typeof DIGITAL_MODEL_STATUS)[number];
+
+// Provenance of a row in `InstructionManual.bom` after reconcile (spec 13-bom-map).
+export const MANUAL_BOM_SOURCE = ['cad', 'file', 'inferred'] as const;
+export type ManualBomSource = (typeof MANUAL_BOM_SOURCE)[number];

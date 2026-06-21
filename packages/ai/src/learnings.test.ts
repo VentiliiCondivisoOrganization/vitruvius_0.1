@@ -1,4 +1,9 @@
-import { manualStepSchema, newLearningSchema, type ManualStep } from '@vitruvius/core';
+import {
+	manualStepSchema,
+	newLearningSchema,
+	partRefFromLabel,
+	type ManualStep
+} from '@vitruvius/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { distillLearnings } from './index.js';
 import {
@@ -20,7 +25,7 @@ function makeStep(overrides: Partial<ManualStep> = {}): ManualStep {
 		endMs: 3000,
 		keyframeUrl: 'file:///tmp/frame_0001.jpg',
 		tools: ['screwdriver'],
-		parts: ['leg A'],
+		parts: [partRefFromLabel('leg A')],
 		warnings: ['Do not overtighten — the thread strips easily.'],
 		confidence: 0.8,
 		reviewStatus: 'hypothesis',

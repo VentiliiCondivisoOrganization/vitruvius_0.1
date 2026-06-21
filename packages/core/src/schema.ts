@@ -3,20 +3,42 @@ import {
 	DIGITAL_MODEL_STATUS,
 	JOB_STATUS,
 	JOB_TYPE,
+	MANUAL_BOM_SOURCE,
 	MANUAL_STATUS,
 	STEP_REVIEW_STATUS
 } from './status.js';
+
+export const partRefSchema = z.object({
+	bomItemId: z.string().nullable(),
+	label: z.string(),
+	bomCode: z.string().optional(),
+	description: z.string().optional(),
+	confidence: z.number().min(0).max(1),
+	candidateBomItemIds: z.array(z.string()).optional()
+});
+
+export const manualBomItemSchema = z.object({
+	id: z.string(),
+	partName: z.string(),
+	bomCode: z.string().optional(),
+	description: z.string(),
+	quantity: z.number().int().positive().optional(),
+	source: z.enum(MANUAL_BOM_SOURCE),
+	cadSourceId: z.string().optional()
+});
 
 export const manualStepSchema = z.object({
 	id: z.string(),
 	order: z.number().int().nonnegative(),
 	title: z.string(),
 	instruction: z.string(),
+	caption: z.string().default(''),
 	startMs: z.number().int().nonnegative(),
 	endMs: z.number().int().nonnegative(),
 	keyframeUrl: z.string(),
+	illustrationUrl: z.string().default(''),
 	tools: z.array(z.string()),
-	parts: z.array(z.string()),
+	parts: z.array(partRefSchema).default([]),
 	warnings: z.array(z.string()),
 	confidence: z.number().min(0).max(1),
 	reviewStatus: z.enum(STEP_REVIEW_STATUS),
@@ -32,6 +54,7 @@ export const instructionManualSchema = z.object({
 	videoUrl: z.string(),
 	status: z.enum(MANUAL_STATUS),
 	steps: z.array(manualStepSchema),
+	bom: z.array(manualBomItemSchema).default([]),
 	createdAt: z.string(),
 	updatedAt: z.string()
 });

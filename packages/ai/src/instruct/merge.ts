@@ -1,4 +1,4 @@
-import { manualStepSchema, type ManualStep } from '@vitruvius/core';
+import { manualStepSchema, partRefsFromLabels, type ManualStep } from '@vitruvius/core';
 import type { RawInstruction } from './types.js';
 
 /** Trim entries and drop blanks — provider lists may contain whitespace-only strings. */
@@ -33,7 +33,7 @@ export function mergeInstruction(original: ManualStep, raw: RawInstruction): Man
 		// Keep the original instruction if the provider returns a blank one.
 		instruction: raw.instruction.trim() || original.instruction,
 		tools: cleanList(raw.tools),
-		parts: cleanList(raw.parts),
+		parts: partRefsFromLabels(cleanList(raw.parts)),
 		warnings: cleanList(raw.warnings),
 		alternatives: cleanList(raw.alternatives),
 		sourceNotes: mergeSourceNotes(original.sourceNotes, raw.addedSourceNotes)

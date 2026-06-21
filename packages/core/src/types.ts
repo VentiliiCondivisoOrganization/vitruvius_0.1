@@ -2,20 +2,34 @@ import type {
 	DigitalModelStatus,
 	JobStatus,
 	JobType,
+	ManualBomSource,
 	ManualStatus,
 	StepReviewStatus
 } from './status.js';
+
+// Structured component reference on a step (spec 13-bom-map). Distinct from the CAD-only
+// `BomItem` inside `DigitalModel` — reconcile merges CAD + file BOM into `ManualBomItem`.
+export type PartRef = {
+	bomItemId: string | null;
+	label: string;
+	bomCode?: string;
+	description?: string;
+	confidence: number;
+	candidateBomItemIds?: string[];
+};
 
 export type ManualStep = {
 	id: string;
 	order: number;
 	title: string;
 	instruction: string;
+	caption: string; // short on-page text for IKEA-style export (spec 06 / 09)
 	startMs: number;
 	endMs: number;
-	keyframeUrl: string;
+	keyframeUrl: string; // source evidence still from video (spec 04)
+	illustrationUrl: string; // print-ready schematic (spec 14); empty until illustrated
 	tools: string[];
-	parts: string[];
+	parts: PartRef[];
 	warnings: string[];
 	confidence: number; // 0..1, the model's self-reported certainty
 	reviewStatus: StepReviewStatus;
@@ -24,12 +38,25 @@ export type ManualStep = {
 	critique: string[]; // Critic (spec 10) flags: what is unsupported/missing; empty when well-supported
 };
 
+// Merged bill of materials at manual scope after spec 13 reconcile (file + CAD + inferred).
+export type ManualBomItem = {
+	id: string;
+	partName: string;
+	bomCode?: string;
+	description: string;
+	quantity?: number;
+	source: ManualBomSource;
+	// When `source` is `cad`, links back to `BomItem.sourceId` from spec 12.
+	cadSourceId?: string;
+};
+
 export type InstructionManual = {
 	id: string;
 	title: string;
 	videoUrl: string;
 	status: ManualStatus;
 	steps: ManualStep[];
+	bom: ManualBomItem[];
 	createdAt: string; // ISO 8601
 	updatedAt: string; // ISO 8601
 };
@@ -56,7 +83,8 @@ export type NewLearning = Omit<Learning, 'id' | 'createdAt'>;
 // pipeline runs unchanged on video alone when no usable model is present.
 // ---------------------------------------------------------------------------
 
-// One line of the bill of materials: a named part and how many occurrences appear.
+// One line of the CAD-derived bill of materials inside `DigitalModel` (spec 12).
+// Manual-scope BOM rows use `ManualBomItem` after reconcile (spec 13).
 export type BomItem = {
 	// Human-readable part name, already decoded (non-ASCII / STEP `\X2\` escapes resolved).
 	name: string;

@@ -1,8 +1,8 @@
 # Spec: 07-engine-worker
 
 **Goal:** The engine claims `process` jobs and runs the full pipeline.
-**Package/app(s):** `apps/engine`, `packages/db`, `packages/media`, `packages/ai`.
-**Depends on:** 02-db, 04-media, 05-ai-segment, 06-ai-instructions, 10-ai-critic, 11-learnings.
+**Package/app(s):** `apps/engine`, `packages/db`, `packages/media`, `packages/ai`, `packages/cad` (spec 12), later `packages/ai` illustrate (spec 14).
+**Depends on:** 02-db, 04-media, 05-ai-segment, 06-ai-instructions, 10-ai-critic, 11-learnings. Target: 12-cad-ingest, 13-bom-map, 14-ai-illustrate.
 
 ## Inputs
 
@@ -19,6 +19,11 @@
 - The poll loop claims a `process` job.
 - Run the full pipeline: prime with learnings → media → ai-segment → ai-instructions →
   ai-critic (spec 10) → distill learnings (spec 11).
+
+**Target pipeline (phase 1):** optional cad-ingest (12) → media → segment → bom-map (13) → instruct →
+**critic → illustrate (14)** → learnings. Critic stays before illustrate; text-only. Also claim
+`regenerate` jobs (spec 16).
+
 - Save the manual via db; set `manuals.status` and the job status.
 - Retry / attempt handling on failure.
 - Order matters for cost: the Critic and learnings passes are cheap text-only stages that run after

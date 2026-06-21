@@ -2,104 +2,94 @@
 
 How Vitruvius uses AI agents, how it keeps that usage cheap, how it checks its own
 accuracy, and how it learns over time. This is the conceptual home for everything that lives
-behind [`packages/ai`](../../packages/ai). The work units are in [`specs/`](../../specs) (05, 06, 10, 11);
-the resolved trade-offs are in [`decisions.md`](./decisions.md) (8–10).
+behind [`packages/ai`](../../packages/ai). The work units are in [`specs/`](../../specs); the
+resolved trade-offs are in [`decisions.md`](./decisions.md) (8–12).
 
 Vitruvius's positioning is _AI-generated draft + guided human revision_ — not a fully automatic
 generator. Everything below serves that: spend the fewest credits to produce a draft that is honest
 about its own confidence, and get better at it over time.
 
+The [client alignment assessment](./client-alignment-assessment.md) adds **Illustrator** and
+**Compositor** agents (spec 14) for schematic deliverables. **BOM mapping** (spec 13) is mostly
+deterministic — not a fifth generative agent. The **Critic** scope does not expand to BOM or images.
+
 ## The agent roster
 
-The pipeline is a sequence of distinct **agents**, each a single responsibility behind
-`packages/ai`. They are deliberately separate so they can be priced, swapped, and (later) configured
-independently.
+### Shipped or in progress (baseline specs 05, 06, 10, 11)
 
 | Agent          | Spec                                    | Responsibility                                                                                                    |
 | -------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **Segmenter**  | [05](../../specs/05-ai-segment.md)      | Split the video into ordered steps with time bounds, `confidence`, `sourceNotes`.                                 |
-| **Instructor** | [06](../../specs/06-ai-instructions.md) | Fill operative fields per step (title, instruction, tools, parts, warnings, alternatives).                        |
-| **Critic**     | [10](../../specs/10-ai-critic.md)       | Independently review the draft for accuracy; adjust `confidence`, flag weak steps. Decoupled from the generators. |
+| **Segmenter**  | [05](../../specs/05-ai-segment.md)      | Split the video into ordered steps with time bounds, `confidence`, `sourceNotes`. Video-first only.               |
+| **Instructor** | [06](../../specs/06-ai-instructions.md) | Fill operative fields per step (`instruction`, `caption`, tools, `PartRef`-backed parts, warnings, alternatives). |
+| **Critic**     | [10](../../specs/10-ai-critic.md)       | Review draft **text** for accuracy vs `sourceNotes`; adjust `confidence`, flag with `critique[]`. Never rewrites. |
 | **Learnings**  | [11](../../specs/11-learnings.md)       | Capture reusable domain knowledge from a run and feed it back into future runs.                                   |
 
-All agents run **in the engine only**, never in the web app, and every output is validated against
+### Planned (client alignment — specs 13, 14, 16)
+
+| Agent / job          | Spec                                         | Responsibility                                                                                              |
+| -------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **BOM layer**        | [13](../../specs/13-bom-map.md)              | Parse BOM file, reconcile with `DigitalModel`; deterministic match → `PartRef[]`; AI **only** if ambiguous. |
+| **Illustrator**      | [14](../../specs/14-ai-illustrate.md)        | Schematic AI images from video/keyframe (no CAD path). Cache on content hash.                               |
+| **Compositor-lite**  | [14](../../specs/14-ai-illustrate.md)        | IKEA layout on spec 12 canonical views (no pose alignment).                                                 |
+| **Compositor-full**  | [14 tier 2](../../specs/14-ai-illustrate.md) | Per-step CAD overlay — phase 2; requires pose alignment research.                                           |
+| **`regenerate` job** | [16](../../specs/16-regenerate-job.md)       | User prompt in editor; scope dispatches to Instructor or Illustrator/Compositor — not a new agent.          |
+
+**Not in `packages/ai`:** spec 12 `packages/cad` (deterministic STEP/mesh ingest); BOM file parser
+(spec 13) follows the same pattern — engine-only, no model calls when the file is authoritative.
+
+All AI agents run **in the engine only**, never in the web app, and every output is validated against
 the `@vitruvius/core` zod schemas before it is trusted.
 
 ## Credit optimization (cross-cutting)
 
 **Accuracy, confidence, and reliability are the constraint; credits are minimized within it, never
 above it.** Optimize away _waste_ — redundant calls, over-sized models on easy steps, re-billing
-identical inputs — never quality. If a cheaper path would lower accuracy or weaken the confidence
-signal, it is not the cheaper path; it is the wrong path.
+identical inputs — never quality.
 
-With that ordering fixed: AI calls are the dominant variable cost, so treat **credits as a
-first-class budget**, not an afterthought — in every spec, every prompt, every loop.
-
-- **Cheapest model that clears the bar.** Don't default to the largest model. Reserve expensive
-  calls (e.g. fine-grained re-segmentation) for sections the cheap pass flagged as low-confidence.
-- **One pass, not many.** Batch steps into a single call where the model allows it; avoid per-step
-  round-trips when a single structured call returns the whole array.
-- **Chunk by need.** Only sub-chunk fast/ambiguous sections (spec 05); don't re-feed the whole video
-  at high resolution when a keyframe sample suffices.
-- **Cache and reuse.** Identical inputs must not be re-billed. Memoize on a content hash of the
-  media artifact + prompt version. The **Learnings store** (spec 11) is part of this: priming a run
-  with known heuristics shrinks the work the model has to do from scratch.
-- **Fail cheap.** Validate inexpensively before spending on the expensive stage; never run the
-  Instructor on segments the Segmenter already rejected.
-- **Measure it.** Every agent call should be attributable to a manual so credit spend per manual is
-  observable (see `infra.md`). You can't optimize what you don't count.
+- **Cheapest model that clears the bar.** Reserve expensive calls for low-confidence or flagged steps.
+- **One pass, not many.** Batch steps into a single structured call where the model allows it.
+- **Chunk by need.** Only sub-chunk fast/ambiguous sections (spec 05).
+- **Cache and reuse.** Memoize on content hash + prompt version. Learnings (spec 11) reduce repeat work.
+- **Deterministic first.** Spec 12 CAD parse and spec 13 BOM reconcile before spending credits on inference.
+- **Image gen discipline (spec 14).** Shared style template; batch where possible; tier-1 vs deep regen
+  (grill-me prompt editing); cache `illustrationUrl` inputs.
+- **Fail cheap.** Never run Instructor on segments the Segmenter already rejected.
+- **Measure it.** Every agent call attributable to a manual (see `infra.md`).
 
 ## Provider-pluggable agents + bring-your-own-license (future, out of MVP scope)
 
-> **Not in the MVP.** Captured here so the MVP doesn't paint us into a corner. The MVP ships a single
-> hosted provider (Gemini) under our own key.
+> **Not in the MVP.** Captured here so the MVP doesn't paint us into a corner.
 
-The end-state: a company can spin up Vitruvius in their own environment and **choose which agents to
-use and attach their own license/keys**. To keep that future cheap, the MVP must obey one rule now:
-
-- **All model access goes through `packages/ai`.** No SDK import, model name, or API key leaks into
-  the engine pipeline, the web app, or any other package. The pipeline depends on the _agent
-  interfaces_ (`segment`, `writeInstructions`, `critique`), never on a concrete provider.
-- That single seam is what later becomes an **agent registry**: a config that maps each role
-  (Segmenter / Instructor / Critic) to a provider + model + credential, resolved at engine startup.
-  Self-hosters swap the registry; nothing upstream changes.
+- **All model access goes through `packages/ai`.** Pipeline depends on agent _interfaces_, never a
+  concrete provider.
+- That seam later becomes an **agent registry** (Segmenter / Instructor / Critic / Illustrator / …).
 
 When this graduates from "future" to "now", it gets its own spec and a `decisions.md` revision.
 
 ## The Critic — unbiased accuracy review (spec 10)
 
-The generators are biased toward their own output; asking them to grade it is theater. So accuracy
-review is a **separate agent with a separate prompt and (optionally) a different/cheaper model**,
-whose only job is to be an honest skeptic — in the spirit of a `/grill-me` reviewer: relentless and
-unbiased, but **not wasting effort on pointless nitpicks**.
+The generators are biased toward their own output; asking them to grade it is theater.
 
-- **Input:** the enriched `ManualStep[]` from the Instructor + their `sourceNotes`.
-- **Job:** for each step, judge whether the instruction is actually supported by its source evidence.
-  Lower `confidence` where it isn't; raise a concrete flag (what's unsupported, what's missing) the
-  editor can act on. Leave well-supported steps alone — no busywork.
-- **Decoupling is the point:** the Critic must not rewrite instructions (that's the Instructor's
-  job). It only _scores and flags_. This keeps the human editor's trust signal (`confidence` +
-  flags) independent of the thing that produced the draft.
-- **Credit-aware:** the Critic is a cheap, structured pass over text the generators already produced
-  — it does not re-watch the video. Escalate to an expensive re-pass only for steps it flags.
-
-The Critic's output sharpens the `confidence` and `sourceNotes` the editor already surfaces (spec
-08); no new UI is strictly required for the MVP.
+- **Input:** enriched `ManualStep[]` from the Instructor + their `sourceNotes`.
+- **Job:** judge whether each **`instruction`** is supported by `sourceNotes`; lower `confidence`;
+  populate `critique[]` when not. Leave well-supported steps alone.
+- **Out of scope for the Critic:** BOM mismatch, illustration quality, `PartRef` ambiguity — handled
+  by spec 13 deterministic flags, editor UX (spec 08), and export gate (spec 09). See decision 12.
+- **Pipeline order (target):** Critic runs **after** instruct, **before** illustrate (spec 14) — still
+  text-only, no re-watch of video.
+- **Decoupling is the point:** the Critic never rewrites instructions or images.
 
 ## Meta-learning — the learnings store (spec 11)
 
-If a run discovers something useful for the product's **core scope** (recognizing assembly steps,
-tools, parts, common warnings), that knowledge should be **persisted and reused**, not relearned
-from zero every time.
+Reusable heuristics (tool/part conventions, audio cues, BOM naming patterns for a product line) are
+distilled from runs and **confirmed human edits**, then injected into Segmenter/Instructor prompts.
 
-- **Write:** at the end of a run (or from confirmed human edits in the editor), distill durable,
-  generalizable facts — e.g. "this product line uses hex bolts", "the narrator says _click_ when a
-  clip seats" — into the learnings store. Store _reusable heuristics_, not per-video transcripts.
-- **Read:** prime future runs by injecting relevant learnings into the Segmenter/Instructor prompts.
-  This both improves accuracy and **cuts credits** (the model reasons less from scratch).
-- **Scope guard:** only capture knowledge that serves the core scope. Don't hoard noise; a learning
-  must be reusable across manuals to earn its place.
-- **Human-in-the-loop is the best signal:** an editor _confirming_ or _correcting_ a step is
-  ground-truth feedback — the highest-quality source of learnings.
+- Store _reusable heuristics_, not per-video transcripts.
+- Human confirmation in the editor is the highest-quality signal.
 
-This closes the loop: generate → critique → human-correct → learn → generate better and cheaper.
+Loop: generate → critique → human-correct → learn → generate better and cheaper.
+
+## Related docs
+
+- [Architecture](./architecture.md) — baseline vs target pipeline
+- [Client alignment assessment](./client-alignment-assessment.md) — grill-me decisions and contract extensions

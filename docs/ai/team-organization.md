@@ -48,11 +48,11 @@ flowchart LR
   engine --> db
 ```
 
-| Person       | Primary lane         | Owns                                                               | Parallel because…                                                               |
-| ------------ | -------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| **Stefano**  | Contract & Web       | `@vitruvius/core`, schema/migrations in `packages/db`, `apps/web`  | Web never imports engine or AI providers; can progress with mock manuals        |
+| Person       | Primary lane           | Owns                                                                                   | Parallel because…                                                               |
+| ------------ | ---------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Stefano**  | Contract & Web         | `@vitruvius/core`, schema/migrations in `packages/db`, `apps/web`                      | Web never imports engine or AI providers; can progress with mock manuals        |
 | **Antonio**  | AI layer + PR approval | `packages/ai` — agents, prompts, credit discipline; **approves every PR** before merge | Each agent is a separate interface; sole merge gatekeeper for the team          |
-| **Giovanni** | Engine & determinism | `packages/media`, `apps/engine`, `packages/export`, `packages/cad` | ffmpeg, PDF, and CAD are engine-side; Giovanni integrates packages as they land |
+| **Giovanni** | Engine & determinism   | `packages/media`, `apps/engine`, `packages/export`, `packages/cad`                     | ffmpeg, PDF, and CAD are engine-side; Giovanni integrates packages as they land |
 
 ### Lane A — Stefano (contract & web)
 
@@ -130,12 +130,12 @@ When a spec needs new fields (`critique`, `PartRef`, `illustrationUrl`, `JOB_TYP
 
 ### PR approval (Antonio)
 
-| Rule | Detail |
-| ---- | ------ |
-| **Approver** | Antonio — all PRs, all lanes |
-| **Author opens PR** | Assign Antonio as reviewer; CI (`checks-pass`) must be green |
-| **Core / DB PRs** | Stefano authors and gatekeeps the contract; Antonio still approves before merge |
-| **Antonio's PRs** | Optional read-through by Stefano or Giovanni; Antonio approves and merges when CI is green |
+| Rule                | Detail                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| **Approver**        | Antonio — all PRs, all lanes                                                               |
+| **Author opens PR** | Assign Antonio as reviewer; CI (`checks-pass`) must be green                               |
+| **Core / DB PRs**   | Stefano authors and gatekeeps the contract; Antonio still approves before merge            |
+| **Antonio's PRs**   | Optional read-through by Stefano or Giovanni; Antonio approves and merges when CI is green |
 
 This is a team convention on top of [pr-and-ci.md](pr-and-ci.md) — it does not replace CI or the
 PR title/body rules.

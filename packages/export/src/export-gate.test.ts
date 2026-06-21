@@ -1,8 +1,11 @@
 import {
 	checkExportGate,
+	formatManualBomItem,
 	manualStepSchema,
 	partRefFromLabel,
-	type InstructionManual
+	resolvePartRefBomCandidate,
+	type InstructionManual,
+	type ManualBomItem
 } from '@vitruvius/core';
 import { describe, expect, it } from 'vitest';
 
@@ -61,5 +64,26 @@ describe('checkExportGate', () => {
 			])
 		);
 		expect(gate.ok).toBe(false);
+	});
+});
+
+describe('resolvePartRefBomCandidate', () => {
+	const bomItem: ManualBomItem = {
+		id: 'bom-1',
+		partName: 'Rail bracket',
+		bomCode: 'RB-42',
+		description: 'Left rail bracket',
+		source: 'file'
+	};
+
+	it('binds a BOM row and clears candidates', () => {
+		const resolved = resolvePartRefBomCandidate(
+			{ ...partRefFromLabel('bracket'), candidateBomItemIds: ['bom-1', 'bom-2'] },
+			bomItem
+		);
+		expect(resolved.bomItemId).toBe('bom-1');
+		expect(resolved.bomCode).toBe('RB-42');
+		expect(resolved.candidateBomItemIds).toBeUndefined();
+		expect(formatManualBomItem(bomItem)).toBe('RB-42 — Rail bracket');
 	});
 });

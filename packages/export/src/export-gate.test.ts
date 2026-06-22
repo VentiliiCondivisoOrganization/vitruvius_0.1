@@ -1,8 +1,11 @@
 import {
 	checkExportGate,
+	formatManualBomItem,
 	manualStepSchema,
 	partRefFromLabel,
-	type InstructionManual
+	resolvePartRefBomCandidate,
+	type InstructionManual,
+	type ManualBomItem
 } from '@vitruvius/core';
 import { describe, expect, it } from 'vitest';
 
@@ -61,5 +64,60 @@ describe('checkExportGate', () => {
 			])
 		);
 		expect(gate.ok).toBe(false);
+	});
+});
+
+describe('resolvePartRefBomCandidate', () => {
+	const bomItem: ManualBomItem = {
+		id: 'bom-1',
+		partName: 'Rail bracket',
+		bomCode: 'RB-42',
+		description: 'Left rail bracket',
+		source: 'file'
+	};
+
+	it('binds a BOM row and clears candidates', () => {
+		const resolved = resolvePartRefBomCandidate(
+			{ ...partRefFromLabel('bracket'), candidateBomItemIds: ['bom-1', 'bom-2'] },
+			bomItem
+		);
+		expect(resolved.bomItemId).toBe('bom-1');
+		expect(resolved.bomCode).toBe('RB-42');
+		expect(resolved.candidateBomItemIds).toBeUndefined();
+	});
+
+	it('trims whitespace from BOM item fields', () => {
+		const resolved = resolvePartRefBomCandidate(partRefFromLabel('x'), {
+			...bomItem,
+			partName: '  Rail bracket  ',
+			bomCode: ' RB-42 ',
+			description: ' Left rail bracket '
+		});
+		expect(resolved.label).toBe('Rail bracket');
+		expect(resolved.bomCode).toBe('RB-42');
+		expect(resolved.description).toBe('Left rail bracket');
+	});
+});
+
+describe('formatManualBomItem', () => {
+	it('formats code + name', () => {
+		const bomItem: ManualBomItem = {
+			id: 'bom-1',
+			partName: 'Rail bracket',
+			bomCode: 'RB-42',
+			description: 'Left rail bracket',
+			source: 'file'
+		};
+		expect(formatManualBomItem(bomItem)).toBe('RB-42 — Rail bracket');
+	});
+
+	it('falls back to id when all fields are empty', () => {
+		const empty: ManualBomItem = {
+			id: 'bom-empty',
+			partName: '',
+			description: '',
+			source: 'file'
+		};
+		expect(formatManualBomItem(empty)).toBe('bom-empty');
 	});
 });

@@ -1,4 +1,4 @@
-import type { PartRef } from './types.js';
+import type { ManualBomItem, PartRef } from './types.js';
 
 /** Empty part row for editor / pipeline defaults. */
 export function emptyPartRef(): PartRef {
@@ -31,4 +31,24 @@ export function formatPartRef(part: PartRef): string {
 /** True when disambiguation is still required before export (spec 08 / 09 gate). */
 export function partRefHasOpenCandidates(part: PartRef): boolean {
 	return (part.candidateBomItemIds?.length ?? 0) > 0;
+}
+
+/** One-line label for BOM picker rows in the editor (spec 08). */
+export function formatManualBomItem(item: ManualBomItem): string {
+	const code = item.bomCode?.trim();
+	const name = item.partName.trim();
+	if (code && name) return `${code} — ${name}`;
+	return code || name || item.description.trim() || item.id;
+}
+
+/** Editor resolves an ambiguous part by binding it to a manual BOM row (spec 08). */
+export function resolvePartRefBomCandidate(part: PartRef, item: ManualBomItem): PartRef {
+	return {
+		bomItemId: item.id,
+		label: item.partName.trim(),
+		bomCode: item.bomCode?.trim(),
+		description: item.description.trim(),
+		confidence: part.confidence,
+		candidateBomItemIds: undefined
+	};
 }

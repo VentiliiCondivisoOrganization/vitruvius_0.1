@@ -5,6 +5,11 @@
 		MANUAL_STATUS,
 		STEP_REVIEW_STATUS,
 		emptyPartRef,
+		formatManualBomItem,
+		formatPartRef,
+		partRefHasOpenCandidates,
+		resolvePartRefBomCandidate,
+		type ManualBomItem,
 		type ManualStatus,
 		type ManualStep,
 		type PartRef,
@@ -118,6 +123,29 @@
 		const part = steps[index]?.parts[partIndex];
 		if (part) part.label = value;
 		touchStep(index);
+	}
+
+	const bomById = $derived(new Map(manual.bom.map((item) => [item.id, item])));
+	const openBomPartCount = $derived(
+		steps.reduce(
+			(count, step) => count + step.parts.filter((part) => partRefHasOpenCandidates(part)).length,
+			0
+		)
+	);
+
+	function bomCandidatesForPart(part: PartRef): ManualBomItem[] {
+		return (part.candidateBomItemIds ?? [])
+			.map((id) => bomById.get(id))
+			.filter((item): item is ManualBomItem => item !== undefined);
+	}
+
+	function chooseBomCandidate(stepIndex: number, partIndex: number, bomItemId: string): void {
+		const part = steps[stepIndex]?.parts[partIndex];
+		if (!part?.candidateBomItemIds?.includes(bomItemId)) return;
+		const item = bomById.get(bomItemId);
+		if (!item) return;
+		steps[stepIndex].parts[partIndex] = resolvePartRefBomCandidate(part, item);
+		touchStep(stepIndex);
 	}
 
 	// ---- Alternatives -------------------------------------------------------
@@ -311,6 +339,12 @@
 					{/if}
 				</div>
 				<div class="flex items-center gap-2">
+					<a
+						href={resolve(`/manuals/${manual.id}/export`)}
+						class="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+					>
+						Export
+					</a>
 					<button
 						type="button"
 						onclick={addStep}
@@ -330,6 +364,15 @@
 
 			{#if form?.error}
 				<p class="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{form.error}</p>
+			{/if}
+
+			{#if openBomPartCount > 0}
+				<p
+					class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+				>
+					{openBomPartCount} component{openBomPartCount === 1 ? '' : 's'} need a BOM choice before export.
+					Pick one option per highlighted part below, then save.
+				</p>
 			{/if}
 
 			{#if steps.length === 0}
@@ -481,20 +524,70 @@
 										+ Add
 									</button>
 								</div>
-								<div class="mt-1 space-y-1.5">
+								<div class="mt-1 space-y-3">
 									{#each step.parts as part, pi (pi)}
-										<div class="flex items-center gap-2">
-											<input
-												type="text"
-												value={part.label}
-												oninput={(e) => updatePartLabel(i, pi, e.currentTarget.value)}
-												class="block w-full rounded border border-slate-300 px-2 py-1 text-sm text-slate-900"
-											/>
-											<button
-												type="button"
-												onclick={() => removePart(i, pi)}
-												class="text-xs text-red-500 hover:text-red-700">×</button
-											>
+										<div
+											class="space-y-1.5 rounded border px-2 py-2 {partRefHasOpenCandidates(part)
+												? 'border-amber-300 bg-amber-50/40'
+												: 'border-transparent'}"
+										>
+											<div class="flex items-center gap-2">
+												<input
+													type="text"
+													value={part.label}
+													oninput={(e) => updatePartLabel(i, pi, e.currentTarget.value)}
+													class="block w-full rounded border border-slate-300 px-2 py-1 text-sm text-slate-900"
+												/>
+												{#if part.bomItemId}
+													<span
+														class="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
+														title="Resolved BOM row"
+													>
+														{formatPartRef(part)}
+													</span>
+												{/if}
+												<button
+													type="button"
+													onclick={() => removePart(i, pi)}
+													aria-label="Remove part {part.label || pi + 1}"
+													class="text-xs text-red-500 hover:text-red-700">×</button
+												>
+											</div>
+											{#if partRefHasOpenCandidates(part)}
+												<div>
+													<p class="text-xs font-medium text-amber-800">
+														Which BOM row matches this step?
+													</p>
+													<ul class="mt-1 space-y-1.5">
+														{#each bomCandidatesForPart(part) as candidate (candidate.id)}
+															<li class="flex items-center gap-2">
+																<span
+																	class="block w-full rounded bg-white px-2 py-1 text-sm text-slate-700 ring-1 ring-amber-200"
+																>
+																	{formatManualBomItem(candidate)}
+																	{#if candidate.description.trim()}
+																		<span class="text-slate-500">
+																			— {candidate.description.trim()}</span
+																		>
+																	{/if}
+																</span>
+																<button
+																	type="button"
+																	onclick={() => chooseBomCandidate(i, pi, candidate.id)}
+																	class="whitespace-nowrap rounded border border-amber-400 px-2 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100"
+																>
+																	Use this
+																</button>
+															</li>
+														{:else}
+															<li class="text-xs text-amber-700">
+																BOM candidates are no longer in this manual — edit the label or
+																re-upload.
+															</li>
+														{/each}
+													</ul>
+												</div>
+											{/if}
 										</div>
 									{/each}
 									{#if step.parts.length === 0}

@@ -193,4 +193,33 @@ describe('illustrateSteps', () => {
 		const written = await readFile(illustrationUrl);
 		expect(written.equals(keyframeBytes)).toBe(true);
 	});
+
+	it('threads regeneration guidance into requests and busts the cache (spec 16)', async () => {
+		const seen: (string | undefined)[] = [];
+		let calls = 0;
+		setIllustrateProviderFactory(
+			(): IllustrateProvider => ({
+				name: 'guidance-recording',
+				illustrate: (requests) => {
+					calls += 1;
+					for (const r of requests) seen.push(r.guidance);
+					return Promise.resolve(
+						requests.map((r) => ({
+							order: r.step.order,
+							imageBase64: PNG_BASE64,
+							mimeType: 'image/png'
+						}))
+					);
+				}
+			})
+		);
+
+		await illustrateSteps({ steps: baseSteps, outDir, guidance: 'make the arrow clearer' });
+		await illustrateSteps({ steps: baseSteps, outDir, guidance: 'make the arrow clearer' }); // cached
+		await illustrateSteps({ steps: baseSteps, outDir, guidance: 'use a top-down view' }); // new
+
+		expect(calls).toBe(2);
+		expect(seen).toContain('make the arrow clearer');
+		expect(seen).toContain('use a top-down view');
+	});
 });

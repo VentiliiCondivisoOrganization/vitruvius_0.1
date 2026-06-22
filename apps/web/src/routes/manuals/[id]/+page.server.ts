@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
-import { instructionManualSchema } from '@vitruvius/core';
-import { getManual, saveManual } from '@vitruvius/db';
+import { instructionManualSchema, regenerateRequestSchema } from '@vitruvius/core';
+import { enqueueJob, getManual, saveManual } from '@vitruvius/db';
 import type { Actions, PageServerLoad } from './$types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -74,5 +74,45 @@ export const actions: Actions = {
 		}
 
 		return { saved: true };
+	},
+
+	// Enqueue an AI regeneration of one step (spec 16). The web app never calls AI —
+	// it only validates the request and queues a `regenerate` job for the engine, which
+	// reuses the Instructor / Illustrator. Regeneration runs on the saved manual.
+	regenerate: async ({ params, request, locals }) => {
+		if (!UUID_RE.test(params.id)) error(404, 'Manual not found');
+
+		const manual = await getManual(locals.db, params.id);
+		if (!manual) error(404, 'Manual not found');
+		if (manual.status !== 'ready') {
+			return fail(409, { error: 'This manual is not ready for AI regeneration.' });
+		}
+
+		const form = await request.formData();
+		const stepId = form.get('stepId');
+		const parsed = regenerateRequestSchema.safeParse({
+			scope: form.get('scope'),
+			prompt: form.get('prompt'),
+			stepIds: typeof stepId === 'string' && stepId ? [stepId] : []
+		});
+		if (!parsed.success) {
+			return fail(400, { error: 'Pick a step and a scope, and enter a prompt to regenerate.' });
+		}
+		if (!manual.steps.some((step) => step.id === parsed.data.stepIds[0])) {
+			return fail(400, { error: 'That step is not part of this manual.' });
+		}
+
+		try {
+			await enqueueJob(locals.db, {
+				manualId: manual.id,
+				type: 'regenerate',
+				payload: parsed.data
+			});
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'unknown error';
+			return fail(500, { error: `Could not start regeneration: ${message}` });
+		}
+
+		return { regenerateQueued: true };
 	}
 };

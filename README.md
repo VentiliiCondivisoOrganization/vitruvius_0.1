@@ -98,7 +98,7 @@ Grill-me decisions and gap analysis: [`docs/ai/client-alignment-assessment.md`](
 | --------------- | --------- | ------------------------------------------------------------------------------ | ------------------ |
 | BOM layer       | 13        | BOM file import + reconcile with CAD; `PartRef[]`; AI only if ambiguous        | Merged (#34)       |
 | Illustrate      | 14 tier 1 | Illustrator (video-only path) + Compositor-lite (canonical CAD views + layout) | Implemented        |
-| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 | Spec stub          |
+| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 | Implemented        |
 | Versioning      | 17        | v1 → v2 enrich on same timeline                                                | Spec stub          |
 | Editor + export | 08, 09    | BOM disambiguation UI (like `alternatives`); schematic PDF; export gate        | BOM UI in progress |
 

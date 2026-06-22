@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import {
 		MANUAL_STATUS,
+		REGENERATE_SCOPE,
 		STEP_REVIEW_STATUS,
 		emptyPartRef,
 		formatManualBomItem,
@@ -60,6 +61,17 @@
 	function markDirty(): void {
 		dirty = true;
 	}
+
+	// ---- AI regeneration (spec 16) -----------------------------------------
+	// Enqueues a `regenerate` job for one step; the engine reuses Instructor/Illustrator.
+	// `structure` scope is not wired engine-side yet, so it is not offered here.
+	let regenerating = $state(false);
+	const regenScopes = REGENERATE_SCOPE.filter((scope) => scope !== 'structure');
+	const regenScopeLabels: Record<string, string> = {
+		text: 'Instruction text',
+		illustration: 'Illustration',
+		layout: 'Layout'
+	};
 
 	const reviewLabels: Record<StepReviewStatus, string> = {
 		hypothesis: 'Hypothesis',
@@ -309,6 +321,70 @@
 			</p>
 		</section>
 	{:else}
+		<form
+			method="POST"
+			action="?/regenerate"
+			use:enhance={() => {
+				regenerating = true;
+				return async ({ update }) => {
+					try {
+						await update({ reset: false });
+					} finally {
+						regenerating = false;
+					}
+				};
+			}}
+			class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+		>
+			<details>
+				<summary class="cursor-pointer text-sm font-semibold text-slate-700">
+					Regenerate a step with AI
+				</summary>
+				<p class="mt-2 text-xs text-slate-500">
+					Queues an AI pass on the saved manual — save your edits first. The step comes back as
+					<span class="font-mono">edited</span> for you to re-confirm.
+				</p>
+				<div class="mt-3 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+					<select
+						name="stepId"
+						required
+						class="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
+					>
+						<option value="" disabled selected>Choose a step…</option>
+						{#each manual.steps as step, i (step.id)}
+							<option value={step.id}>{i + 1}. {step.title}</option>
+						{/each}
+					</select>
+					<select
+						name="scope"
+						class="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
+					>
+						{#each regenScopes as scope (scope)}
+							<option value={scope}>{regenScopeLabels[scope]}</option>
+						{/each}
+					</select>
+					<button
+						type="submit"
+						disabled={regenerating}
+						class="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-100 disabled:opacity-50"
+					>
+						{regenerating ? 'Queuing…' : 'Regenerate'}
+					</button>
+				</div>
+				<input
+					name="prompt"
+					required
+					placeholder="What should change? e.g. “mention the 4mm hex key” or “make the arrow clearer”"
+					class="mt-3 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+				/>
+				{#if form?.regenerateQueued}
+					<p class="mt-3 rounded bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+						Regeneration queued. Reload in a moment to see the updated step.
+					</p>
+				{/if}
+			</details>
+		</form>
+
 		<form
 			method="POST"
 			action="?/save"

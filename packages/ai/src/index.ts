@@ -1,6 +1,8 @@
 import type { ManualStep, NewLearning } from '@vitruvius/core';
 import { critiqueSteps as runCritiqueSteps } from './critique/critique.js';
 import type { CritiqueInput } from './critique/types.js';
+import { illustrateSteps as runIllustrateSteps } from './illustrate/illustrate.js';
+import type { IllustrateInput } from './illustrate/types.js';
 import { enrichSteps } from './instruct/instruct.js';
 import type { InstructInput } from './instruct/types.js';
 import { distillLearnings as runDistillLearnings } from './learnings/distill.js';
@@ -11,6 +13,8 @@ import type { SegmentInput } from './segment/types.js';
 
 export { clearCritiqueCache } from './critique/cache.js';
 export type { CritiqueInput, CritiqueOptions } from './critique/types.js';
+export { clearIllustrateCache } from './illustrate/cache.js';
+export type { IllustrateInput, IllustrateOptions, IllustrationMode } from './illustrate/types.js';
 export { clearInstructCache } from './instruct/cache.js';
 export type { InstructInput, InstructOptions } from './instruct/types.js';
 export { isReusableLearning } from './learnings/distill.js';
@@ -23,6 +27,14 @@ export {
 	resetCritiqueProviderFactory,
 	setCritiqueProviderFactory
 } from './providers/critique-provider.js';
+export {
+	createIllustrateProvider,
+	GeminiIllustrateProvider,
+	getIllustrateProvider,
+	HeuristicIllustrateProvider,
+	resetIllustrateProviderFactory,
+	setIllustrateProviderFactory
+} from './providers/illustrate-provider.js';
 export {
 	createInstructProvider,
 	GeminiInstructProvider,
@@ -74,6 +86,16 @@ export async function segmentVideoIntoSteps(
  */
 export async function writeInstructions(input: InstructInput): Promise<ManualStep[]> {
 	return enrichSteps(input);
+}
+
+/**
+ * Illustrator agent (spec 14 tier 1): give each critic-reviewed step a print-ready
+ * `illustrationUrl` — an AI schematic redrawn from the video keyframe, or (with a primed
+ * CAD model) the schematic laid out on a canonical view (Compositor-lite). Generation is
+ * cached per step and the output is a file ref, never inline image bytes.
+ */
+export async function illustrateSteps(input: IllustrateInput): Promise<ManualStep[]> {
+	return runIllustrateSteps(input);
 }
 
 /**

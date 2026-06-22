@@ -32,6 +32,21 @@ export async function loadKeyframeParts(keyframes: Keyframe[]): Promise<GeminiPa
 	return parts;
 }
 
+/**
+ * Load an image (keyframe or canonical CAD view) as base64 bytes, resolving `file://`,
+ * plain local paths, and `http(s)` refs. Shared by providers that need the raw image
+ * either to send to a model or to reuse as a deterministic fallback illustration.
+ */
+export async function loadImageBase64(ref: string, fetchFn: typeof fetch = fetch): Promise<string> {
+	const path = ref.startsWith('file://') ? ref.slice('file://'.length) : ref;
+	if (/^https?:\/\//.test(path)) {
+		const res = await fetchFn(path);
+		if (!res.ok) throw new Error(`image fetch failed (${res.status}) for ${path}`);
+		return Buffer.from(await res.arrayBuffer()).toString('base64');
+	}
+	return (await readFile(path)).toString('base64');
+}
+
 export function mimeFromPath(path: string): string {
 	// Strip a file:// prefix and any query string / fragment (e.g. signed-URL params)
 	// so the extension is read from the real filename, not "...png?X-Amz-Signature=...".

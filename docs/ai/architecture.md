@@ -13,7 +13,8 @@ The [client alignment assessment](./client-alignment-assessment.md) (grill-me, 2
 (`illustrationUrl`), structured BOM per step (`PartRef`), optional CAD priming (spec 12), prompt
 regeneration in revision, and export gated on human confirmation. That target lands in **two
 engineering phases** — see [Pipeline](#pipeline-baseline-vs-target) below. Spec baseline `01`–`12`
-is implemented or in progress; extensions `13`, `14`, `16`, `17` are specified, not yet coded.
+is implemented; extension `13` is merged (#34) and `14` tier 1 (Illustrator + Compositor-lite) is
+implemented; `16` and `17` are specified, not yet coded.
 
 ## Repository structure
 

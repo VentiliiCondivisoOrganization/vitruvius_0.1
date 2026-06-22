@@ -92,15 +92,15 @@ flowchart TD
 
 Grill-me decisions and gap analysis: [`docs/ai/client-alignment-assessment.md`](docs/ai/client-alignment-assessment.md).
 
-**Phase 1 (next specs)** — illustrated manual without pose alignment:
+**Phase 1 (client deliverable)** — illustrated manual without pose alignment:
 
-| Addition        | Spec      | Role                                                                           |
-| --------------- | --------- | ------------------------------------------------------------------------------ |
-| BOM layer       | 13        | BOM file import + reconcile with CAD; `PartRef[]`; AI only if ambiguous        |
-| Illustrate      | 14 tier 1 | Illustrator (video-only path) + Compositor-lite (canonical CAD views + layout) |
-| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 |
-| Versioning      | 17        | v1 → v2 enrich on same timeline                                                |
-| Editor + export | 08, 09    | BOM disambiguation UI (like `alternatives`); schematic PDF; export gate        |
+| Addition        | Spec      | Role                                                                           | Status             |
+| --------------- | --------- | ------------------------------------------------------------------------------ | ------------------ |
+| BOM layer       | 13        | BOM file import + reconcile with CAD; `PartRef[]`; AI only if ambiguous        | Merged (#34)       |
+| Illustrate      | 14 tier 1 | Illustrator (video-only path) + Compositor-lite (canonical CAD views + layout) | Implemented        |
+| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 | Spec stub          |
+| Versioning      | 17        | v1 → v2 enrich on same timeline                                                | Spec stub          |
+| Editor + export | 08, 09    | BOM disambiguation UI (like `alternatives`); schematic PDF; export gate        | BOM UI in progress |
 
 **Phase 2** — Compositor-full (CAD geometry overlay per step) requires video↔CAD pose alignment
 (research; out of scope for spec 12).

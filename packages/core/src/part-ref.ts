@@ -38,16 +38,17 @@ export function formatManualBomItem(item: ManualBomItem): string {
 	const code = item.bomCode?.trim();
 	const name = item.partName.trim();
 	if (code && name) return `${code} — ${name}`;
-	return code || name || item.description.trim();
+	return code || name || item.description.trim() || item.id;
 }
 
 /** Editor resolves an ambiguous part by binding it to a manual BOM row (spec 08). */
 export function resolvePartRefBomCandidate(part: PartRef, item: ManualBomItem): PartRef {
 	return {
 		bomItemId: item.id,
-		label: item.partName,
-		bomCode: item.bomCode,
-		description: item.description,
-		confidence: part.confidence
+		label: item.partName.trim(),
+		bomCode: item.bomCode?.trim(),
+		description: item.description.trim(),
+		confidence: part.confidence,
+		candidateBomItemIds: undefined
 	};
 }

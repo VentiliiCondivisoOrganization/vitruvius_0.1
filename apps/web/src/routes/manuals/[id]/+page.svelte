@@ -549,6 +549,7 @@
 												<button
 													type="button"
 													onclick={() => removePart(i, pi)}
+													aria-label="Remove part {part.label || pi + 1}"
 													class="text-xs text-red-500 hover:text-red-700">×</button
 												>
 											</div>

@@ -57,9 +57,10 @@ Branch `feat/web-bom-disambiguation`:
 | -------------------- | ----------------------------------------------- |
 | 01-core              | Bootstrap done; PartRef extension merged (#33)  |
 | 02-db                | Done; migrations 0006 (#33) + 0007 (#34)        |
-| 03–12                | Done on `main`                                  |
-| 13-bom-map           | **Merged** (#34)                                |
+| 03–07                | Done on `main`                                  |
 | 08-web-editor        | **BOM disambiguation UI in progress** (08 ext.) |
+| 09–12                | Done on `main`                                  |
+| 13-bom-map           | **Merged** (#34)                                |
 | 14-ai-illustrate     | Spec stub                                       |
 | 16-regenerate-job    | Spec stub                                       |
 | 17-manual-versioning | Spec stub                                       |

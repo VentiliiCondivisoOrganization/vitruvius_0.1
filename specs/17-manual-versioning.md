@@ -10,7 +10,7 @@ immutable manual version (v1 → v2 → …) so the original stays intact and ex
 > domanda 10. The contract fields (`version`, `parentVersionId`) and the `enrich` job type are
 > **already landed** (#33/#44); this spec is the source of truth for the remaining end-to-end slice:
 > the web trigger, the version list/open UI, the immutability rule, and how enrichment preserves
-> human edits. Where the shipped code diverges from the rules below, the code is wrong — not the spec.
+> human edits.
 
 ## Why this exists
 

@@ -2,7 +2,7 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-23 (spec 14 tier 1 merged #40; spec 16 regenerate merged #41; spec 17 manual versioning implemented; spec 13 merged #34; spec 08 BOM disambiguation UI in progress)._
+_Last updated: 2026-06-23 (spec 14 tier 1 merged #40; spec 16 regenerate merged #41; spec 17 manual versioning implemented end-to-end incl. editor trigger/switcher/freeze; spec 13 merged #34; spec 08 BOM disambiguation merged #35/#43)._
 
 ## Client alignment roadmap
 
@@ -83,22 +83,27 @@ Branch `claude/sleepy-ptolemy-wwo15q` (on top of specs 14 + 16):
   the lineage.
 - `apps/engine`: claims `enrich`, re-maps BOM and re-illustrates on the existing step timeline
   (no re-segmentation), reusing the spec 13 / 14 agents.
+- `apps/web` (spec 17 redesign): the missing end-to-end slice — an editor "Add BOM / digital
+  model" action that stores the new files and calls `createManualVersion` (→ `enrich` job), a
+  version switcher driven by `listManualVersions`, and the **freeze rule** (only the head of a
+  lineage is editable; older versions are read-only but exportable, enforced server-side on
+  `save`/`regenerate`/`enrich`). Shared upload helpers extracted to `lib/server/uploads.ts`.
 
 ### Next vertical slices (phase 1)
 
-Phase 1 core slices (13, 14, 16, 17) are implemented; remaining work is the spec 08 / 09
-export gate + schematic PDF polish.
+Phase 1 core slices (13, 14, 16, 17) are implemented end-to-end; remaining work is the
+spec 08 / 09 export gate + schematic PDF polish.
 
 ## Spec status matrix
 
-| Spec                 | Status                                                            |
-| -------------------- | ----------------------------------------------------------------- |
-| 01-core              | Bootstrap done; PartRef extension merged (#33)                    |
-| 02-db                | Done; migrations 0006 (#33) + 0007 (#34)                          |
-| 03–07                | Done on `main`                                                    |
-| 08-web-editor        | **BOM disambiguation UI in progress** (08 ext.)                   |
-| 09–12                | Done on `main`                                                    |
-| 13-bom-map           | **Merged** (#34)                                                  |
-| 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite)           |
-| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout; structure deferred) |
-| 17-manual-versioning | **Implemented** (version lineage + `enrich` job; v1→v2 timeline)  |
+| Spec                 | Status                                                                    |
+| -------------------- | ------------------------------------------------------------------------- |
+| 01-core              | Bootstrap done; PartRef extension merged (#33)                            |
+| 02-db                | Done; migrations 0006 (#33) + 0007 (#34)                                  |
+| 03–07                | Done on `main`                                                            |
+| 08-web-editor        | **BOM disambiguation UI in progress** (08 ext.)                           |
+| 09–12                | Done on `main`                                                            |
+| 13-bom-map           | **Merged** (#34)                                                          |
+| 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite)                   |
+| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout; structure deferred)         |
+| 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze) |

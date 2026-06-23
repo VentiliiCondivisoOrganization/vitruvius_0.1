@@ -19,7 +19,7 @@ names and fastener codes that turn a draft into an IKEA-style manual often live 
 export that is **not available when the video is first uploaded** — it shows up later. Re-running the
 whole expensive pipeline (re-segmentation, re-instruction, re-critique) to absorb that file would
 waste credits and, worse, **throw away the human review already done on v1**. Versioning lets the
-engine re-map BOM (spec 13) and re-illustrate (spec 14) onto the *existing* steps, cheaply, while
+engine re-map BOM (spec 13) and re-illustrate (spec 14) onto the _existing_ steps, cheaply, while
 keeping v1 frozen as an auditable, still-exportable snapshot.
 
 ## The version model
@@ -74,7 +74,7 @@ keeping v1 frozen as an auditable, still-exportable snapshot.
   disambiguation, and **re-illustrate** only when a model is `primed` (spec 14, Compositor-lite).
   Illustration failure is non-fatal (keyframes remain export evidence), matching `process`.
 - **Preserve human work:** copy `title`, `instruction`, `tools`, `warnings`, `alternatives`, and each
-  step's `reviewStatus`/`critique` from the parent unchanged. Enrich only *derives* `parts`, `bom`,
+  step's `reviewStatus`/`critique` from the parent unchanged. Enrich only _derives_ `parts`, `bom`,
   and `illustrationUrl`. It must **not** rewrite instruction text or silently re-confirm/-unconfirm a
   step's `reviewStatus`.
 - Newly-introduced ambiguous parts surface as `candidateBomItemIds`; the **export gate (spec 09)

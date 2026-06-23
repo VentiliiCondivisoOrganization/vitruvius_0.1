@@ -22,6 +22,13 @@
 	const manual = $derived(data.manual);
 	const isReady = $derived(manual.status === 'ready');
 
+	// ---- Versioning (spec 17) ----------------------------------------------
+	// Only the head of a lineage is editable; older versions are read-only snapshots
+	// (still exportable). The switcher lets the user jump between versions.
+	const versions = $derived(data.versions);
+	const readOnly = $derived(!data.isHead);
+	let enriching = $state(false);
+
 	// ---- Status view (non-ready manuals) -----------------------------------
 	// Derive the happy-path pipeline from the contract so it can't drift; `failed`
 	// is a terminal state shown on its own, not a stage.
@@ -297,7 +304,27 @@
 	<header class="space-y-2">
 		<a href={resolve('/')} class="text-sm text-slate-500 hover:text-slate-700">← Upload another</a>
 		<h1 class="text-3xl font-bold tracking-tight text-slate-900">{manual.title}</h1>
-		<p class="text-sm text-slate-500">Manual <span class="font-mono">{manual.id}</span></p>
+		<p class="text-sm text-slate-500">
+			Manual <span class="font-mono">{manual.id}</span> · version {manual.version}
+		</p>
+
+		{#if versions.length > 1}
+			<nav class="flex flex-wrap items-center gap-2 pt-1 text-sm">
+				<span class="text-xs font-medium uppercase tracking-wide text-slate-400">Versions</span>
+				{#each versions as v (v.id)}
+					{@const current = v.id === manual.id}
+					<a
+						href={resolve(`/manuals/${v.id}`)}
+						aria-current={current ? 'page' : undefined}
+						class="rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset {current
+							? 'bg-slate-900 text-slate-100 ring-slate-900'
+							: 'text-slate-600 ring-slate-300 hover:bg-slate-50'}"
+					>
+						v{v.version}
+					</a>
+				{/each}
+			</nav>
+		{/if}
 	</header>
 
 	{#if !isReady}
@@ -330,69 +357,133 @@
 			</p>
 		</section>
 	{:else}
-		<form
-			method="POST"
-			action="?/regenerate"
-			use:enhance={() => {
-				regenerating = true;
-				return async ({ update }) => {
-					try {
-						await update({ reset: false });
-					} finally {
-						regenerating = false;
-					}
-				};
-			}}
-			class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-		>
-			<details>
-				<summary class="cursor-pointer text-sm font-semibold text-slate-700">
-					Regenerate a step with AI
-				</summary>
-				<p class="mt-2 text-xs text-slate-500">
-					Queues an AI pass on the saved manual — save your edits first. The step comes back as
-					<span class="font-mono">edited</span> for you to re-confirm.
-				</p>
-				<div class="mt-3 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
-					<select
-						name="stepId"
-						required
-						class="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
-					>
-						<option value="" disabled selected>Choose a step…</option>
-						{#each manual.steps as step, i (step.id)}
-							<option value={step.id}>{i + 1}. {step.title}</option>
-						{/each}
-					</select>
-					<select
-						name="scope"
-						class="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
-					>
-						{#each regenScopes as scope (scope)}
-							<option value={scope}>{regenScopeLabels[scope]}</option>
-						{/each}
-					</select>
+		{#if readOnly}
+			<p class="rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+				This is version {manual.version}, a read-only snapshot. Open the latest version to edit; you
+				can still export this one.
+			</p>
+		{/if}
+
+		{#if !readOnly}
+			<form
+				method="POST"
+				action="?/enrich"
+				enctype="multipart/form-data"
+				use:enhance={() => {
+					enriching = true;
+					return async ({ update }) => {
+						try {
+							await update({ reset: false });
+						} finally {
+							enriching = false;
+						}
+					};
+				}}
+				class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+			>
+				<details>
+					<summary class="cursor-pointer text-sm font-semibold text-slate-700">
+						Add BOM / digital model (new version)
+					</summary>
+					<p class="mt-2 text-xs text-slate-500">
+						Got the parts list or CAD after recording? Attach it to create version {manual.version +
+							1} on the same step timeline — the engine re-maps parts and re-illustrates without re-watching
+						the video. This version stays as a snapshot.
+					</p>
+					<div class="mt-3 grid gap-3 sm:grid-cols-2">
+						<label class="block text-xs font-medium text-slate-600">
+							BOM file (CSV)
+							<input
+								type="file"
+								name="bom"
+								accept=".csv"
+								class="mt-1 block w-full text-sm text-slate-700 file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium"
+							/>
+						</label>
+						<label class="block text-xs font-medium text-slate-600">
+							Digital model (STEP/OBJ/STL)
+							<input
+								type="file"
+								name="model"
+								accept=".step,.stp,.obj,.stl"
+								class="mt-1 block w-full text-sm text-slate-700 file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium"
+							/>
+						</label>
+					</div>
 					<button
 						type="submit"
-						disabled={regenerating}
-						class="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-100 disabled:opacity-50"
+						disabled={enriching}
+						class="mt-3 rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-100 disabled:opacity-50"
 					>
-						{regenerating ? 'Queuing…' : 'Regenerate'}
+						{enriching ? 'Creating version…' : `Create version ${manual.version + 1}`}
 					</button>
-				</div>
-				<input
-					name="prompt"
-					required
-					placeholder="What should change? e.g. “mention the 4mm hex key” or “make the arrow clearer”"
-					class="mt-3 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-				/>
-				{#if form?.regenerateQueued}
-					<p class="mt-3 rounded bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-						Regeneration queued. Reload in a moment to see the updated step.
+				</details>
+			</form>
+
+			<form
+				method="POST"
+				action="?/regenerate"
+				use:enhance={() => {
+					regenerating = true;
+					return async ({ update }) => {
+						try {
+							await update({ reset: false });
+						} finally {
+							regenerating = false;
+						}
+					};
+				}}
+				class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+			>
+				<details>
+					<summary class="cursor-pointer text-sm font-semibold text-slate-700">
+						Regenerate a step with AI
+					</summary>
+					<p class="mt-2 text-xs text-slate-500">
+						Queues an AI pass on the saved manual — save your edits first. The step comes back as
+						<span class="font-mono">edited</span> for you to re-confirm.
 					</p>
-				{/if}
-			</details>
-		</form>
+					<div class="mt-3 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+						<select
+							name="stepId"
+							required
+							class="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
+						>
+							<option value="" disabled selected>Choose a step…</option>
+							{#each manual.steps as step, i (step.id)}
+								<option value={step.id}>{i + 1}. {step.title}</option>
+							{/each}
+						</select>
+						<select
+							name="scope"
+							class="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
+						>
+							{#each regenScopes as scope (scope)}
+								<option value={scope}>{regenScopeLabels[scope]}</option>
+							{/each}
+						</select>
+						<button
+							type="submit"
+							disabled={regenerating}
+							class="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-100 disabled:opacity-50"
+						>
+							{regenerating ? 'Queuing…' : 'Regenerate'}
+						</button>
+					</div>
+					<input
+						name="prompt"
+						required
+						placeholder="What should change? e.g. “mention the 4mm hex key” or “make the arrow clearer”"
+						class="mt-3 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+					/>
+					{#if form?.regenerateQueued}
+						<p class="mt-3 rounded bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+							Regeneration queued. Reload in a moment to see the updated step.
+						</p>
+					{/if}
+				</details>
+			</form>
+		{/if}
 
 		<form
 			method="POST"
@@ -411,373 +502,378 @@
 		>
 			<input type="hidden" name="payload" value={payload} />
 
-			<div
-				class="sticky top-0 z-10 -mx-6 mb-6 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur"
-			>
-				<div class="text-sm text-slate-600">
-					{steps.length}
-					{steps.length === 1 ? 'step' : 'steps'}
-					{#if dirty}
-						<span class="ml-2 text-amber-600">• unsaved changes</span>
-					{:else if form?.saved}
-						<span class="ml-2 text-emerald-600">• saved</span>
-					{/if}
-				</div>
-				<div class="flex items-center gap-2">
-					<a
-						href={resolve(`/manuals/${manual.id}/export`)}
-						class="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-					>
-						Export
-					</a>
-					<button
-						type="button"
-						onclick={addStep}
-						class="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-					>
-						+ Add step
-					</button>
-					<button
-						type="submit"
-						disabled={saving || !dirty}
-						class="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-100 disabled:opacity-50"
-					>
-						{saving ? 'Saving…' : 'Save changes'}
-					</button>
-				</div>
-			</div>
-
-			{#if form?.error}
-				<p class="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{form.error}</p>
-			{/if}
-
-			{#if openBomPartCount > 0}
-				<p
-					class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+			<!-- A disabled fieldset makes the whole editor read-only on a frozen (non-head)
+			     version in one native step; the Export link is unaffected (spec 17). -->
+			<fieldset disabled={readOnly} class="m-0 min-w-0 border-0 p-0">
+				<div
+					class="sticky top-0 z-10 -mx-6 mb-6 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur"
 				>
-					{openBomPartCount} component{openBomPartCount === 1 ? '' : 's'} need a BOM choice before export.
-					Pick one option per highlighted part below, then save.
-				</p>
-			{/if}
-
-			{#if steps.length === 0}
-				<p
-					class="rounded border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500"
-				>
-					This manual has no steps yet. Add one to start building it.
-				</p>
-			{/if}
-
-			<ol class="space-y-6">
-				{#each steps as step, i (step.id)}
-					<li class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-						<div class="mb-3 flex items-start justify-between gap-3">
-							<div class="flex items-center gap-2">
-								<span
-									class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-slate-100"
-								>
-									{i + 1}
-								</span>
-								<span
-									class="rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset {reviewStyles[
-										step.reviewStatus
-									]}"
-								>
-									{reviewLabels[step.reviewStatus]}
-								</span>
-								<span class="text-xs text-slate-500">
-									confidence {confidencePct(step.confidence)}%
-								</span>
-							</div>
-							<div class="flex items-center gap-1">
-								<button
-									type="button"
-									title="Move up"
-									onclick={() => moveStep(i, -1)}
-									disabled={i === 0}
-									class="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30"
-								>
-									↑
-								</button>
-								<button
-									type="button"
-									title="Move down"
-									onclick={() => moveStep(i, 1)}
-									disabled={i === steps.length - 1}
-									class="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30"
-								>
-									↓
-								</button>
-								<button
-									type="button"
-									title="Remove step"
-									onclick={() => removeStep(i)}
-									class="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50"
-								>
-									Remove
-								</button>
-							</div>
-						</div>
-
-						<!-- Confidence bar -->
-						<div class="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-							<div
-								class="h-full rounded-full {step.confidence < 0.5
-									? 'bg-amber-400'
-									: 'bg-emerald-400'}"
-								style="width: {confidencePct(step.confidence)}%"
-							></div>
-						</div>
-
-						<!-- Critic flags (spec 10), surfaced when present -->
-						{#if step.critique.length > 0}
-							<div class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2">
-								<p class="text-xs font-semibold uppercase tracking-wide text-amber-700">
-									Critic flags
-								</p>
-								<ul class="mt-1 list-disc space-y-0.5 pl-4 text-sm text-amber-800">
-									{#each step.critique as flag, fi (fi)}
-										<li>{flag}</li>
-									{/each}
-								</ul>
-							</div>
+					<div class="text-sm text-slate-600">
+						{steps.length}
+						{steps.length === 1 ? 'step' : 'steps'}
+						{#if dirty}
+							<span class="ml-2 text-amber-600">• unsaved changes</span>
+						{:else if form?.saved}
+							<span class="ml-2 text-emerald-600">• saved</span>
 						{/if}
+					</div>
+					<div class="flex items-center gap-2">
+						<a
+							href={resolve(`/manuals/${manual.id}/export`)}
+							class="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+						>
+							Export
+						</a>
+						<button
+							type="button"
+							onclick={addStep}
+							class="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+						>
+							+ Add step
+						</button>
+						<button
+							type="submit"
+							disabled={saving || !dirty}
+							class="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-100 disabled:opacity-50"
+						>
+							{saving ? 'Saving…' : 'Save changes'}
+						</button>
+					</div>
+				</div>
 
-						<div class="grid gap-4">
-							<label class="block">
-								<span class="text-xs font-medium uppercase tracking-wide text-slate-500">Title</span
-								>
-								<input
-									type="text"
-									bind:value={step.title}
-									oninput={() => touchStep(i)}
-									class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-								/>
-							</label>
+				{#if form?.error}
+					<p class="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{form.error}</p>
+				{/if}
 
-							<label class="block">
-								<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-									Instruction
-								</span>
-								<textarea
-									bind:value={step.instruction}
-									oninput={() => touchStep(i)}
-									rows="3"
-									placeholder="Describe what to do in this step. Note any missing info here."
-									class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-								></textarea>
-							</label>
+				{#if openBomPartCount > 0}
+					<p
+						class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+					>
+						{openBomPartCount} component{openBomPartCount === 1 ? '' : 's'} need a BOM choice before export.
+						Pick one option per highlighted part below, then save.
+					</p>
+				{/if}
 
-							<div class="grid grid-cols-2 gap-4">
-								<label class="block">
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										Start (ms)
+				{#if steps.length === 0}
+					<p
+						class="rounded border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500"
+					>
+						This manual has no steps yet. Add one to start building it.
+					</p>
+				{/if}
+
+				<ol class="space-y-6">
+					{#each steps as step, i (step.id)}
+						<li class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+							<div class="mb-3 flex items-start justify-between gap-3">
+								<div class="flex items-center gap-2">
+									<span
+										class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-slate-100"
+									>
+										{i + 1}
 									</span>
-									<input
-										type="number"
-										min="0"
-										bind:value={step.startMs}
-										oninput={() => touchStep(i)}
-										class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-									/>
-								</label>
-								<label class="block">
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										End (ms)
+									<span
+										class="rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset {reviewStyles[
+											step.reviewStatus
+										]}"
+									>
+										{reviewLabels[step.reviewStatus]}
 									</span>
-									<input
-										type="number"
-										min="0"
-										bind:value={step.endMs}
-										oninput={() => touchStep(i)}
-										class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-									/>
-								</label>
-							</div>
-
-							<!-- Components / parts -->
-							<div>
-								<div class="flex items-center justify-between">
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										Components / parts
+									<span class="text-xs text-slate-500">
+										confidence {confidencePct(step.confidence)}%
 									</span>
+								</div>
+								<div class="flex items-center gap-1">
 									<button
 										type="button"
-										onclick={() => addPart(i)}
-										class="text-xs text-slate-500 hover:text-slate-800"
+										title="Move up"
+										onclick={() => moveStep(i, -1)}
+										disabled={i === 0}
+										class="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30"
 									>
-										+ Add
+										↑
 									</button>
-								</div>
-								<div class="mt-1 space-y-3">
-									{#each step.parts as part, pi (pi)}
-										<BomPartPicker
-											{part}
-											partIndex={pi}
-											bomCandidates={bomCandidatesByPart.get(part) ?? []}
-											onUpdateLabel={(val) => updatePartLabel(i, pi, val)}
-											onRemove={() => removePart(i, pi)}
-											onChooseCandidate={(bomItemId) => chooseBomCandidate(i, pi, bomItemId)}
-										/>
-									{/each}
-									{#if step.parts.length === 0}
-										<p class="text-xs text-slate-400">No parts listed.</p>
-									{/if}
+									<button
+										type="button"
+										title="Move down"
+										onclick={() => moveStep(i, 1)}
+										disabled={i === steps.length - 1}
+										class="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+									>
+										↓
+									</button>
+									<button
+										type="button"
+										title="Remove step"
+										onclick={() => removeStep(i)}
+										class="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50"
+									>
+										Remove
+									</button>
 								</div>
 							</div>
 
-							<!-- Tools -->
-							<div>
-								<div class="flex items-center justify-between">
+							<!-- Confidence bar -->
+							<div class="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+								<div
+									class="h-full rounded-full {step.confidence < 0.5
+										? 'bg-amber-400'
+										: 'bg-emerald-400'}"
+									style="width: {confidencePct(step.confidence)}%"
+								></div>
+							</div>
+
+							<!-- Critic flags (spec 10), surfaced when present -->
+							{#if step.critique.length > 0}
+								<div class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2">
+									<p class="text-xs font-semibold uppercase tracking-wide text-amber-700">
+										Critic flags
+									</p>
+									<ul class="mt-1 list-disc space-y-0.5 pl-4 text-sm text-amber-800">
+										{#each step.critique as flag, fi (fi)}
+											<li>{flag}</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+
+							<div class="grid gap-4">
+								<label class="block">
 									<span class="text-xs font-medium uppercase tracking-wide text-slate-500"
-										>Tools</span
+										>Title</span
 									>
-									<button
-										type="button"
-										onclick={() => addItem(i, 'tools')}
-										class="text-xs text-slate-500 hover:text-slate-800"
-									>
-										+ Add
-									</button>
-								</div>
-								<div class="mt-1 space-y-1.5">
-									{#each step.tools as tool, ti (ti)}
-										<div class="flex items-center gap-2">
-											<input
-												type="text"
-												value={tool}
-												oninput={(e) => updateItem(i, 'tools', ti, e.currentTarget.value)}
-												class="block w-full rounded border border-slate-300 px-2 py-1 text-sm text-slate-900"
-											/>
-											<button
-												type="button"
-												onclick={() => removeItem(i, 'tools', ti)}
-												class="text-xs text-red-500 hover:text-red-700">×</button
-											>
-										</div>
-									{/each}
-									{#if step.tools.length === 0}
-										<p class="text-xs text-slate-400">No tools listed.</p>
-									{/if}
-								</div>
-							</div>
+									<input
+										type="text"
+										bind:value={step.title}
+										oninput={() => touchStep(i)}
+										class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+									/>
+								</label>
 
-							<!-- Warnings / quality checks -->
-							<div>
-								<div class="flex items-center justify-between">
+								<label class="block">
 									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										Warnings &amp; quality checks
+										Instruction
 									</span>
-									<button
-										type="button"
-										onclick={() => addItem(i, 'warnings')}
-										class="text-xs text-slate-500 hover:text-slate-800"
-									>
-										+ Add
-									</button>
-								</div>
-								<div class="mt-1 space-y-1.5">
-									{#each step.warnings as warning, wi (wi)}
-										<div class="flex items-center gap-2">
-											<input
-												type="text"
-												value={warning}
-												oninput={(e) => updateItem(i, 'warnings', wi, e.currentTarget.value)}
-												placeholder="e.g. Wear gloves / Check the panel is flush"
-												class="block w-full rounded border border-amber-300 bg-amber-50/40 px-2 py-1 text-sm text-slate-900"
-											/>
-											<button
-												type="button"
-												onclick={() => removeItem(i, 'warnings', wi)}
-												class="text-xs text-red-500 hover:text-red-700">×</button
-											>
-										</div>
-									{/each}
-									{#if step.warnings.length === 0}
-										<p class="text-xs text-slate-400">No warnings or checks.</p>
-									{/if}
-								</div>
-							</div>
+									<textarea
+										bind:value={step.instruction}
+										oninput={() => touchStep(i)}
+										rows="3"
+										placeholder="Describe what to do in this step. Note any missing info here."
+										class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+									></textarea>
+								</label>
 
-							<!-- Alternatives -->
-							{#if step.alternatives.length > 0}
+								<div class="grid grid-cols-2 gap-4">
+									<label class="block">
+										<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
+											Start (ms)
+										</span>
+										<input
+											type="number"
+											min="0"
+											bind:value={step.startMs}
+											oninput={() => touchStep(i)}
+											class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+										/>
+									</label>
+									<label class="block">
+										<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
+											End (ms)
+										</span>
+										<input
+											type="number"
+											min="0"
+											bind:value={step.endMs}
+											oninput={() => touchStep(i)}
+											class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
+										/>
+									</label>
+								</div>
+
+								<!-- Components / parts -->
 								<div>
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										Alternatives
-									</span>
-									<ul class="mt-1 space-y-1.5">
-										{#each step.alternatives as alt, ai (ai)}
-											<li class="flex items-center gap-2">
-												<span
-													class="block w-full rounded bg-slate-50 px-2 py-1 text-sm text-slate-700"
-												>
-													{alt}
-												</span>
+									<div class="flex items-center justify-between">
+										<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
+											Components / parts
+										</span>
+										<button
+											type="button"
+											onclick={() => addPart(i)}
+											class="text-xs text-slate-500 hover:text-slate-800"
+										>
+											+ Add
+										</button>
+									</div>
+									<div class="mt-1 space-y-3">
+										{#each step.parts as part, pi (pi)}
+											<BomPartPicker
+												{part}
+												partIndex={pi}
+												bomCandidates={bomCandidatesByPart.get(part) ?? []}
+												onUpdateLabel={(val) => updatePartLabel(i, pi, val)}
+												onRemove={() => removePart(i, pi)}
+												onChooseCandidate={(bomItemId) => chooseBomCandidate(i, pi, bomItemId)}
+											/>
+										{/each}
+										{#if step.parts.length === 0}
+											<p class="text-xs text-slate-400">No parts listed.</p>
+										{/if}
+									</div>
+								</div>
+
+								<!-- Tools -->
+								<div>
+									<div class="flex items-center justify-between">
+										<span class="text-xs font-medium uppercase tracking-wide text-slate-500"
+											>Tools</span
+										>
+										<button
+											type="button"
+											onclick={() => addItem(i, 'tools')}
+											class="text-xs text-slate-500 hover:text-slate-800"
+										>
+											+ Add
+										</button>
+									</div>
+									<div class="mt-1 space-y-1.5">
+										{#each step.tools as tool, ti (ti)}
+											<div class="flex items-center gap-2">
+												<input
+													type="text"
+													value={tool}
+													oninput={(e) => updateItem(i, 'tools', ti, e.currentTarget.value)}
+													class="block w-full rounded border border-slate-300 px-2 py-1 text-sm text-slate-900"
+												/>
 												<button
 													type="button"
-													onclick={() => chooseAlternative(i, ai)}
-													class="whitespace-nowrap rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
+													onclick={() => removeItem(i, 'tools', ti)}
+													class="text-xs text-red-500 hover:text-red-700">×</button
 												>
-													Use this
-												</button>
-											</li>
+											</div>
 										{/each}
-									</ul>
+										{#if step.tools.length === 0}
+											<p class="text-xs text-slate-400">No tools listed.</p>
+										{/if}
+									</div>
 								</div>
-							{/if}
 
-							<!-- Source notes (read-only evidence) -->
-							{#if step.sourceNotes.length > 0}
-								<details class="rounded border border-slate-200 bg-slate-50 px-3 py-2">
-									<summary
-										class="cursor-pointer text-xs font-medium uppercase tracking-wide text-slate-500"
-									>
-										Source notes ({step.sourceNotes.length})
-									</summary>
-									<ul class="mt-2 list-disc space-y-0.5 pl-4 text-sm text-slate-600">
-										{#each step.sourceNotes as note, ni (ni)}
-											<li>{note}</li>
+								<!-- Warnings / quality checks -->
+								<div>
+									<div class="flex items-center justify-between">
+										<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
+											Warnings &amp; quality checks
+										</span>
+										<button
+											type="button"
+											onclick={() => addItem(i, 'warnings')}
+											class="text-xs text-slate-500 hover:text-slate-800"
+										>
+											+ Add
+										</button>
+									</div>
+									<div class="mt-1 space-y-1.5">
+										{#each step.warnings as warning, wi (wi)}
+											<div class="flex items-center gap-2">
+												<input
+													type="text"
+													value={warning}
+													oninput={(e) => updateItem(i, 'warnings', wi, e.currentTarget.value)}
+													placeholder="e.g. Wear gloves / Check the panel is flush"
+													class="block w-full rounded border border-amber-300 bg-amber-50/40 px-2 py-1 text-sm text-slate-900"
+												/>
+												<button
+													type="button"
+													onclick={() => removeItem(i, 'warnings', wi)}
+													class="text-xs text-red-500 hover:text-red-700">×</button
+												>
+											</div>
 										{/each}
-									</ul>
-								</details>
-							{/if}
-						</div>
+										{#if step.warnings.length === 0}
+											<p class="text-xs text-slate-400">No warnings or checks.</p>
+										{/if}
+									</div>
+								</div>
 
-						<!-- Step-level actions: review status + split/merge -->
-						<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-							<span class="text-xs text-slate-400">Mark as:</span>
-							{#each STEP_REVIEW_STATUS as status (status)}
+								<!-- Alternatives -->
+								{#if step.alternatives.length > 0}
+									<div>
+										<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
+											Alternatives
+										</span>
+										<ul class="mt-1 space-y-1.5">
+											{#each step.alternatives as alt, ai (ai)}
+												<li class="flex items-center gap-2">
+													<span
+														class="block w-full rounded bg-slate-50 px-2 py-1 text-sm text-slate-700"
+													>
+														{alt}
+													</span>
+													<button
+														type="button"
+														onclick={() => chooseAlternative(i, ai)}
+														class="whitespace-nowrap rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
+													>
+														Use this
+													</button>
+												</li>
+											{/each}
+										</ul>
+									</div>
+								{/if}
+
+								<!-- Source notes (read-only evidence) -->
+								{#if step.sourceNotes.length > 0}
+									<details class="rounded border border-slate-200 bg-slate-50 px-3 py-2">
+										<summary
+											class="cursor-pointer text-xs font-medium uppercase tracking-wide text-slate-500"
+										>
+											Source notes ({step.sourceNotes.length})
+										</summary>
+										<ul class="mt-2 list-disc space-y-0.5 pl-4 text-sm text-slate-600">
+											{#each step.sourceNotes as note, ni (ni)}
+												<li>{note}</li>
+											{/each}
+										</ul>
+									</details>
+								{/if}
+							</div>
+
+							<!-- Step-level actions: review status + split/merge -->
+							<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+								<span class="text-xs text-slate-400">Mark as:</span>
+								{#each STEP_REVIEW_STATUS as status (status)}
+									<button
+										type="button"
+										onclick={() => setReviewStatus(i, status)}
+										class="rounded px-2 py-1 text-xs font-medium ring-1 ring-inset {step.reviewStatus ===
+										status
+											? reviewStyles[status]
+											: 'text-slate-500 ring-slate-200 hover:bg-slate-50'}"
+									>
+										{reviewLabels[status]}
+									</button>
+								{/each}
+								<span class="mx-1 h-4 w-px bg-slate-200"></span>
 								<button
 									type="button"
-									onclick={() => setReviewStatus(i, status)}
-									class="rounded px-2 py-1 text-xs font-medium ring-1 ring-inset {step.reviewStatus ===
-									status
-										? reviewStyles[status]
-										: 'text-slate-500 ring-slate-200 hover:bg-slate-50'}"
+									onclick={() => splitStep(i)}
+									class="rounded px-2 py-1 text-xs text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
 								>
-									{reviewLabels[status]}
+									Split
 								</button>
-							{/each}
-							<span class="mx-1 h-4 w-px bg-slate-200"></span>
-							<button
-								type="button"
-								onclick={() => splitStep(i)}
-								class="rounded px-2 py-1 text-xs text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
-							>
-								Split
-							</button>
-							<button
-								type="button"
-								onclick={() => mergeWithNext(i)}
-								disabled={i === steps.length - 1}
-								class="rounded px-2 py-1 text-xs text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50 disabled:opacity-30"
-							>
-								Merge with next
-							</button>
-						</div>
-					</li>
-				{/each}
-			</ol>
+								<button
+									type="button"
+									onclick={() => mergeWithNext(i)}
+									disabled={i === steps.length - 1}
+									class="rounded px-2 py-1 text-xs text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50 disabled:opacity-30"
+								>
+									Merge with next
+								</button>
+							</div>
+						</li>
+					{/each}
+				</ol>
+			</fieldset>
 		</form>
 	{/if}
 </main>

@@ -1,25 +1,8 @@
+import { VIDEO_BUCKET, readAuxFiles, storageKey, uploadAuxFiles } from '$lib/server/uploads';
 import { fail, redirect } from '@sveltejs/kit';
 import type { InstructionManual } from '@vitruvius/core';
 import { deleteManual, enqueueJob, saveManual } from '@vitruvius/db';
 import type { Actions } from './$types';
-
-const VIDEO_BUCKET = 'videos';
-
-function storageKey(id: string, filename: string, prefix: string): string {
-	const ext =
-		filename
-			.split('.')
-			.pop()
-			?.toLowerCase()
-			.replace(/[^a-z0-9]/g, '') ?? '';
-	return ext ? `${id}/${prefix}.${ext}` : `${id}/${prefix}`;
-}
-
-function optionalFile(form: FormData, field: string): File | null {
-	const file = form.get(field);
-	if (!(file instanceof File) || file.size === 0) return null;
-	return file;
-}
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
@@ -33,23 +16,11 @@ export const actions: Actions = {
 			return fail(400, { error: 'That file is not a video.' });
 		}
 
-		const bomFile = optionalFile(form, 'bom');
-		if (bomFile && !bomFile.name.toLowerCase().endsWith('.csv')) {
-			return fail(400, { error: 'BOM file must be a CSV.' });
-		}
-
-		const modelFile = optionalFile(form, 'model');
-		if (modelFile) {
-			const lower = modelFile.name.toLowerCase();
-			const ok = ['.step', '.stp', '.obj', '.stl'].some((ext) => lower.endsWith(ext));
-			if (!ok) {
-				return fail(400, { error: 'Digital model must be STEP, OBJ, or STL.' });
-			}
-		}
+		const aux = readAuxFiles(form);
+		if ('error' in aux) return fail(400, { error: aux.error });
 
 		const id = crypto.randomUUID();
 		const videoPath = storageKey(id, file.name, 'source');
-		const uploadedPaths: string[] = [videoPath];
 
 		const { error: uploadError } = await locals.db.storage
 			.from(VIDEO_BUCKET)
@@ -59,33 +30,14 @@ export const actions: Actions = {
 			return fail(502, { error: `Upload failed: ${uploadError.message}` });
 		}
 
-		let bomFileUrl = '';
-		if (bomFile) {
-			bomFileUrl = storageKey(id, bomFile.name, 'bom');
-			uploadedPaths.push(bomFileUrl);
-			const { error } = await locals.db.storage
-				.from(VIDEO_BUCKET)
-				.upload(bomFileUrl, bomFile, { contentType: 'text/csv' });
-			if (error) {
-				await locals.db.storage.from(VIDEO_BUCKET).remove(uploadedPaths);
-				return fail(502, { error: `BOM upload failed: ${error.message}` });
-			}
+		const auxUpload = await uploadAuxFiles(locals.db, id, aux);
+		if ('error' in auxUpload) {
+			// The aux helper cleaned up its own writes; roll back the video too.
+			await locals.db.storage.from(VIDEO_BUCKET).remove([videoPath]);
+			return fail(502, { error: auxUpload.error });
 		}
-
-		let digitalModelUrl = '';
-		if (modelFile) {
-			digitalModelUrl = storageKey(id, modelFile.name, 'model');
-			uploadedPaths.push(digitalModelUrl);
-			const { error } = await locals.db.storage
-				.from(VIDEO_BUCKET)
-				.upload(digitalModelUrl, modelFile, {
-					contentType: modelFile.type || 'application/octet-stream'
-				});
-			if (error) {
-				await locals.db.storage.from(VIDEO_BUCKET).remove(uploadedPaths);
-				return fail(502, { error: `Model upload failed: ${error.message}` });
-			}
-		}
+		const { bomFileUrl, digitalModelUrl } = auxUpload;
+		const uploadedPaths = [videoPath, ...auxUpload.uploadedPaths];
 
 		const now = new Date().toISOString();
 		const manual: InstructionManual = {

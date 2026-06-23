@@ -2,7 +2,7 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-22 (spec 14 tier 1 Illustrator implemented; spec 13 merged #34; spec 08 BOM disambiguation UI in progress)._
+_Last updated: 2026-06-23 (spec 15 auth spec drafted; spec 14 tier 1 Illustrator implemented; spec 13 merged #34; spec 08 BOM disambiguation UI in progress)._
 
 ## Client alignment roadmap
 

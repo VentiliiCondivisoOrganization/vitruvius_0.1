@@ -23,7 +23,7 @@ WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/engine ./apps/engine
-RUN pnpm install --frozen-lockfile
+RUN pnpm config set store-dir /app/.pnpm-store && pnpm install --frozen-lockfile
 
 # Build the engine and its workspace dependencies.
 RUN pnpm --filter @vitruvius/engine... build
@@ -35,6 +35,6 @@ USER node
 
 # Healthcheck to verify the engine worker process is running.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD pgrep -f "pnpm --filter @vitruvius/engine start" || exit 1
+  CMD pgrep -f "node dist/index.js" || exit 1
 
 CMD ["pnpm", "--filter", "@vitruvius/engine", "start"]

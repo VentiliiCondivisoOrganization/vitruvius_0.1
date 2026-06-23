@@ -145,12 +145,16 @@ jobs:
           persist-credentials: false
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
         with:
-          version: latest
+          version: 2.106.0
 
       - name: Start Supabase local stack
-        run: supabase start
+        run: |
+          supabase start --workdir packages/db
+          supabase db reset --workdir packages/db
+          SERVICE_ROLE_KEY=$(supabase status -o json --workdir packages/db | jq -r .SERVICE_ROLE_KEY)
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
 
       - name: Prepare
         uses: ./.github/actions/prepare

@@ -16,7 +16,7 @@ agent. The **Critic** scope does not expand to BOM or images.
 
 ## The agent roster
 
-### Shipped or in progress (baseline 05, 06, 10, 11; phase 1 specs 13, 14 tier 1, 16)
+### Shipped (baseline 05, 06, 10, 11; phase 1 specs 13, 14 tier 1, 16)
 
 | Agent                | Spec                                    | Responsibility                                                                                                                                                            |
 | -------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

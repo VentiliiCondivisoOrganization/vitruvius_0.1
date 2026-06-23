@@ -168,7 +168,9 @@ To avoid blocking:
 
 ## Near-term backlog (baseline 06–12)
 
-Current state: specs 01–03 done; 04–05 in review; 06–12 stubbed. See
+Current state: baseline 01–12 and phase-1 specs 13, 14 (tier 1), 16, 17 are implemented; spec 08
+gained BOM disambiguation + versioning UI. The sprint table below is the original baseline plan,
+kept for history. Live status is the source of truth:
 [implementation-progress.md](implementation-progress.md).
 
 | Sprint focus | Stefano                                         | Antonio                            | Giovanni                                  |

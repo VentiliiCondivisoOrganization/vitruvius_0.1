@@ -23,45 +23,10 @@ import {
 	type DbClient
 } from '@vitruvius/db';
 import { detectScenes, extractKeyframes, probeDurationMs } from '@vitruvius/media';
-import { createWriteStream } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
-import type { ReadableStream as NodeWebReadableStream } from 'node:stream/web';
-
-const VIDEO_BUCKET = 'videos';
-const SIGNED_URL_TTL_S = 600;
-
-async function resolveStorageUrl(db: DbClient, objectKey: string): Promise<string> {
-	if (/^https?:\/\//.test(objectKey)) return objectKey;
-
-	const { data, error } = await db.storage
-		.from(VIDEO_BUCKET)
-		.createSignedUrl(objectKey, SIGNED_URL_TTL_S);
-	if (error || !data?.signedUrl) {
-		throw new Error(
-			`sign storage url failed for ${objectKey}: ${error?.message ?? 'no url returned'}`
-		);
-	}
-	return data.signedUrl;
-}
-
-async function downloadStorageObject(url: string, destPath: string): Promise<void> {
-	const res = await fetch(url);
-	if (!res.ok || !res.body) {
-		throw new Error(`download failed (${res.status}) for ${url}`);
-	}
-	const webStream = res.body as unknown as NodeWebReadableStream<Uint8Array>;
-	await pipeline(Readable.fromWeb(webStream), createWriteStream(destPath));
-}
-
-async function maybeDownload(db: DbClient, objectKey: string, destPath: string): Promise<boolean> {
-	if (!objectKey.trim()) return false;
-	await downloadStorageObject(await resolveStorageUrl(db, objectKey), destPath);
-	return true;
-}
+import { downloadStorageObject, maybeDownload, resolveStorageUrl } from './storage.js';
 
 /**
  * Run the full draft pipeline for a `process` job (spec 07):
@@ -102,9 +67,12 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 		const manualBom: ManualBomItem[] = reconcileBom(digitalModel, fileBomRows);
 
 		const videoDurationMs = await probeDurationMs(localVideo);
+		const keyframesDir = join(tmpdir(), 'vitruvius', 'keyframes', manual.id);
+		await mkdir(keyframesDir, { recursive: true });
+
 		const [scenes, keyframes] = await Promise.all([
 			detectScenes(localVideo),
-			extractKeyframes(localVideo, { outDir: workDir })
+			extractKeyframes(localVideo, { outDir: keyframesDir })
 		]);
 
 		const segmented = await segmentVideoIntoSteps({
@@ -146,7 +114,7 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 		try {
 			illustrated = await illustrateSteps({
 				steps: reviewed,
-				outDir: join(workDir, 'illustrations'),
+				outDir: join(tmpdir(), 'vitruvius', 'illustrations', manual.id),
 				digitalModel,
 				manualId: manual.id
 			});

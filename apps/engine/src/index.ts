@@ -1,7 +1,9 @@
 import type { Job } from '@vitruvius/core';
 import { claimNextJob, completeJob, createDbClient, failJob, type DbClient } from '@vitruvius/db';
+import { handleEnrichJob } from './enrich.js';
 import { handleExportJob } from './export.js';
 import { handleProcessJob } from './process.js';
+import { handleRegenerateJob } from './regenerate.js';
 
 const POLL_INTERVAL_MS = Number(process.env.ENGINE_POLL_INTERVAL_MS ?? 2000);
 
@@ -16,6 +18,12 @@ async function dispatch(db: DbClient, job: Job): Promise<void> {
 			return;
 		case 'export':
 			await handleExportJob(db, job);
+			return;
+		case 'regenerate':
+			await handleRegenerateJob(db, job);
+			return;
+		case 'enrich':
+			await handleEnrichJob(db, job);
 			return;
 	}
 }

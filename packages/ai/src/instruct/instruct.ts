@@ -12,15 +12,21 @@ import type { InstructInput, RawInstruction } from './types.js';
 async function instructWithCache(
 	steps: ManualStep[],
 	learnings: string[],
-	manualId?: string
+	manualId?: string,
+	guidance?: string
 ): Promise<RawInstruction[]> {
-	const key = instructCacheKey({ promptVersion: INSTRUCT_PROMPT_VERSION, steps, learnings });
+	const key = instructCacheKey({
+		promptVersion: INSTRUCT_PROMPT_VERSION,
+		steps,
+		learnings,
+		guidance
+	});
 
 	const cached = getCachedInstructions(key);
 	if (cached) return cached;
 
 	const provider = getInstructProvider();
-	const raw = await provider.writeInstructions(steps, { learnings, manualId });
+	const raw = await provider.writeInstructions(steps, { learnings, manualId, guidance });
 
 	setCachedInstructions(key, raw);
 	return raw;
@@ -35,7 +41,7 @@ export async function enrichSteps(input: InstructInput): Promise<ManualStep[]> {
 	if (input.steps.length === 0) return [];
 
 	const learnings = input.learnings ?? [];
-	const raw = await instructWithCache(input.steps, learnings, input.manualId);
+	const raw = await instructWithCache(input.steps, learnings, input.manualId, input.guidance);
 
 	const byOrder = new Map<number, RawInstruction>();
 	for (const r of raw) byOrder.set(r.order, r);

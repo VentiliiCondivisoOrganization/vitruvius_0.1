@@ -4,6 +4,8 @@ import type { ManualStep } from '@vitruvius/core';
 export type InstructOptions = {
 	learnings?: string[];
 	manualId?: string;
+	/** Natural-language steering from a `regenerate` text job (spec 16). Empty on a normal run. */
+	guidance?: string;
 };
 
 /**

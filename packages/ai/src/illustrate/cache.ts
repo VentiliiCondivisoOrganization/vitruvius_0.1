@@ -17,7 +17,7 @@ export function illustrateCacheKey(request: IllustrationRequest): string {
 		styleVersion: ILLUSTRATE_STYLE_VERSION,
 		mode: request.mode,
 		baseImageRef: request.baseImageRef,
-		prompt: buildIllustratePrompt(request.step, request.mode)
+		prompt: buildIllustratePrompt(request.step, request.mode, request.guidance)
 	});
 	return createHash('sha256').update(payload).digest('hex');
 }

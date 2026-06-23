@@ -58,6 +58,9 @@ export const instructionManualSchema = z.object({
 	status: z.enum(MANUAL_STATUS),
 	steps: z.array(manualStepSchema),
 	bom: z.array(manualBomItemSchema).default([]),
+	// Versioning (spec 17). Defaulted so legacy rows and bootstrap manuals parse as v1.
+	version: z.number().int().positive().default(1),
+	parentVersionId: z.string().nullable().default(null),
 	createdAt: z.string(),
 	updatedAt: z.string()
 });
@@ -119,7 +122,7 @@ export const digitalModelSchema = z.object({
 // automatic regeneration without a user prompt is out of scope.
 export const regenerateRequestSchema = z.object({
 	scope: z.enum(REGENERATE_SCOPE),
-	prompt: z.string().min(1),
+	prompt: z.string().trim().min(1),
 	stepIds: z.array(z.string()).min(1)
 });
 

@@ -22,6 +22,8 @@ export function rowToManual(manual: ManualRow, steps: StepRow[]): InstructionMan
 		digitalModelUrl: manual.digital_model_url ?? '',
 		status: manual.status,
 		bom: manual.bom ?? [],
+		version: manual.version ?? 1,
+		parentVersionId: manual.parent_version_id ?? null,
 		createdAt: manual.created_at,
 		updatedAt: manual.updated_at,
 		steps: [...steps]

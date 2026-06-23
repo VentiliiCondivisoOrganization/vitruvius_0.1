@@ -9,7 +9,7 @@ export type StepReviewStatus = (typeof STEP_REVIEW_STATUS)[number];
 export const JOB_STATUS = ['queued', 'running', 'done', 'failed'] as const;
 export type JobStatus = (typeof JOB_STATUS)[number];
 
-export const JOB_TYPE = ['process', 'export', 'regenerate'] as const;
+export const JOB_TYPE = ['process', 'export', 'regenerate', 'enrich'] as const;
 export type JobType = (typeof JOB_TYPE)[number];
 
 // Scope of a `regenerate` job (spec 16): which facet of the selected steps the AI

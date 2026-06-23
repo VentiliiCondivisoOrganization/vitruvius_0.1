@@ -36,6 +36,8 @@ function manual(steps: ManualStep[], title = 'Test Manual'): InstructionManual {
 		status: 'ready',
 		steps,
 		bom: [],
+		version: 1,
+		parentVersionId: null,
 		createdAt: now,
 		updatedAt: now
 	};
@@ -79,5 +81,26 @@ describe('renderManualHtml', () => {
 		);
 		expect(html).not.toContain('<h4>Tools</h4>');
 		expect(html).not.toContain('<h4>Warnings</h4>');
+	});
+
+	it('prefers illustrationUrl over keyframeUrl', () => {
+		const html = renderManualHtml(
+			manual([
+				step({
+					keyframeUrl: 'https://example.test/frame.jpg',
+					illustrationUrl: 'https://example.test/illustration.png'
+				})
+			])
+		);
+		expect(html).toContain('src="https://example.test/illustration.png"');
+		expect(html).not.toContain('src="https://example.test/frame.jpg"');
+	});
+
+	it('prefers caption over instruction', () => {
+		const html = renderManualHtml(
+			manual([step({ instruction: 'Base instruction', caption: 'Custom caption' })])
+		);
+		expect(html).toContain('Custom caption');
+		expect(html).not.toContain('Base instruction');
 	});
 });

@@ -83,7 +83,7 @@ export class GeminiIllustrateProvider implements IllustrateProvider {
 
 	private async illustrateOne(req: IllustrationRequest): Promise<RawIllustration | null> {
 		const baseImage = await loadImageBase64(req.baseImageRef, this.fetchFn);
-		const prompt = buildIllustratePrompt(req.step, req.mode);
+		const prompt = buildIllustratePrompt(req.step, req.mode, req.guidance);
 
 		const body: GeminiGenerateRequest = {
 			contents: [

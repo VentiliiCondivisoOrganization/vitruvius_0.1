@@ -3,11 +3,17 @@ import { INSTRUCT_PROMPT_VERSION } from './cache.js';
 
 export function buildInstructPrompt(
 	steps: ManualStep[],
-	learnings: string[]
+	learnings: string[],
+	guidance?: string
 ): { system: string; user: string } {
 	const learningsBlock =
 		learnings.length > 0
 			? `\nPrior learnings (reusable heuristics — apply when relevant):\n${learnings.map((l) => `- ${l}`).join('\n')}\n`
+			: '';
+
+	const guidanceBlock =
+		guidance && guidance.trim()
+			? `\nEditor regeneration request — apply this to every step you rewrite, while staying grounded in the evidence:\n"${guidance.trim()}"\n`
 			: '';
 
 	const stepLines = steps
@@ -37,7 +43,7 @@ Prompt version: ${INSTRUCT_PROMPT_VERSION}`;
 Keyframe stills are attached for some steps and each is labelled with its step order.
 Match a still to a step only by that label; a step with no attached still has no image — do
 not assume an unlabelled image belongs to it.
-${learningsBlock}
+${learningsBlock}${guidanceBlock}
 Steps:
 ${stepLines}
 

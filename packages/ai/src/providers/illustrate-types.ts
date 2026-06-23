@@ -9,6 +9,8 @@ export type IllustrationRequest = {
 	step: ManualStep;
 	mode: IllustrationMode;
 	baseImageRef: string;
+	/** Editor regeneration prompt (spec 16); folded into the prompt and the cache key when present. */
+	guidance?: string;
 };
 
 export type IllustrateProviderContext = {

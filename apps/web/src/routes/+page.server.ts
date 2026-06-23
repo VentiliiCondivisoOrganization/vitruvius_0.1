@@ -97,6 +97,8 @@ export const actions: Actions = {
 			status: 'uploaded',
 			steps: [],
 			bom: [],
+			version: 1,
+			parentVersionId: null,
 			createdAt: now,
 			updatedAt: now
 		};

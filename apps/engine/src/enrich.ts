@@ -64,12 +64,14 @@ export async function handleEnrichJob(db: DbClient, job: Job): Promise<void> {
 
 		// Re-illustrate only when a CAD model is present (Compositor-lite on canonical views);
 		// like the process pipeline this is non-fatal so a render failure can't fail the run.
+		// Illustrations go to a persistent dir (not workDir, which is deleted below) so the
+		// saved `illustrationUrl` refs survive the job — matching process/regenerate.
 		let steps = bomSteps;
 		if (digitalModel?.status === 'primed') {
 			try {
 				steps = await illustrateSteps({
 					steps: bomSteps,
-					outDir: join(workDir, 'illustrations'),
+					outDir: join(tmpdir(), 'vitruvius', 'illustrations', manual.id),
 					digitalModel,
 					manualId: manual.id
 				});

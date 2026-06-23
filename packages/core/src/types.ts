@@ -62,6 +62,10 @@ export type InstructionManual = {
 	status: ManualStatus;
 	steps: ManualStep[];
 	bom: ManualBomItem[];
+	// Versioning (spec 17): incremental enrichment (adding BOM/CAD to a video-only manual)
+	// produces a new version on the SAME step timeline. v1 is `version: 1, parentVersionId: null`.
+	version: number;
+	parentVersionId: string | null;
 	createdAt: string; // ISO 8601
 	updatedAt: string; // ISO 8601
 };

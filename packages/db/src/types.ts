@@ -14,6 +14,8 @@ export type ManualRow = {
 	digital_model_url: string;
 	status: ManualStatus;
 	bom: unknown;
+	version: number;
+	parent_version_id: string | null;
 	created_at: string;
 	updated_at: string;
 };

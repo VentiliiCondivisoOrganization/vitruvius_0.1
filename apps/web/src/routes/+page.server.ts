@@ -1,8 +1,13 @@
 import { VIDEO_BUCKET, readAuxFiles, storageKey, uploadAuxFiles } from '$lib/server/uploads';
 import { fail, redirect } from '@sveltejs/kit';
 import type { InstructionManual } from '@vitruvius/core';
-import { deleteManual, enqueueJob, saveManual } from '@vitruvius/db';
-import type { Actions } from './$types';
+import { deleteManual, enqueueJob, getManuals, saveManual } from '@vitruvius/db';
+import type { Actions, PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ locals }) => {
+	const manuals = await getManuals(locals.db);
+	return { manuals };
+};
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {

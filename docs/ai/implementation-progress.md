@@ -2,7 +2,7 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-23 (spec 14 tier 1 merged #40; spec 16 regenerate merged #41; spec 17 manual versioning implemented end-to-end incl. editor trigger/switcher/freeze; spec 13 merged #34; spec 08 BOM disambiguation merged #35/#43)._
+_Last updated: 2026-06-23 (spec 15 auth spec drafted; spec 14 tier 1 merged #40; spec 16 regenerate merged #41; spec 17 manual versioning implemented end-to-end incl. editor trigger/switcher/freeze; spec 13 merged #34; spec 08 BOM disambiguation merged #35/#43)._
 
 ## Client alignment roadmap
 
@@ -86,7 +86,11 @@ Docs alignment (assessment revision 2, spec stubs 13–17): [#31](https://github
 Phase 1 core slices (13, 14, 16, 17) are implemented end-to-end, and the spec 09 export gate
 (`checkExportGate`) blocks unconfirmed steps / open BOM candidates. Remaining phase-1 work is the
 schematic PDF: the export template using `illustrationUrl` + `caption` as the primary image instead
-of the keyframe.
+of the keyframe. Newly drafted (not yet built): spec 15 (auth + multi-tenant).
+
+| Spec                 | Package / app   | Depends on      |
+| -------------------- | --------------- | --------------- |
+| 15-auth-multi-tenant | core + db + web | Core + db + web |
 
 ## Spec status matrix
 
@@ -99,5 +103,6 @@ of the keyframe.
 | 09–12                | Done on `main`                                                                       |
 | 13-bom-map           | **Merged** (#34)                                                                     |
 | 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite)                              |
+| 15-auth-multi-tenant | **Spec drafted**                                                                     |
 | 16-regenerate-job    | **Merged (#41)** (text + illustration/layout; structure deferred)                    |
 | 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)            |

@@ -45,7 +45,7 @@ export function formatManualBomItem(item: ManualBomItem): string {
 export function resolvePartRefBomCandidate(part: PartRef, item: ManualBomItem): PartRef {
 	return {
 		bomItemId: item.id,
-		label: item.partName.trim(),
+		label: item.partName.trim() || part.label,
 		bomCode: item.bomCode?.trim(),
 		description: item.description.trim(),
 		confidence: part.confidence,

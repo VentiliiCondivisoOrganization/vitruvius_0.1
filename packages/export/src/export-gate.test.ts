@@ -97,6 +97,16 @@ describe('resolvePartRefBomCandidate', () => {
 		expect(resolved.bomCode).toBe('RB-42');
 		expect(resolved.description).toBe('Left rail bracket');
 	});
+
+	it('falls back to the existing part label if the BOM item partName is empty', () => {
+		const resolved = resolvePartRefBomCandidate(partRefFromLabel('Original bracket'), {
+			...bomItem,
+			partName: '   ',
+			bomCode: 'RB-42',
+			description: 'Left rail bracket'
+		});
+		expect(resolved.label).toBe('Original bracket');
+	});
 });
 
 describe('formatManualBomItem', () => {

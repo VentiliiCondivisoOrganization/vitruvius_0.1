@@ -2,7 +2,7 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-23 (spec 15 auth spec drafted; spec 14 tier 1 Illustrator implemented; spec 13 merged #34; spec 08 BOM disambiguation UI in progress)._
+_Last updated: 2026-06-23 (spec 15 auth spec drafted; spec 14 tier 1 Illustrator merged #40)._
 
 ## Client alignment roadmap
 
@@ -57,21 +57,23 @@ Branch `claude/brave-mayer-7zr2mr`:
 
 ### Next vertical slices (phase 1)
 
-| Spec                 | Package / app | Depends on                           |
-| -------------------- | ------------- | ------------------------------------ |
-| 16-regenerate-job    | web + engine  | Core `JOB_TYPE: regenerate` (later)  |
-| 17-manual-versioning | core + db     | Core versioning fields + spec 14 (✓) |
+| Spec                 | Package / app   | Depends on                           |
+| -------------------- | --------------- | ------------------------------------ |
+| 15-auth-multi-tenant | core + db + web | Core + db + web                      |
+| 16-regenerate-job    | web + engine    | Core `JOB_TYPE: regenerate` (later)  |
+| 17-manual-versioning | core + db       | Core versioning fields + spec 14 (✓) |
 
 ## Spec status matrix
 
-| Spec                 | Status                                                 |
-| -------------------- | ------------------------------------------------------ |
-| 01-core              | Bootstrap done; PartRef extension merged (#33)         |
-| 02-db                | Done; migrations 0006 (#33) + 0007 (#34)               |
-| 03–07                | Done on `main`                                         |
-| 08-web-editor        | **BOM disambiguation UI in progress** (08 ext.)        |
-| 09–12                | Done on `main`                                         |
-| 13-bom-map           | **Merged** (#34)                                       |
-| 14-ai-illustrate     | **Tier 1 in progress** (Illustrator + Compositor-lite) |
-| 16-regenerate-job    | Spec stub                                              |
-| 17-manual-versioning | Spec stub                                              |
+| Spec                 | Status                                          |
+| -------------------- | ----------------------------------------------- |
+| 01-core              | Bootstrap done; PartRef extension merged (#33)  |
+| 02-db                | Done; migrations 0006 (#33) + 0007 (#34)        |
+| 03–07                | Done on `main`                                  |
+| 08-web-editor        | **BOM disambiguation UI in progress** (08 ext.) |
+| 09–12                | Done on `main`                                  |
+| 13-bom-map           | **Merged** (#34)                                |
+| 14-ai-illustrate     | **Merged** (#40)                                |
+| 15-auth-multi-tenant | **Spec drafted**                                |
+| 16-regenerate-job    | Spec stub                                       |
+| 17-manual-versioning | Spec stub                                       |

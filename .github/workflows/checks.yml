@@ -131,9 +131,40 @@ jobs:
 
   # Per-package tests are gated individually, not via the repo-wide `pnpm test`:
   # `@vitruvius/db`'s Vitest run needs a live Supabase (Docker) instance — see
-  # specs/02-db.md — so it stays ungated until we provision Supabase/Postgres as a
-  # CI service. `@vitruvius/media` only needs the ffmpeg/ffprobe binaries, which we
+  # specs/02-db.md — which is provisioned via the Supabase CLI in CI below.
+  # `@vitruvius/media` only needs the ffmpeg/ffprobe binaries, which we
   # install explicitly below, so it runs in plain CI today.
+  test-db:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        with:
+          version: 2.106.0
+
+      - name: Start Supabase local stack
+        run: |
+          supabase start --workdir packages/db
+          supabase db reset --workdir packages/db
+          SERVICE_ROLE_KEY=$(supabase status -o json --workdir packages/db | jq -r .SERVICE_ROLE_KEY)
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> $GITHUB_ENV
+
+      - name: Prepare
+        uses: ./.github/actions/prepare
+
+      - name: Run db tests
+        run: pnpm --filter @vitruvius/db test
+
   test-media:
     runs-on: ubuntu-24.04
     permissions:
@@ -204,7 +235,7 @@ jobs:
   # branch protection rule never has to change.
   checks-pass:
     if: always()
-    needs: ['pr-title', 'format', 'lint', 'typecheck', 'build', 'test-media', 'test-cad']
+    needs: ['pr-title', 'format', 'lint', 'typecheck', 'build', 'test-db', 'test-media', 'test-cad']
     runs-on: ubuntu-24.04
     permissions:
       contents: read

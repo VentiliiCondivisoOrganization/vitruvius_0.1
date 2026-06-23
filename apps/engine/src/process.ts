@@ -104,7 +104,7 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 		const videoDurationMs = await probeDurationMs(localVideo);
 		const [scenes, keyframes] = await Promise.all([
 			detectScenes(localVideo),
-			extractKeyframes(localVideo, { outDir: join(workDir, 'keyframes') })
+			extractKeyframes(localVideo, { outDir: workDir })
 		]);
 
 		const segmented = await segmentVideoIntoSteps({

@@ -121,10 +121,21 @@ WITH
 
 -- 5. Storage Policies for 'videos' and 'exports' buckets.
 -- Allow authenticated users full access to objects in the private videos and exports buckets.
-CREATE POLICY storage_videos_auth_policy ON storage.objects FOR ALL TO authenticated USING (bucket_id = 'videos')
-WITH
-	CHECK (bucket_id = 'videos');
+CREATE POLICY storage_videos_auth_policy ON storage.objects
+FOR ALL TO authenticated
+USING (bucket_id = 'videos' AND owner = auth.uid())
+WITH CHECK (bucket_id = 'videos' AND owner = auth.uid());
 
-CREATE POLICY storage_exports_auth_policy ON storage.objects FOR ALL TO authenticated USING (bucket_id = 'exports')
-WITH
-	CHECK (bucket_id = 'exports');
+-- Exports are written by the engine (service_role), so `owner` may not match the end user.
+-- Allow authenticated users to read only exports that correspond to manuals they own.
+CREATE POLICY storage_exports_auth_policy ON storage.objects
+FOR SELECT TO authenticated
+USING (
+	bucket_id = 'exports'
+	AND EXISTS (
+		SELECT 1
+		FROM public.manuals
+		WHERE public.manuals.id::text = split_part(name, '.', 1)
+			AND public.manuals.user_id = auth.uid()
+	)
+);

@@ -1,18 +1,21 @@
 import type { InstructionManual } from '@vitruvius/core';
+import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDbClient, type DbClient } from './client.js';
 import { claimNextJob, enqueueJob } from './jobs.js';
 import { saveManual } from './manuals.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const pkgRoot = join(__dirname, '..');
+
 // Talks to a real local Supabase stack (`pnpm db:start`). Falls back to the
 // well-known local CLI defaults so a fresh stack works with no extra config;
 // override via env to point at another instance.
 const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const SERVICE_ROLE_KEY =
-	process.env.SUPABASE_SERVICE_ROLE_KEY ??
-	// Documented default local service_role key (not a secret — same on every local CLI).
-	'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q';
 
 const JOB_COUNT = 8;
 const CLAIMER_COUNT = 16; // more claimers than jobs, so excess claims must come back empty
@@ -22,7 +25,25 @@ describe('claimNextJob concurrency', () => {
 	let manualId: string;
 
 	beforeAll(async () => {
-		client = createDbClient({ url: SUPABASE_URL, key: SERVICE_ROLE_KEY });
+		let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+		if (!serviceRoleKey) {
+			try {
+				const statusJson = execSync('npx supabase status -o json', {
+					cwd: pkgRoot,
+					stdio: ['ignore', 'pipe', 'ignore']
+				}).toString();
+				const status = JSON.parse(statusJson);
+				if (!status.SERVICE_ROLE_KEY) {
+					throw new Error('SERVICE_ROLE_KEY not found in status JSON');
+				}
+				serviceRoleKey = status.SERVICE_ROLE_KEY;
+			} catch {
+				serviceRoleKey =
+					'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q';
+			}
+		}
+
+		client = createDbClient({ url: SUPABASE_URL, key: serviceRoleKey! });
 
 		const now = new Date().toISOString();
 		manualId = randomUUID();

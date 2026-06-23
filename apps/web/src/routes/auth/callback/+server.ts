@@ -17,14 +17,14 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				path: '/',
 				httpOnly: true,
 				sameSite: 'lax',
-				secure: true,
+				secure: process.env.NODE_ENV === 'production',
 				maxAge: data.session.expires_in
 			});
 			cookies.set('sb-refresh-token', data.session.refresh_token, {
 				path: '/',
 				httpOnly: true,
 				sameSite: 'lax',
-				secure: true,
+				secure: process.env.NODE_ENV === 'production',
 				maxAge: 60 * 60 * 24 * 30
 			});
 		}

@@ -32,7 +32,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 					path: '/',
 					httpOnly: true,
 					sameSite: 'lax',
-					secure: true,
+					secure: process.env.NODE_ENV === 'production',
 					maxAge: refreshData.session.expires_in
 				});
 				if (refreshData.session.refresh_token) {

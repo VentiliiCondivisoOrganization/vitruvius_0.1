@@ -69,7 +69,7 @@ export async function handleEnrichJob(db: DbClient, job: Job): Promise<void> {
 			try {
 				steps = await illustrateSteps({
 					steps: bomSteps,
-					outDir: join(workDir, 'illustrations'),
+					outDir: join(tmpdir(), 'vitruvius', 'illustrations', manual.id),
 					digitalModel,
 					manualId: manual.id
 				});

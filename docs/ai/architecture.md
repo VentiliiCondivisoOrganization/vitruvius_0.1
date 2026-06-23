@@ -13,8 +13,8 @@ The [client alignment assessment](./client-alignment-assessment.md) (grill-me, 2
 (`illustrationUrl`), structured BOM per step (`PartRef`), optional CAD priming (spec 12), prompt
 regeneration in revision, and export gated on human confirmation. That target lands in **two
 engineering phases** — see [Pipeline](#pipeline-baseline-vs-target) below. Spec baseline `01`–`12`
-is implemented; extension `13` is merged (#34), `14` tier 1 (Illustrator + Compositor-lite) and
-`16` (regenerate job) are implemented; `17` is specified, not yet coded.
+is implemented; extension `13` is merged (#34), and `14` tier 1 (Illustrator + Compositor-lite),
+`16` (regenerate job), and `17` (manual versioning) are implemented.
 
 ## Repository structure
 
@@ -134,7 +134,7 @@ schemas). Everything communicates through these shapes.
 
 - `critique`, `Learning`, `DigitalModel` / `BomItem` (specs 10–12)
 - `PartRef`, `illustrationUrl`, `caption` alongside `instruction`, manual versioning (specs 13–17)
-- `JOB_TYPE`: `regenerate` + `Job.payload` (`RegenerateRequest`) — landed (spec 16)
+- `JOB_TYPE`: `regenerate` + `Job.payload` (`RegenerateRequest`) — landed (spec 16); `enrich` + `InstructionManual.version` / `parentVersionId` — landed (spec 17)
 - `BomItem.partName` vs `BomItem.bomCode` — CAD-derived names vs client distinta codes
 
 No other package redefines these shapes; untrusted/AI output is validated against core zod schemas.

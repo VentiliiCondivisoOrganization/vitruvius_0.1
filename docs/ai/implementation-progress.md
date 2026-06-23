@@ -2,17 +2,17 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-22 (spec 16 regenerate job implemented; spec 14 tier 1 Illustrator implemented; spec 13 merged #34; spec 08 BOM disambiguation UI in progress)._
+_Last updated: 2026-06-22 (spec 17 manual versioning implemented; spec 16 regenerate job implemented; spec 14 tier 1 Illustrator implemented; spec 13 merged #34; spec 08 BOM disambiguation UI in progress)._
 
 ## Client alignment roadmap
 
 Full analysis: [client-alignment-assessment.md](./client-alignment-assessment.md).
 
-| Phase        | Deliverable                                                             | Specs                                      | Status                                                                                                                                                 |
-| ------------ | ----------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Baseline** | Video-first pipeline, editor, keyframe PDF                              | 01–12                                      | **Done** on `main` (PRs #21–#30)                                                                                                                       |
-| **Phase 1**  | BOM layer, schematic illustrations, regenerate, versioning, export gate | 13, 14 (tier 1), 16, 17 + extensions 08/09 | **13 merged (#34)**; **14 tier 1 implemented**; **16 regenerate implemented**; **08 BOM disambiguation UI in progress**; PartRef contract merged (#33) |
-| **Phase 2**  | Compositor-full (CAD overlay per step)                                  | 14 tier 2                                  | Blocked on pose alignment research                                                                                                                     |
+| Phase        | Deliverable                                                             | Specs                                      | Status                                                                                                                                                        |
+| ------------ | ----------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Baseline** | Video-first pipeline, editor, keyframe PDF                              | 01–12                                      | **Done** on `main` (PRs #21–#30)                                                                                                                              |
+| **Phase 1**  | BOM layer, schematic illustrations, regenerate, versioning, export gate | 13, 14 (tier 1), 16, 17 + extensions 08/09 | **13 merged (#34)**; **14 tier 1**, **16 regenerate**, **17 versioning** implemented; **08 BOM disambiguation UI in progress**; PartRef contract merged (#33) |
+| **Phase 2**  | Compositor-full (CAD overlay per step)                                  | 14 tier 2                                  | Blocked on pose alignment research                                                                                                                            |
 
 ## Shipped on `main` (baseline 01–12)
 
@@ -71,11 +71,24 @@ Branch `claude/regenerate-job-spec16` (stacked on the spec 14 branch):
 - `apps/web`: editor panel to pick a step + scope + prompt and enqueue the job (web never
   calls AI).
 
-### Next vertical slices (phase 1)
+### Manual versioning — spec 17
 
-| Spec                 | Package / app | Depends on                           |
-| -------------------- | ------------- | ------------------------------------ |
-| 17-manual-versioning | core + db     | Core versioning fields + spec 14 (✓) |
+Branch `claude/manual-versioning-spec17` (stacked on the spec 16 branch):
+
+- `@vitruvius/core`: `InstructionManual.version` + `parentVersionId` (defaulted so legacy
+  rows parse as v1); `JOB_TYPE` adds `enrich`.
+- `@vitruvius/db`: migration `0009` (manuals `version` + `parent_version_id` lineage, jobs
+  CHECK, `save_manual` persists them); `createManualVersion` (copies the parent on the same
+  timeline + enqueues `enrich`) and `listManualVersions` (lineage list).
+- `apps/engine`: `enrich` handler re-runs spec 13 bom-map + spec 14 illustrate (CAD only) on
+  the existing steps — never re-segments; the parent (v1) stays loadable/exportable. Storage
+  helpers extracted to `storage.ts` and shared with the process pipeline.
+
+### Phase 1 vertical slices
+
+All phase-1 slices (13, 14 tier 1, 16, 17) now have implementations in review; spec 08 BOM
+disambiguation UI is the remaining in-progress extension. Phase 2 (Compositor-full) stays
+blocked on pose-alignment research.
 
 ## Spec status matrix
 
@@ -89,4 +102,4 @@ Branch `claude/regenerate-job-spec16` (stacked on the spec 14 branch):
 | 13-bom-map           | **Merged** (#34)                                                 |
 | 14-ai-illustrate     | **Tier 1 in progress** (Illustrator + Compositor-lite)           |
 | 16-regenerate-job    | **In progress** (text + illustration/layout; structure deferred) |
-| 17-manual-versioning | Spec stub                                                        |
+| 17-manual-versioning | **In progress** (BOM/CAD enrichment v1 → v2)                     |

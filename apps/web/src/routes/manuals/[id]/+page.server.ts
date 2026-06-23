@@ -192,6 +192,7 @@ export const actions: Actions = {
 				digitalModelUrl: aux.modelFile ? auxUpload.digitalModelUrl : undefined
 			});
 		} catch (err) {
+			await Promise.allSettled([locals.db.storage.from('videos').remove(auxUpload.uploadedPaths)]);
 			const message = err instanceof Error ? err.message : 'unknown error';
 			return fail(500, { error: `Could not start enrichment: ${message}` });
 		}

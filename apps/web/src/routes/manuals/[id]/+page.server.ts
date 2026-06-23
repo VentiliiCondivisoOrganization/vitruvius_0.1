@@ -42,8 +42,16 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 /** Reject edits/regeneration on a frozen (non-head) version. Returns a `fail` or null. */
 async function assertHead(db: DbClient, manualId: string) {
-	const versions = await listManualVersions(db, manualId);
-	if (!isHeadVersion(manualId, versions)) {
+	const { data, error } = await db
+		.from('manuals')
+		.select('id')
+		.eq('parent_version_id', manualId)
+		.limit(1)
+		.returns<{ id: string }[]>();
+	if (error) {
+		return fail(500, { error: `Could not check version head: ${error.message}` });
+	}
+	if ((data?.length ?? 0) > 0) {
 		return fail(409, {
 			error: 'This is an older version and is read-only. Open the latest version to edit.'
 		});

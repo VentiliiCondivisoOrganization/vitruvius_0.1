@@ -19,10 +19,10 @@ to lives here.
 
 ## Spec map
 
-| Range                 | Role                                                                                                                                |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **01–12**             | Baseline vertical slices — bootstrap through CAD priming (see [implementation-progress.md](implementation-progress.md))             |
-| **13, 14, 16, 17**    | Client-alignment extensions — BOM layer, illustrate, regenerate job, versioning ([assessment §5.3](client-alignment-assessment.md)) |
-| **08, 09** (extended) | Disambiguation BOM + schematic export absorbed here — no separate spec 15/18                                                        |
+| Range                  | Role                                                                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **01–12**              | Baseline vertical slices — bootstrap through CAD priming (see [implementation-progress.md](implementation-progress.md))                   |
+| **13, 14, 15, 16, 17** | Client-alignment extensions — BOM layer, illustrate, auth, regenerate job, versioning ([assessment §5.3](client-alignment-assessment.md)) |
+| **08, 09** (extended)  | Disambiguation BOM + schematic export absorbed here — no separate spec 18                                                                 |
 
 Pipeline target (phase 1): [architecture.md § Pipeline](architecture.md#pipeline-baseline-vs-target).

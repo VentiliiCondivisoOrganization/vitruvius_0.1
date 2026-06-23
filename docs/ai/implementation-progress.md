@@ -2,7 +2,7 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-23 (spec 14 tier 1 merged #40; spec 16 regenerate merged #41; spec 17 manual versioning implemented; spec 13 merged #34; spec 08 BOM disambiguation UI in progress)._
+_Last updated: 2026-06-23 (spec 15 auth spec drafted; spec 14 tier 1 merged #40; spec 16 regenerate merged #41; spec 17 manual versioning implemented; spec 13 merged #34; spec 08 BOM disambiguation UI in progress)._
 
 ## Client alignment roadmap
 
@@ -84,10 +84,14 @@ Branch `claude/sleepy-ptolemy-wwo15q` (on top of specs 14 + 16):
 - `apps/engine`: claims `enrich`, re-maps BOM and re-illustrates on the existing step timeline
   (no re-segmentation), reusing the spec 13 / 14 agents.
 
-### Next vertical slices (phase 1)
-
 Phase 1 core slices (13, 14, 16, 17) are implemented; remaining work is the spec 08 / 09
 export gate + schematic PDF polish.
+
+### Next vertical slices (phase 1)
+
+| Spec                 | Package / app   | Depends on      |
+| -------------------- | --------------- | --------------- |
+| 15-auth-multi-tenant | core + db + web | Core + db + web |
 
 ## Spec status matrix
 
@@ -100,5 +104,6 @@ export gate + schematic PDF polish.
 | 09–12                | Done on `main`                                                    |
 | 13-bom-map           | **Merged** (#34)                                                  |
 | 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite)           |
+| 15-auth-multi-tenant | **Spec drafted**                                                  |
 | 16-regenerate-job    | **Merged (#41)** (text + illustration/layout; structure deferred) |
 | 17-manual-versioning | **Implemented** (version lineage + `enrich` job; v1→v2 timeline)  |

@@ -8,9 +8,11 @@ declare global {
 		// interface Error {}
 		interface Locals {
 			db: DbClient;
+			// The access token is intentionally kept out of this shape: `locals.session`
+			// is exposed to the browser via +layout.server.ts, and leaking the JWT there
+			// would defeat the httpOnly auth cookies.
 			session: {
 				user: User;
-				accessToken: string;
 			} | null;
 		}
 		// interface PageData {}

@@ -30,14 +30,21 @@ export function dbClientFromEnv(
 	accessToken?: string
 ): DbClient {
 	const url = env.PUBLIC_SUPABASE_URL;
-	// When an accessToken is present, we must use the anon key. If we use service_role,
-	// Supabase will bypass RLS entirely regardless of the Authorization header.
+	// When an accessToken is present we are acting on behalf of a user and MUST use the
+	// anon key so RLS is enforced. Never fall back to the service-role key here: that
+	// would silently bypass RLS regardless of the Authorization header and expose other
+	// tenants' data. Fail loudly instead.
 	const key = accessToken
-		? (env.PUBLIC_SUPABASE_ANON_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY)
+		? env.PUBLIC_SUPABASE_ANON_KEY
 		: (env.SUPABASE_SERVICE_ROLE_KEY ?? env.PUBLIC_SUPABASE_ANON_KEY);
 
 	if (!url) throw new Error('Missing PUBLIC_SUPABASE_URL');
-	if (!key) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY or PUBLIC_SUPABASE_ANON_KEY');
+	if (!key)
+		throw new Error(
+			accessToken
+				? 'Missing PUBLIC_SUPABASE_ANON_KEY (required to enforce RLS when an access token is provided)'
+				: 'Missing SUPABASE_SERVICE_ROLE_KEY or PUBLIC_SUPABASE_ANON_KEY'
+		);
 
 	return createDbClient({ url, key, accessToken });
 }

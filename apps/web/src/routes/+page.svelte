@@ -46,6 +46,21 @@
 	></div>
 
 	<main class="relative mx-auto max-w-6xl px-6 py-16 lg:py-24">
+		<!-- User Profile Nav -->
+		{#if data.session?.user}
+			<div class="flex justify-end items-center gap-4 mb-8">
+				<span class="text-sm text-slate-400">{data.session.user.email}</span>
+				<form action="/logout" method="POST" use:enhance>
+					<button
+						type="submit"
+						class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer font-semibold"
+					>
+						Log Out
+					</button>
+				</form>
+			</div>
+		{/if}
+
 		<!-- Header -->
 		<header class="mb-16 text-center lg:text-left space-y-4">
 			<div

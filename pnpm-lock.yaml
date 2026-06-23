@@ -188,6 +188,9 @@ importers:
       '@types/node':
         specifier: 24.7.0
         version: 24.7.0
+      '@vitruvius/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@vitruvius/export':
         specifier: workspace:*
         version: link:../export

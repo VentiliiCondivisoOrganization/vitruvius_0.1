@@ -2,6 +2,7 @@ import {
 	critiqueSteps,
 	disambiguateBomSteps,
 	distillLearnings,
+	illustrateSteps,
 	segmentVideoIntoSteps,
 	writeInstructions
 } from '@vitruvius/ai';
@@ -64,7 +65,7 @@ async function maybeDownload(db: DbClient, objectKey: string, destPath: string):
 
 /**
  * Run the full draft pipeline for a `process` job (spec 07):
- *   prime → media → segment → bom-map (13) → instruct → critic → save → distill.
+ *   prime → media → segment → bom-map (13) → instruct → critic → illustrate (14) → save → distill.
  * Optional CAD ingest (12) and BOM file run before segmentation output is enriched.
  */
 export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
@@ -138,10 +139,26 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 			manualId: manual.id
 		});
 
+		// Illustrate (spec 14) runs after the Critic. It is enrichment: a failure must not
+		// fail the run, since keyframes remain the export evidence (spec 09). Like learnings,
+		// errors are logged and the manual still saves `ready`.
+		let illustrated = reviewed;
+		try {
+			illustrated = await illustrateSteps({
+				steps: reviewed,
+				outDir: join(workDir, 'illustrations'),
+				digitalModel,
+				manualId: manual.id
+			});
+		} catch (error) {
+			const reason = error instanceof Error ? error.message : String(error);
+			console.warn(`[engine] illustration skipped for ${manual.id}: ${reason}`);
+		}
+
 		const finished: InstructionManual = {
 			...manual,
 			status: 'ready',
-			steps: reviewed,
+			steps: illustrated,
 			bom: bomMapped.manualBom,
 			updatedAt: new Date().toISOString()
 		};

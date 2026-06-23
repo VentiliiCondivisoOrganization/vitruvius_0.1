@@ -10,29 +10,30 @@ generator. Everything below serves that: spend the fewest credits to produce a d
 about its own confidence, and get better at it over time.
 
 The [client alignment assessment](./client-alignment-assessment.md) adds **Illustrator** and
-**Compositor** agents (spec 14) for schematic deliverables. **BOM mapping** (spec 13) is mostly
-deterministic — not a fifth generative agent. The **Critic** scope does not expand to BOM or images.
+**Compositor** agents (spec 14) for schematic deliverables — tier 1 (Illustrator + Compositor-lite)
+is now in `packages/ai`. **BOM mapping** (spec 13) is mostly deterministic — not a fifth generative
+agent. The **Critic** scope does not expand to BOM or images.
 
 ## The agent roster
 
-### Shipped or in progress (baseline specs 05, 06, 10, 11)
+### Shipped or in progress (baseline 05, 06, 10, 11; phase 1 specs 13, 14 tier 1)
 
-| Agent          | Spec                                    | Responsibility                                                                                                    |
-| -------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **Segmenter**  | [05](../../specs/05-ai-segment.md)      | Split the video into ordered steps with time bounds, `confidence`, `sourceNotes`. Video-first only.               |
-| **Instructor** | [06](../../specs/06-ai-instructions.md) | Fill operative fields per step (`instruction`, `caption`, tools, `PartRef`-backed parts, warnings, alternatives). |
-| **Critic**     | [10](../../specs/10-ai-critic.md)       | Review draft **text** for accuracy vs `sourceNotes`; adjust `confidence`, flag with `critique[]`. Never rewrites. |
-| **Learnings**  | [11](../../specs/11-learnings.md)       | Capture reusable domain knowledge from a run and feed it back into future runs.                                   |
+| Agent               | Spec                                    | Responsibility                                                                                                            |
+| ------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Segmenter**       | [05](../../specs/05-ai-segment.md)      | Split the video into ordered steps with time bounds, `confidence`, `sourceNotes`. Video-first only.                       |
+| **Instructor**      | [06](../../specs/06-ai-instructions.md) | Fill operative fields per step (`instruction`, `caption`, tools, `PartRef`-backed parts, warnings, alternatives).         |
+| **Critic**          | [10](../../specs/10-ai-critic.md)       | Review draft **text** for accuracy vs `sourceNotes`; adjust `confidence`, flag with `critique[]`. Never rewrites.         |
+| **Learnings**       | [11](../../specs/11-learnings.md)       | Capture reusable domain knowledge from a run and feed it back into future runs.                                           |
+| **BOM layer**       | [13](../../specs/13-bom-map.md)         | Parse BOM file, reconcile with `DigitalModel`; deterministic match → `PartRef[]`; AI **only** if ambiguous. Merged (#34). |
+| **Illustrator**     | [14](../../specs/14-ai-illustrate.md)   | Schematic AI image from a keyframe (video-only path). Cache on hash(base image + prompt + style). Tier 1 shipped.         |
+| **Compositor-lite** | [14](../../specs/14-ai-illustrate.md)   | IKEA layout on spec 12 canonical views (no pose alignment). Tier 1 shipped.                                               |
 
-### Planned (client alignment — specs 13, 14, 16)
+### Planned (specs 14 tier 2, 16)
 
-| Agent / job          | Spec                                         | Responsibility                                                                                              |
-| -------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **BOM layer**        | [13](../../specs/13-bom-map.md)              | Parse BOM file, reconcile with `DigitalModel`; deterministic match → `PartRef[]`; AI **only** if ambiguous. |
-| **Illustrator**      | [14](../../specs/14-ai-illustrate.md)        | Schematic AI images from video/keyframe (no CAD path). Cache on content hash.                               |
-| **Compositor-lite**  | [14](../../specs/14-ai-illustrate.md)        | IKEA layout on spec 12 canonical views (no pose alignment).                                                 |
-| **Compositor-full**  | [14 tier 2](../../specs/14-ai-illustrate.md) | Per-step CAD overlay — phase 2; requires pose alignment research.                                           |
-| **`regenerate` job** | [16](../../specs/16-regenerate-job.md)       | User prompt in editor; scope dispatches to Instructor or Illustrator/Compositor — not a new agent.          |
+| Agent / job          | Spec                                         | Responsibility                                                                                     |
+| -------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Compositor-full**  | [14 tier 2](../../specs/14-ai-illustrate.md) | Per-step CAD overlay — phase 2; requires pose alignment research.                                  |
+| **`regenerate` job** | [16](../../specs/16-regenerate-job.md)       | User prompt in editor; scope dispatches to Instructor or Illustrator/Compositor — not a new agent. |
 
 **Not in `packages/ai`:** spec 12 `packages/cad` (deterministic STEP/mesh ingest); BOM file parser
 (spec 13) follows the same pattern — engine-only, no model calls when the file is authoritative.

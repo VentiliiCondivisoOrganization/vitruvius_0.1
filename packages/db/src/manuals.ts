@@ -50,3 +50,33 @@ export async function deleteManual(client: DbClient, id: string): Promise<void> 
 	const { error } = await client.from('manuals').delete().eq('id', id);
 	if (error) throw new Error(`deleteManual: ${error.message}`);
 }
+
+// Retrieve all manuals, mapped to the InstructionManual type (with steps).
+export async function getManuals(client: DbClient): Promise<InstructionManual[]> {
+	const { data: manuals, error: manualsError } = await client
+		.from('manuals')
+		.select('*')
+		.order('created_at', { ascending: false })
+		.returns<ManualRow[]>();
+
+	if (manualsError) throw new Error(`getManuals: ${manualsError.message}`);
+	if (!manuals || manuals.length === 0) return [];
+
+	const manualIds = manuals.map((m) => m.id);
+	const { data: allSteps, error: stepsError } = await client
+		.from('steps')
+		.select('*')
+		.in('manual_id', manualIds)
+		.returns<StepRow[]>();
+
+	if (stepsError) throw new Error(`getManuals steps: ${stepsError.message}`);
+
+	const stepsByManualId = new Map<string, StepRow[]>();
+	for (const step of allSteps ?? []) {
+		const list = stepsByManualId.get(step.manual_id) ?? [];
+		list.push(step);
+		stepsByManualId.set(step.manual_id, list);
+	}
+
+	return manuals.map((m) => rowToManual(m, stepsByManualId.get(m.id) ?? []));
+}

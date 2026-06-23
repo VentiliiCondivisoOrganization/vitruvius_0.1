@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { invalidateAll } from '$app/navigation';
 	import {
 		MANUAL_STATUS,
 		REGENERATE_SCOPE,
@@ -22,36 +23,35 @@
 	const manual = $derived(data.manual);
 	const isReady = $derived(manual.status === 'ready');
 
-	// ---- Status view (non-ready manuals) -----------------------------------
-	// Derive the happy-path pipeline from the contract so it can't drift; `failed`
-	// is a terminal state shown on its own, not a stage.
-	const stages: readonly ManualStatus[] = MANUAL_STATUS.filter((s) => s !== 'failed');
+	// ---- Auto-refresh for non-ready manuals ---------------------------------
 	const failed = $derived(manual.status === 'failed');
+	$effect(() => {
+		if (!isReady && !failed) {
+			const interval = setInterval(() => {
+				invalidateAll();
+			}, 3000);
+			return () => clearInterval(interval);
+		}
+	});
+
+	// ---- Status view (non-ready manuals) -----------------------------------
+	const stages: readonly ManualStatus[] = MANUAL_STATUS.filter((s) => s !== 'failed');
 	const currentIndex = $derived(stages.indexOf(manual.status));
 
 	// ---- Editor view (ready manuals) ---------------------------------------
-	// A local, editable copy of the steps. Seeded from server data; persisted via
-	// the `save` form action. `structuredClone` keeps the original `data` immutable
-	// so a failed save leaves the page coherent.
 	let steps = $state<ManualStep[]>([]);
 	let dirty = $state(false);
 	let saving = $state(false);
-	// The manual id the local `steps` were seeded from. SvelteKit can reuse this
-	// component instance across `/manuals/[id]` navigations, so we must detect an id
-	// change and re-seed even if the previous manual had unsaved edits — otherwise the
-	// new manual's header would show (and could submit) the old manual's steps.
 	let seededId = $state<string | null>(null);
+
 	$effect(() => {
 		const m = manual;
 		if (m.id !== seededId) {
-			// New manual (navigation): always reset, discarding any stale edit state.
 			steps = structuredClone($state.snapshot(m.steps)) as ManualStep[];
 			seededId = m.id;
 			dirty = false;
 			return;
 		}
-		// Same manual: re-seed after a successful save re-runs the load, but never
-		// clobber an in-progress edit.
 		if (!dirty && !saving) {
 			steps = structuredClone($state.snapshot(m.steps)) as ManualStep[];
 		}
@@ -78,18 +78,15 @@
 		edited: 'Edited'
 	};
 	const reviewStyles: Record<StepReviewStatus, string> = {
-		hypothesis: 'bg-amber-50 text-amber-700 ring-amber-200',
-		confirmed: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-		edited: 'bg-sky-50 text-sky-700 ring-sky-200'
+		hypothesis: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+		confirmed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+		edited: 'bg-sky-500/10 text-sky-400 border-sky-500/20'
 	};
 
 	function confidencePct(c: number): number {
 		return Math.round(c * 100);
 	}
 
-	// A field-level edit always demotes a step to `edited` (unless the user has
-	// explicitly confirmed it via the Confirm button). This is the spec's signal
-	// that human work happened.
 	function touchStep(index: number): void {
 		const step = steps[index];
 		if (step && step.reviewStatus === 'hypothesis') {
@@ -105,7 +102,7 @@
 		markDirty();
 	}
 
-	// ---- String-list helpers (tools / parts / warnings / quality checks) ----
+	// ---- String-list helpers (tools / parts / warnings) -------------------
 	function addItem(index: number, field: ListField): void {
 		steps[index]?.[field].push('');
 		touchStep(index);
@@ -122,6 +119,7 @@
 
 	type ListField = 'tools' | 'warnings';
 
+	// Safe addition to keep lists correct.
 	function addPart(index: number): void {
 		steps[index]?.parts.push(emptyPartRef());
 		touchStep(index);
@@ -170,9 +168,6 @@
 	}
 
 	// ---- Alternatives -------------------------------------------------------
-	// Choosing an alternative promotes it to the instruction and keeps the former
-	// instruction in the alternatives list, so nothing is lost and the choice is
-	// reversible.
 	function chooseAlternative(index: number, altIndex: number): void {
 		const step = steps[index];
 		if (!step) return;
@@ -189,8 +184,6 @@
 		const step = steps[index];
 		if (!step) return;
 		const mid = Math.round((step.startMs + step.endMs) / 2);
-		// The second half starts where the first ends and reuses the keyframe; the
-		// editor fills in the detail. A fresh id keeps it a distinct row.
 		const second: ManualStep = {
 			...structuredClone($state.snapshot(step)),
 			id: crypto.randomUUID(),
@@ -234,6 +227,7 @@
 		return [...new Set(items.map((s) => s.trim()).filter(Boolean))];
 	}
 
+	// Dedupe helper for part references.
 	function dedupePartRefs(items: PartRef[]): PartRef[] {
 		const seen: Record<string, true> = {};
 		const out: PartRef[] = [];
@@ -286,498 +280,790 @@
 		markDirty();
 	}
 
-	// The hidden payload submitted to the `save` action. Re-numbered server-side
-	// too, but kept tidy here so the round-trip is obvious.
 	const payload = $derived(
 		JSON.stringify(steps.map((step, index) => ({ ...$state.snapshot(step), order: index })))
 	);
 </script>
 
-<main class="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-12">
-	<header class="space-y-2">
-		<a href={resolve('/')} class="text-sm text-slate-500 hover:text-slate-700">← Upload another</a>
-		<h1 class="text-3xl font-bold tracking-tight text-slate-900">{manual.title}</h1>
-		<p class="text-sm text-slate-500">Manual <span class="font-mono">{manual.id}</span></p>
-	</header>
+<svelte:head>
+	<title>{manual.title} — Edit Assembly Manual</title>
+</svelte:head>
 
-	{#if !isReady}
-		<section class="space-y-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Status</h2>
-			{#if failed}
-				<p class="rounded bg-red-50 px-3 py-2 text-sm text-red-700">
-					Processing failed. Try uploading the video again.
+<div
+	class="min-h-screen bg-slate-950 text-slate-100 selection:bg-slate-800 selection:text-white relative"
+>
+	<!-- Decorative grid background -->
+	<div
+		class="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30 pointer-events-none"
+	></div>
+
+	<main class="relative mx-auto max-w-5xl px-6 py-12 lg:py-16 space-y-8">
+		<!-- Header -->
+		<header class="space-y-3 relative z-10">
+			<div class="flex flex-wrap items-center gap-2">
+				<a
+					href={resolve('/')}
+					class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+				>
+					<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M15 19l-7-7 7-7"
+						/>
+					</svg>
+					All manuals
+				</a>
+				<span class="text-slate-700">/</span>
+				<span
+					class="text-xs font-mono text-slate-500 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-lg"
+					>{manual.id}</span
+				>
+			</div>
+
+			<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+				<h1
+					class="text-3xl lg:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent"
+				>
+					{manual.title}
+				</h1>
+
+				{#if isReady}
+					<a
+						href={resolve(`/manuals/${manual.id}/export`)}
+						class="self-start md:self-auto inline-flex items-center gap-2 rounded-xl border border-indigo-500/30 hover:border-indigo-500/60 bg-indigo-500/10 hover:bg-indigo-500/15 px-4 py-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-all cursor-pointer shadow-lg shadow-indigo-500/5"
+					>
+						<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+							/>
+						</svg>
+						Export Manual
+					</a>
+				{/if}
+			</div>
+		</header>
+
+		{#if !isReady}
+			<!-- Status checklist / workflow wait -->
+			<section
+				class="max-w-md mx-auto rounded-2xl border border-slate-900 bg-slate-900/20 backdrop-blur-md p-8 shadow-xl space-y-6 relative overflow-hidden group"
+			>
+				<div
+					class="absolute -right-16 -top-16 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-500"
+				></div>
+
+				<h2
+					class="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2"
+				>
+					<span class="h-2 w-2 rounded-full bg-indigo-400 animate-ping"></span>
+					Processing Pipeline
+				</h2>
+
+				{#if failed}
+					<div
+						class="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs text-rose-400 flex items-start gap-2.5"
+					>
+						<svg
+							class="w-4 h-4 shrink-0 mt-0.5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+							/>
+						</svg>
+						<div>
+							<p class="font-semibold text-slate-200">Assembly manual creation failed</p>
+							<p class="text-slate-500 mt-1 leading-relaxed">
+								The processing run encountered an error. Please try uploading the source video
+								again.
+							</p>
+						</div>
+					</div>
+				{:else}
+					<ol class="space-y-4">
+						{#each stages as stage, i (stage)}
+							{@const active = i === currentIndex}
+							{@const completed = i < currentIndex}
+							<li class="flex items-center gap-3.5 text-xs">
+								{#if completed}
+									<div
+										class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 border border-indigo-500 text-indigo-400 text-[10px] font-bold"
+									>
+										✓
+									</div>
+								{:else}
+									<div
+										class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border {active
+											? 'border-indigo-400 bg-indigo-950/60 text-indigo-400 font-bold'
+											: 'border-slate-800 bg-slate-950 text-slate-600'} text-[9px]"
+									>
+										{i + 1}
+									</div>
+								{/if}
+								<span
+									class="font-bold uppercase tracking-wider {active
+										? 'text-white'
+										: completed
+											? 'text-slate-300 font-semibold'
+											: 'text-slate-600'}">{stage}</span
+								>
+								{#if active && stage !== 'ready'}
+									<span
+										class="text-[9px] px-2 py-0.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 font-medium animate-pulse ml-auto"
+										>in progress</span
+									>
+								{/if}
+							</li>
+						{/each}
+					</ol>
+				{/if}
+
+				<p class="text-[11px] text-slate-500 leading-relaxed pt-4 border-t border-slate-900">
+					This workspace will refresh automatically and open the interactive step editor as soon as
+					the processing status transitions to <span
+						class="font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.5 rounded text-[10px]"
+						>ready</span
+					>.
 				</p>
-			{:else}
-				<ol class="space-y-2">
-					{#each stages as stage, i (stage)}
-						<li class="flex items-center gap-2 text-sm">
-							<span
-								class="inline-block h-2 w-2 rounded-full {i <= currentIndex
-									? 'bg-slate-900'
-									: 'bg-slate-300'}"
-							></span>
-							<span class={i <= currentIndex ? 'text-slate-900' : 'text-slate-400'}>{stage}</span>
-							{#if i === currentIndex && stage !== 'ready'}
-								<span class="text-slate-400">— in progress</span>
+			</section>
+		{:else}
+			<form
+				method="POST"
+				action="?/regenerate"
+				use:enhance={() => {
+					regenerating = true;
+					return async ({ update }) => {
+						try {
+							await update({ reset: false });
+						} finally {
+							regenerating = false;
+						}
+					};
+				}}
+				class="rounded-2xl border border-slate-900 bg-slate-900/20 backdrop-blur-md p-6 hover:border-slate-800/80 transition-all duration-300 mb-6"
+			>
+				<details class="group/details">
+					<summary
+						class="cursor-pointer text-[11px] font-bold uppercase tracking-wider text-slate-400 select-none outline-none flex items-center justify-between"
+					>
+						Regenerate a step with AI
+						<svg
+							class="w-3.5 h-3.5 text-slate-500 transition-transform group-open/details:rotate-180"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M19 9l-7 7-7-7"
+							/>
+						</svg>
+					</summary>
+					<p class="mt-3 text-xs text-slate-500 leading-relaxed">
+						Queues an AI pass on the saved manual — save your edits first. The step comes back as
+						<span
+							class="font-mono text-indigo-400 bg-indigo-500/5 border border-indigo-500/10 px-1 py-0.5 rounded text-[10px]"
+							>edited</span
+						> for you to re-confirm.
+					</p>
+					<div class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+						<select
+							name="stepId"
+							required
+							class="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+						>
+							<option value="" disabled selected class="bg-slate-950 text-slate-500"
+								>Choose a step…</option
+							>
+							{#each manual.steps as step, i (step.id)}
+								<option value={step.id} class="bg-slate-950 text-slate-200"
+									>{i + 1}. {step.title}</option
+								>
+							{/each}
+						</select>
+						<select
+							name="scope"
+							class="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+						>
+							{#each regenScopes as scope (scope)}
+								<option value={scope} class="bg-slate-950 text-slate-200"
+									>{regenScopeLabels[scope]}</option
+								>
+							{/each}
+						</select>
+						<button
+							type="submit"
+							disabled={regenerating}
+							class="rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none px-4 py-2 text-xs font-bold text-white transition-all shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.98] cursor-pointer"
+						>
+							{regenerating ? 'Queuing…' : 'Regenerate'}
+						</button>
+					</div>
+					<input
+						name="prompt"
+						required
+						placeholder="What should change? e.g. “mention the 4mm hex key” or “make the arrow clearer”"
+						class="mt-3 block w-full rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs text-white placeholder:text-slate-700 focus:outline-none focus:border-indigo-500 transition-all"
+					/>
+					{#if form?.regenerateQueued}
+						<p
+							class="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-400"
+						>
+							Regeneration queued. Reload in a moment to see the updated step.
+						</p>
+					{/if}
+				</details>
+			</form>
+
+			<!-- Editor Workspace -->
+			<form
+				method="POST"
+				action="?/save"
+				use:enhance={() => {
+					saving = true;
+					return async ({ update, result }) => {
+						try {
+							await update({ reset: false });
+							if (result.type === 'success') dirty = false;
+						} finally {
+							saving = false;
+						}
+					};
+				}}
+				class="space-y-6"
+			>
+				<input type="hidden" name="payload" value={payload} />
+
+				<!-- Sticky Header Toolbar -->
+				<div
+					class="sticky top-4 z-20 rounded-2xl border border-slate-800 bg-slate-950/80 backdrop-blur-md px-6 py-4 flex items-center justify-between gap-4 shadow-xl"
+				>
+					<div class="text-xs font-semibold text-slate-400 flex items-center gap-2">
+						<span
+							class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg text-slate-200"
+						>
+							{steps.length}
+							{steps.length === 1 ? 'Step' : 'Steps'}
+						</span>
+						{#if dirty}
+							<span class="text-amber-400 flex items-center gap-1.5 animate-pulse">
+								<span class="h-2 w-2 rounded-full bg-amber-400"></span>
+								Unsaved changes
+							</span>
+						{:else if form?.saved}
+							<span class="text-emerald-400 flex items-center gap-1.5">
+								<span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+								All changes saved
+							</span>
+						{/if}
+					</div>
+
+					<div class="flex items-center gap-2">
+						<a
+							href={resolve(`/manuals/${manual.id}/export`)}
+							class="rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-slate-700 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white transition-all"
+						>
+							Export
+						</a>
+						<button
+							type="button"
+							onclick={addStep}
+							class="rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-slate-700 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer"
+						>
+							+ Add Step
+						</button>
+						<button
+							type="submit"
+							disabled={saving || !dirty}
+							class="rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none px-4 py-2 text-xs font-bold text-white transition-all shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.98] cursor-pointer"
+						>
+							{saving ? 'Saving...' : 'Save Changes'}
+						</button>
+					</div>
+				</div>
+
+				{#if form?.error}
+					<div
+						class="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs text-rose-400 flex items-center gap-2"
+					>
+						<svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+							/>
+						</svg>
+						<span>{form.error}</span>
+					</div>
+				{/if}
+
+				{#if openBomPartCount > 0}
+					<div
+						class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs text-amber-300 flex items-start gap-2.5 shadow-lg shadow-amber-500/5"
+					>
+						<svg
+							class="w-4 h-4 shrink-0 mt-0.5 text-amber-400"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+							/>
+						</svg>
+						<div>
+							<p class="font-bold">BOM Resolution Required</p>
+							<p class="text-amber-400/80 mt-1 leading-relaxed">
+								{openBomPartCount} component{openBomPartCount === 1 ? '' : 's'} need a BOM choice before
+								export. Pick one option per highlighted part below, then save changes.
+							</p>
+						</div>
+					</div>
+				{/if}
+
+				{#if steps.length === 0}
+					<div
+						class="rounded-2xl border border-dashed border-slate-800 bg-slate-900/10 p-16 text-center space-y-3"
+					>
+						<p class="text-sm font-semibold text-slate-400">This manual has no steps yet</p>
+						<p class="text-xs text-slate-600">
+							Add a new step using the toolbar above to start drafting.
+						</p>
+					</div>
+				{/if}
+
+				<!-- Steps List -->
+				<ol class="space-y-6">
+					{#each steps as step, i (step.id)}
+						<li
+							class="rounded-2xl border border-slate-900 bg-slate-900/20 backdrop-blur-md p-6 hover:border-slate-800/80 transition-all duration-300 relative overflow-hidden group/step"
+						>
+							<div
+								class="absolute -right-24 -top-24 w-48 h-48 bg-slate-900/5 rounded-full blur-3xl pointer-events-none"
+							></div>
+
+							<!-- Step Header -->
+							<div
+								class="mb-5 flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-950"
+							>
+								<div class="flex items-center gap-3">
+									<span
+										class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300"
+									>
+										{i + 1}
+									</span>
+									<span
+										class="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border {reviewStyles[
+											step.reviewStatus
+										]}"
+									>
+										{reviewLabels[step.reviewStatus]}
+									</span>
+									<span class="text-xs text-slate-500 font-medium">
+										Confidence: <span
+											class={step.confidence < 0.5
+												? 'text-amber-400 font-semibold'
+												: 'text-indigo-400 font-bold'}>{confidencePct(step.confidence)}%</span
+										>
+									</span>
+								</div>
+
+								<div class="flex items-center gap-1.5">
+									<button
+										type="button"
+										title="Move Step Up"
+										onclick={() => moveStep(i, -1)}
+										disabled={i === 0}
+										class="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-900 disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer"
+									>
+										<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M5 15l7-7 7 7"
+											/>
+										</svg>
+									</button>
+									<button
+										type="button"
+										title="Move Step Down"
+										onclick={() => moveStep(i, 1)}
+										disabled={i === steps.length - 1}
+										class="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-900 disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer"
+									>
+										<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M19 9l-7 7-7-7"
+											/>
+										</svg>
+									</button>
+									<span class="h-4 w-px bg-slate-900 mx-1"></span>
+									<button
+										type="button"
+										title="Remove Step"
+										onclick={() => removeStep(i)}
+										class="rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-rose-500 hover:text-white hover:bg-rose-600/95 transition-all cursor-pointer"
+									>
+										Remove
+									</button>
+								</div>
+							</div>
+
+							<!-- Step Metadata Bar -->
+							<div class="mb-5 space-y-1">
+								<div
+									class="h-1.5 w-full overflow-hidden rounded-full bg-slate-950 border border-slate-900"
+								>
+									<div
+										class="h-full rounded-full transition-all duration-300 {step.confidence < 0.5
+											? 'bg-gradient-to-r from-amber-500 to-yellow-400 shadow-md shadow-amber-500/20'
+											: 'bg-gradient-to-r from-indigo-500 to-indigo-400 shadow-md shadow-indigo-500/20'}"
+										style="width: {confidencePct(step.confidence)}%"
+									></div>
+								</div>
+							</div>
+
+							<!-- Critic flags, surfaced when present -->
+							{#if step.critique.length > 0}
+								<div
+									class="mb-5 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-1.5"
+								>
+									<p
+										class="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5"
+									>
+										<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+											/>
+										</svg>
+										Critic Review Warnings
+									</p>
+									<ul class="list-disc space-y-1 pl-4 text-xs text-amber-300/80 leading-relaxed">
+										{#each step.critique as flag, fi (fi)}
+											<li>{flag}</li>
+										{/each}
+									</ul>
+								</div>
 							{/if}
+
+							<!-- Editor Layout Grid -->
+							<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+								<!-- Media and Times (Col 4) -->
+								<div class="md:col-span-4 space-y-4">
+									{#if step.keyframeUrl}
+										<div
+											class="rounded-xl overflow-hidden border border-slate-900 bg-slate-950/60 aspect-video relative group/img shadow-md"
+										>
+											<!-- eslint-disable svelte/no-navigation-without-resolve -->
+											<img
+												src={step.keyframeUrl}
+												alt="Keyframe for step"
+												class="w-full h-full object-cover transition-transform group-hover/img:scale-[1.02] duration-500"
+											/>
+											<!-- eslint-enable svelte/no-navigation-without-resolve -->
+											<div
+												class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-950/80 border border-slate-900 text-[9px] text-slate-400 font-mono"
+											>
+												Keyframe
+											</div>
+										</div>
+									{/if}
+
+									<div class="grid grid-cols-2 gap-3.5">
+										<label class="block">
+											<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
+												>Start (ms)</span
+											>
+											<input
+												type="number"
+												min="0"
+												bind:value={step.startMs}
+												oninput={() => touchStep(i)}
+												class="mt-1.5 block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500 focus:bg-slate-950 transition-all"
+											/>
+										</label>
+										<label class="block">
+											<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
+												>End (ms)</span
+											>
+											<input
+												type="number"
+												min="0"
+												bind:value={step.endMs}
+												oninput={() => touchStep(i)}
+												class="mt-1.5 block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500 focus:bg-slate-950 transition-all"
+											/>
+										</label>
+									</div>
+								</div>
+
+								<!-- Content Fields (Col 8) -->
+								<div class="md:col-span-8 space-y-4">
+									<label class="block">
+										<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
+											>Title</span
+										>
+										<input
+											type="text"
+											bind:value={step.title}
+											oninput={() => touchStep(i)}
+											class="mt-1.5 block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500 focus:bg-slate-950 transition-all"
+										/>
+									</label>
+
+									<label class="block">
+										<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
+											>Instruction Detail</span
+										>
+										<textarea
+											bind:value={step.instruction}
+											oninput={() => touchStep(i)}
+											rows="3"
+											placeholder="Describe what to do in this step..."
+											class="mt-1.5 block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs font-medium text-slate-300 focus:outline-none focus:border-indigo-500 focus:bg-slate-950 transition-all leading-relaxed"
+										></textarea>
+									</label>
+
+									<!-- Parts, Tools, Warnings, Alternatives -->
+									<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+										<!-- Components -->
+										<div class="rounded-xl border border-slate-900 bg-slate-950/40 p-4 space-y-3">
+											<div class="flex items-center justify-between">
+												<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
+													>Parts / Components</span
+												>
+												<button
+													type="button"
+													onclick={() => addPart(i)}
+													class="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+												>
+													+ Add Part
+												</button>
+											</div>
+											<div class="space-y-2">
+												{#each step.parts as part, pi (pi)}
+													<BomPartPicker
+														{part}
+														partIndex={pi}
+														bomCandidates={bomCandidatesByPart.get(part) ?? []}
+														onUpdateLabel={(val) => updatePartLabel(i, pi, val)}
+														onRemove={() => removePart(i, pi)}
+														onChooseCandidate={(bomItemId) => chooseBomCandidate(i, pi, bomItemId)}
+													/>
+												{/each}
+												{#if step.parts.length === 0}
+													<p class="text-[11px] text-slate-600 italic">
+														No parts mapped to this step.
+													</p>
+												{/if}
+											</div>
+										</div>
+
+										<!-- Tools -->
+										<div class="rounded-xl border border-slate-900 bg-slate-950/40 p-4 space-y-3">
+											<div class="flex items-center justify-between">
+												<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
+													>Required Tools</span
+												>
+												<button
+													type="button"
+													onclick={() => addItem(i, 'tools')}
+													class="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+												>
+													+ Add Tool
+												</button>
+											</div>
+											<div class="space-y-1.5">
+												{#each step.tools as tool, ti (ti)}
+													<div class="flex items-center gap-2">
+														<input
+															type="text"
+															value={tool}
+															oninput={(e) => updateItem(i, 'tools', ti, e.currentTarget.value)}
+															class="block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
+														/>
+														<button
+															type="button"
+															onclick={() => removeItem(i, 'tools', ti)}
+															class="text-slate-500 hover:text-rose-400 text-sm px-1.5 transition-colors cursor-pointer"
+														>
+															×
+														</button>
+													</div>
+												{/each}
+												{#if step.tools.length === 0}
+													<p class="text-[11px] text-slate-600 italic">
+														No tools mapped to this step.
+													</p>
+												{/if}
+											</div>
+										</div>
+									</div>
+
+									<!-- Warnings & Quality Checks -->
+									<div class="rounded-xl border border-slate-900 bg-slate-950/40 p-4 space-y-3">
+										<div class="flex items-center justify-between">
+											<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
+												>Warnings & Quality Checks</span
+											>
+											<button
+												type="button"
+												onclick={() => addItem(i, 'warnings')}
+												class="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+											>
+												+ Add Check
+											</button>
+										</div>
+										<div class="space-y-1.5">
+											{#each step.warnings as warning, wi (wi)}
+												<div class="flex items-center gap-2">
+													<input
+														type="text"
+														value={warning}
+														oninput={(e) => updateItem(i, 'warnings', wi, e.currentTarget.value)}
+														placeholder="e.g. Align the notches perfectly..."
+														class="block w-full rounded-lg border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5 text-xs text-amber-300/90 focus:outline-none focus:border-amber-500 transition-all placeholder:text-slate-700"
+													/>
+													<button
+														type="button"
+														onclick={() => removeItem(i, 'warnings', wi)}
+														class="text-slate-500 hover:text-rose-400 text-sm px-1.5 transition-colors cursor-pointer"
+													>
+														×
+													</button>
+												</div>
+											{/each}
+											{#if step.warnings.length === 0}
+												<p class="text-[11px] text-slate-600 italic">
+													No special warnings or quality checks.
+												</p>
+											{/if}
+										</div>
+									</div>
+
+									<!-- Alternatives -->
+									{#if step.alternatives.length > 0}
+										<div class="rounded-xl border border-slate-900 bg-slate-950/40 p-4 space-y-3">
+											<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
+												>Alternative Instructions (AI)</span
+											>
+											<ul class="space-y-2">
+												{#each step.alternatives as alt, ai (ai)}
+													<li
+														class="flex items-center justify-between gap-3 rounded-lg border border-slate-900 bg-slate-950/60 p-2.5 text-xs text-slate-300"
+													>
+														<span class="leading-relaxed">{alt}</span>
+														<button
+															type="button"
+															onclick={() => chooseAlternative(i, ai)}
+															class="whitespace-nowrap rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-200 hover:text-white transition-colors cursor-pointer"
+														>
+															Use Alternative
+														</button>
+													</li>
+												{/each}
+											</ul>
+										</div>
+									{/if}
+
+									<!-- Source notes (read-only evidence) -->
+									{#if step.sourceNotes.length > 0}
+										<details
+											class="rounded-xl border border-slate-900 bg-slate-950/20 px-4 py-3 group/details"
+										>
+											<summary
+												class="cursor-pointer text-[10px] font-bold uppercase tracking-wider text-slate-500 select-none outline-none flex items-center justify-between"
+											>
+												Source evidence notes ({step.sourceNotes.length})
+												<svg
+													class="w-3.5 h-3.5 transition-transform group-open/details:rotate-180"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M19 9l-7 7-7-7"
+													/>
+												</svg>
+											</summary>
+											<ul
+												class="mt-3 list-disc pl-4 text-xs text-slate-400/80 space-y-1.5 leading-relaxed"
+											>
+												{#each step.sourceNotes as note, ni (ni)}
+													<li>{note}</li>
+												{/each}
+											</ul>
+										</details>
+									{/if}
+								</div>
+							</div>
+
+							<!-- Step actions border footer -->
+							<div
+								class="mt-6 flex flex-wrap items-center gap-2 border-t border-slate-950 pt-4 text-xs"
+							>
+								<span class="text-slate-500 font-medium">Verify Step:</span>
+								{#each STEP_REVIEW_STATUS as status (status)}
+									<button
+										type="button"
+										onclick={() => setReviewStatus(i, status)}
+										class="rounded-lg px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer {step.reviewStatus ===
+										status
+											? reviewStyles[status]
+											: 'text-slate-400 border-slate-800 bg-slate-900/60 hover:bg-slate-800 hover:text-white'}"
+									>
+										{reviewLabels[status]}
+									</button>
+								{/each}
+
+								<span class="mx-2 h-4 w-px bg-slate-900"></span>
+
+								<button
+									type="button"
+									onclick={() => splitStep(i)}
+									class="rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer"
+								>
+									Split Step
+								</button>
+								<button
+									type="button"
+									onclick={() => mergeWithNext(i)}
+									disabled={i === steps.length - 1}
+									class="rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-20 disabled:pointer-events-none"
+								>
+									Merge with Next
+								</button>
+							</div>
 						</li>
 					{/each}
 				</ol>
-			{/if}
-			<p class="text-sm text-slate-400">
-				The guided editor opens here once processing reports
-				<span class="font-mono">ready</span>.
-			</p>
-		</section>
-	{:else}
-		<form
-			method="POST"
-			action="?/regenerate"
-			use:enhance={() => {
-				regenerating = true;
-				return async ({ update }) => {
-					try {
-						await update({ reset: false });
-					} finally {
-						regenerating = false;
-					}
-				};
-			}}
-			class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-		>
-			<details>
-				<summary class="cursor-pointer text-sm font-semibold text-slate-700">
-					Regenerate a step with AI
-				</summary>
-				<p class="mt-2 text-xs text-slate-500">
-					Queues an AI pass on the saved manual — save your edits first. The step comes back as
-					<span class="font-mono">edited</span> for you to re-confirm.
-				</p>
-				<div class="mt-3 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
-					<select
-						name="stepId"
-						required
-						class="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
-					>
-						<option value="" disabled selected>Choose a step…</option>
-						{#each manual.steps as step, i (step.id)}
-							<option value={step.id}>{i + 1}. {step.title}</option>
-						{/each}
-					</select>
-					<select
-						name="scope"
-						class="rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-900"
-					>
-						{#each regenScopes as scope (scope)}
-							<option value={scope}>{regenScopeLabels[scope]}</option>
-						{/each}
-					</select>
-					<button
-						type="submit"
-						disabled={regenerating}
-						class="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-100 disabled:opacity-50"
-					>
-						{regenerating ? 'Queuing…' : 'Regenerate'}
-					</button>
-				</div>
-				<input
-					name="prompt"
-					required
-					placeholder="What should change? e.g. “mention the 4mm hex key” or “make the arrow clearer”"
-					class="mt-3 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-				/>
-				{#if form?.regenerateQueued}
-					<p class="mt-3 rounded bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-						Regeneration queued. Reload in a moment to see the updated step.
-					</p>
-				{/if}
-			</details>
-		</form>
-
-		<form
-			method="POST"
-			action="?/save"
-			use:enhance={() => {
-				saving = true;
-				return async ({ update, result }) => {
-					try {
-						await update({ reset: false });
-						if (result.type === 'success') dirty = false;
-					} finally {
-						saving = false;
-					}
-				};
-			}}
-		>
-			<input type="hidden" name="payload" value={payload} />
-
-			<div
-				class="sticky top-0 z-10 -mx-6 mb-6 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur"
-			>
-				<div class="text-sm text-slate-600">
-					{steps.length}
-					{steps.length === 1 ? 'step' : 'steps'}
-					{#if dirty}
-						<span class="ml-2 text-amber-600">• unsaved changes</span>
-					{:else if form?.saved}
-						<span class="ml-2 text-emerald-600">• saved</span>
-					{/if}
-				</div>
-				<div class="flex items-center gap-2">
-					<a
-						href={resolve(`/manuals/${manual.id}/export`)}
-						class="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-					>
-						Export
-					</a>
-					<button
-						type="button"
-						onclick={addStep}
-						class="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-					>
-						+ Add step
-					</button>
-					<button
-						type="submit"
-						disabled={saving || !dirty}
-						class="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-100 disabled:opacity-50"
-					>
-						{saving ? 'Saving…' : 'Save changes'}
-					</button>
-				</div>
-			</div>
-
-			{#if form?.error}
-				<p class="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{form.error}</p>
-			{/if}
-
-			{#if openBomPartCount > 0}
-				<p
-					class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
-				>
-					{openBomPartCount} component{openBomPartCount === 1 ? '' : 's'} need a BOM choice before export.
-					Pick one option per highlighted part below, then save.
-				</p>
-			{/if}
-
-			{#if steps.length === 0}
-				<p
-					class="rounded border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500"
-				>
-					This manual has no steps yet. Add one to start building it.
-				</p>
-			{/if}
-
-			<ol class="space-y-6">
-				{#each steps as step, i (step.id)}
-					<li class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-						<div class="mb-3 flex items-start justify-between gap-3">
-							<div class="flex items-center gap-2">
-								<span
-									class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-slate-100"
-								>
-									{i + 1}
-								</span>
-								<span
-									class="rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset {reviewStyles[
-										step.reviewStatus
-									]}"
-								>
-									{reviewLabels[step.reviewStatus]}
-								</span>
-								<span class="text-xs text-slate-500">
-									confidence {confidencePct(step.confidence)}%
-								</span>
-							</div>
-							<div class="flex items-center gap-1">
-								<button
-									type="button"
-									title="Move up"
-									onclick={() => moveStep(i, -1)}
-									disabled={i === 0}
-									class="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30"
-								>
-									↑
-								</button>
-								<button
-									type="button"
-									title="Move down"
-									onclick={() => moveStep(i, 1)}
-									disabled={i === steps.length - 1}
-									class="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30"
-								>
-									↓
-								</button>
-								<button
-									type="button"
-									title="Remove step"
-									onclick={() => removeStep(i)}
-									class="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50"
-								>
-									Remove
-								</button>
-							</div>
-						</div>
-
-						<!-- Confidence bar -->
-						<div class="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-							<div
-								class="h-full rounded-full {step.confidence < 0.5
-									? 'bg-amber-400'
-									: 'bg-emerald-400'}"
-								style="width: {confidencePct(step.confidence)}%"
-							></div>
-						</div>
-
-						<!-- Critic flags (spec 10), surfaced when present -->
-						{#if step.critique.length > 0}
-							<div class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2">
-								<p class="text-xs font-semibold uppercase tracking-wide text-amber-700">
-									Critic flags
-								</p>
-								<ul class="mt-1 list-disc space-y-0.5 pl-4 text-sm text-amber-800">
-									{#each step.critique as flag, fi (fi)}
-										<li>{flag}</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-
-						<div class="grid gap-4">
-							<label class="block">
-								<span class="text-xs font-medium uppercase tracking-wide text-slate-500">Title</span
-								>
-								<input
-									type="text"
-									bind:value={step.title}
-									oninput={() => touchStep(i)}
-									class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-								/>
-							</label>
-
-							<label class="block">
-								<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-									Instruction
-								</span>
-								<textarea
-									bind:value={step.instruction}
-									oninput={() => touchStep(i)}
-									rows="3"
-									placeholder="Describe what to do in this step. Note any missing info here."
-									class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-								></textarea>
-							</label>
-
-							<div class="grid grid-cols-2 gap-4">
-								<label class="block">
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										Start (ms)
-									</span>
-									<input
-										type="number"
-										min="0"
-										bind:value={step.startMs}
-										oninput={() => touchStep(i)}
-										class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-									/>
-								</label>
-								<label class="block">
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										End (ms)
-									</span>
-									<input
-										type="number"
-										min="0"
-										bind:value={step.endMs}
-										oninput={() => touchStep(i)}
-										class="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900"
-									/>
-								</label>
-							</div>
-
-							<!-- Components / parts -->
-							<div>
-								<div class="flex items-center justify-between">
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										Components / parts
-									</span>
-									<button
-										type="button"
-										onclick={() => addPart(i)}
-										class="text-xs text-slate-500 hover:text-slate-800"
-									>
-										+ Add
-									</button>
-								</div>
-								<div class="mt-1 space-y-3">
-									{#each step.parts as part, pi (pi)}
-										<BomPartPicker
-											{part}
-											partIndex={pi}
-											bomCandidates={bomCandidatesByPart.get(part) ?? []}
-											onUpdateLabel={(val) => updatePartLabel(i, pi, val)}
-											onRemove={() => removePart(i, pi)}
-											onChooseCandidate={(bomItemId) => chooseBomCandidate(i, pi, bomItemId)}
-										/>
-									{/each}
-									{#if step.parts.length === 0}
-										<p class="text-xs text-slate-400">No parts listed.</p>
-									{/if}
-								</div>
-							</div>
-
-							<!-- Tools -->
-							<div>
-								<div class="flex items-center justify-between">
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500"
-										>Tools</span
-									>
-									<button
-										type="button"
-										onclick={() => addItem(i, 'tools')}
-										class="text-xs text-slate-500 hover:text-slate-800"
-									>
-										+ Add
-									</button>
-								</div>
-								<div class="mt-1 space-y-1.5">
-									{#each step.tools as tool, ti (ti)}
-										<div class="flex items-center gap-2">
-											<input
-												type="text"
-												value={tool}
-												oninput={(e) => updateItem(i, 'tools', ti, e.currentTarget.value)}
-												class="block w-full rounded border border-slate-300 px-2 py-1 text-sm text-slate-900"
-											/>
-											<button
-												type="button"
-												onclick={() => removeItem(i, 'tools', ti)}
-												class="text-xs text-red-500 hover:text-red-700">×</button
-											>
-										</div>
-									{/each}
-									{#if step.tools.length === 0}
-										<p class="text-xs text-slate-400">No tools listed.</p>
-									{/if}
-								</div>
-							</div>
-
-							<!-- Warnings / quality checks -->
-							<div>
-								<div class="flex items-center justify-between">
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										Warnings &amp; quality checks
-									</span>
-									<button
-										type="button"
-										onclick={() => addItem(i, 'warnings')}
-										class="text-xs text-slate-500 hover:text-slate-800"
-									>
-										+ Add
-									</button>
-								</div>
-								<div class="mt-1 space-y-1.5">
-									{#each step.warnings as warning, wi (wi)}
-										<div class="flex items-center gap-2">
-											<input
-												type="text"
-												value={warning}
-												oninput={(e) => updateItem(i, 'warnings', wi, e.currentTarget.value)}
-												placeholder="e.g. Wear gloves / Check the panel is flush"
-												class="block w-full rounded border border-amber-300 bg-amber-50/40 px-2 py-1 text-sm text-slate-900"
-											/>
-											<button
-												type="button"
-												onclick={() => removeItem(i, 'warnings', wi)}
-												class="text-xs text-red-500 hover:text-red-700">×</button
-											>
-										</div>
-									{/each}
-									{#if step.warnings.length === 0}
-										<p class="text-xs text-slate-400">No warnings or checks.</p>
-									{/if}
-								</div>
-							</div>
-
-							<!-- Alternatives -->
-							{#if step.alternatives.length > 0}
-								<div>
-									<span class="text-xs font-medium uppercase tracking-wide text-slate-500">
-										Alternatives
-									</span>
-									<ul class="mt-1 space-y-1.5">
-										{#each step.alternatives as alt, ai (ai)}
-											<li class="flex items-center gap-2">
-												<span
-													class="block w-full rounded bg-slate-50 px-2 py-1 text-sm text-slate-700"
-												>
-													{alt}
-												</span>
-												<button
-													type="button"
-													onclick={() => chooseAlternative(i, ai)}
-													class="whitespace-nowrap rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
-												>
-													Use this
-												</button>
-											</li>
-										{/each}
-									</ul>
-								</div>
-							{/if}
-
-							<!-- Source notes (read-only evidence) -->
-							{#if step.sourceNotes.length > 0}
-								<details class="rounded border border-slate-200 bg-slate-50 px-3 py-2">
-									<summary
-										class="cursor-pointer text-xs font-medium uppercase tracking-wide text-slate-500"
-									>
-										Source notes ({step.sourceNotes.length})
-									</summary>
-									<ul class="mt-2 list-disc space-y-0.5 pl-4 text-sm text-slate-600">
-										{#each step.sourceNotes as note, ni (ni)}
-											<li>{note}</li>
-										{/each}
-									</ul>
-								</details>
-							{/if}
-						</div>
-
-						<!-- Step-level actions: review status + split/merge -->
-						<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-							<span class="text-xs text-slate-400">Mark as:</span>
-							{#each STEP_REVIEW_STATUS as status (status)}
-								<button
-									type="button"
-									onclick={() => setReviewStatus(i, status)}
-									class="rounded px-2 py-1 text-xs font-medium ring-1 ring-inset {step.reviewStatus ===
-									status
-										? reviewStyles[status]
-										: 'text-slate-500 ring-slate-200 hover:bg-slate-50'}"
-								>
-									{reviewLabels[status]}
-								</button>
-							{/each}
-							<span class="mx-1 h-4 w-px bg-slate-200"></span>
-							<button
-								type="button"
-								onclick={() => splitStep(i)}
-								class="rounded px-2 py-1 text-xs text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
-							>
-								Split
-							</button>
-							<button
-								type="button"
-								onclick={() => mergeWithNext(i)}
-								disabled={i === steps.length - 1}
-								class="rounded px-2 py-1 text-xs text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50 disabled:opacity-30"
-							>
-								Merge with next
-							</button>
-						</div>
-					</li>
-				{/each}
-			</ol>
-		</form>
-	{/if}
-</main>
+			</form>
+		{/if}
+	</main>
+</div>

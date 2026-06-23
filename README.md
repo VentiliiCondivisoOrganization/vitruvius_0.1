@@ -94,13 +94,13 @@ Grill-me decisions and gap analysis: [`docs/ai/client-alignment-assessment.md`](
 
 **Phase 1 (client deliverable)** — illustrated manual without pose alignment:
 
-| Addition        | Spec      | Role                                                                           | Status        |
-| --------------- | --------- | ------------------------------------------------------------------------------ | ------------- |
-| BOM layer       | 13        | BOM file import + reconcile with CAD; `PartRef[]`; AI only if ambiguous        | Merged (#34)  |
-| Illustrate      | 14 tier 1 | Illustrator (video-only path) + Compositor-lite (canonical CAD views + layout) | Implemented   |
-| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 | Implemented   |
-| Versioning      | 17        | v1 → v2 enrich on same timeline; editor trigger + switcher + read-only freeze  | Implemented   |
-| Editor + export | 08, 09    | BOM disambiguation UI (like `alternatives`); schematic PDF; export gate        | BOM UI merged |
+| Addition        | Spec      | Role                                                                           | Status                                      |
+| --------------- | --------- | ------------------------------------------------------------------------------ | ------------------------------------------- |
+| BOM layer       | 13        | BOM file import + reconcile with CAD; `PartRef[]`; AI only if ambiguous        | Merged (#34)                                |
+| Illustrate      | 14 tier 1 | Illustrator (video-only path) + Compositor-lite (canonical CAD views + layout) | Implemented                                 |
+| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 | Implemented                                 |
+| Versioning      | 17        | v1 → v2 enrich on same timeline; editor trigger + switcher + read-only freeze  | Implemented                                 |
+| Editor + export | 08, 09    | BOM disambiguation UI (like `alternatives`); schematic PDF; export gate        | BOM UI + gate merged; schematic PDF pending |
 
 **Phase 2** — Compositor-full (CAD geometry overlay per step) requires video↔CAD pose alignment
 (research; out of scope for spec 12).

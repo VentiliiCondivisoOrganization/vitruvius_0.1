@@ -163,7 +163,7 @@
 							class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-slate-700 px-4 py-3 text-xs font-bold text-slate-200 hover:text-white transition-all cursor-pointer shadow-md"
 						>
 							<svg
-								class="w-4 h-4 text-emerald-450"
+								class="w-4 h-4 text-emerald-400"
 								fill="none"
 								viewBox="0 0 24 24"
 								stroke="currentColor"
@@ -181,7 +181,7 @@
 					</div>
 				{:else}
 					<div class="border-t border-slate-950 pt-6 text-center">
-						<p class="text-[11px] text-slate-550 italic">
+						<p class="text-[11px] text-slate-500 italic">
 							No PDF generated yet. Use the action button above to start.
 						</p>
 					</div>

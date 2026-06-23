@@ -384,7 +384,7 @@
 									<div
 										class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border {active
 											? 'border-indigo-400 bg-indigo-950/60 text-indigo-400 font-bold'
-											: 'border-slate-800 bg-slate-950 text-slate-650'} text-[9px]"
+											: 'border-slate-800 bg-slate-950 text-slate-600'} text-[9px]"
 									>
 										{i + 1}
 									</div>
@@ -393,7 +393,7 @@
 									class="font-bold uppercase tracking-wider {active
 										? 'text-white'
 										: completed
-											? 'text-slate-350 font-semibold'
+											? 'text-slate-300 font-semibold'
 											: 'text-slate-600'}">{stage}</span
 								>
 								{#if active && stage !== 'ready'}
@@ -531,7 +531,7 @@
 						class="rounded-2xl border border-dashed border-slate-800 bg-slate-900/10 p-16 text-center space-y-3"
 					>
 						<p class="text-sm font-semibold text-slate-400">This manual has no steps yet</p>
-						<p class="text-xs text-slate-650">
+						<p class="text-xs text-slate-600">
 							Add a new step using the toolbar above to start drafting.
 						</p>
 					</div>
@@ -567,7 +567,7 @@
 									<span class="text-xs text-slate-500 font-medium">
 										Confidence: <span
 											class={step.confidence < 0.5
-												? 'text-amber-405 font-semibold'
+												? 'text-amber-400 font-semibold'
 												: 'text-indigo-400 font-bold'}>{confidencePct(step.confidence)}%</span
 										>
 									</span>
@@ -766,7 +766,7 @@
 																type="text"
 																value={part.label}
 																oninput={(e) => updatePartLabel(i, pi, e.currentTarget.value)}
-																class="block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-2.5 py-1.5 text-xs text-slate-250 focus:outline-none focus:border-indigo-500 transition-all"
+																class="block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
 															/>
 															{#if part.bomItemId}
 																<span
@@ -814,7 +814,7 @@
 																			</button>
 																		</li>
 																	{:else}
-																		<li class="text-[11px] text-amber-405/70 italic">
+																		<li class="text-[11px] text-amber-400/70 italic">
 																			BOM candidates are no longer in this manual — edit the label
 																			or re-upload.
 																		</li>
@@ -853,12 +853,12 @@
 															type="text"
 															value={tool}
 															oninput={(e) => updateItem(i, 'tools', ti, e.currentTarget.value)}
-															class="block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-2.5 py-1.5 text-xs text-slate-250 focus:outline-none focus:border-indigo-500 transition-all"
+															class="block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
 														/>
 														<button
 															type="button"
 															onclick={() => removeItem(i, 'tools', ti)}
-															class="text-slate-500 hover:text-rose-450 text-sm px-1.5 transition-colors cursor-pointer"
+															class="text-slate-500 hover:text-rose-400 text-sm px-1.5 transition-colors cursor-pointer"
 														>
 															×
 														</button>
@@ -900,7 +900,7 @@
 													<button
 														type="button"
 														onclick={() => removeItem(i, 'warnings', wi)}
-														class="text-slate-500 hover:text-rose-450 text-sm px-1.5 transition-colors cursor-pointer"
+														class="text-slate-500 hover:text-rose-400 text-sm px-1.5 transition-colors cursor-pointer"
 													>
 														×
 													</button>
@@ -923,7 +923,7 @@
 											<ul class="space-y-2">
 												{#each step.alternatives as alt, ai (ai)}
 													<li
-														class="flex items-center justify-between gap-3 rounded-lg border border-slate-900 bg-slate-950/60 p-2.5 text-xs text-slate-350"
+														class="flex items-center justify-between gap-3 rounded-lg border border-slate-900 bg-slate-950/60 p-2.5 text-xs text-slate-300"
 													>
 														<span class="leading-relaxed">{alt}</span>
 														<button

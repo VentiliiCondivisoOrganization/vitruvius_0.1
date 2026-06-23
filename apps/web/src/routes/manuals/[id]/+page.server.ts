@@ -1,9 +1,27 @@
-import { error, fail } from '@sveltejs/kit';
+import { readAuxFiles, uploadAuxFiles } from '$lib/server/uploads';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { instructionManualSchema, regenerateRequestSchema } from '@vitruvius/core';
-import { enqueueJob, getManual, saveManual } from '@vitruvius/db';
+import {
+	createManualVersion,
+	enqueueJob,
+	getManual,
+	listManualVersions,
+	saveManual,
+	type DbClient,
+	type ManualVersionSummary
+} from '@vitruvius/db';
 import type { Actions, PageServerLoad } from './$types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Spec 17 freeze rule: only the head (no descendant) of a lineage is editable; older
+ * versions are read-only snapshots (still exportable). A lineage with a single version
+ * is its own head.
+ */
+function isHeadVersion(manualId: string, versions: ManualVersionSummary[]): boolean {
+	return !versions.some((v) => v.parentVersionId === manualId);
+}
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	// id maps to a uuid column; a non-uuid would make the query error (500) rather
@@ -13,10 +31,33 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const manual = await getManual(locals.db, params.id);
 	if (!manual) error(404, 'Manual not found');
 
+	// The version lineage drives the switcher and the freeze rule. A video-only manual
+	// that was never enriched is a one-element lineage (and its own head).
+	const versions = await listManualVersions(locals.db, manual.id);
+
 	// Hand the full manual to the page: the status view needs only the header
 	// fields, but the editor (shown once `ready`) needs every step field.
-	return { manual };
+	return { manual, versions, isHead: isHeadVersion(manual.id, versions) };
 };
+
+/** Reject edits/regeneration on a frozen (non-head) version. Returns a `fail` or null. */
+async function assertHead(db: DbClient, manualId: string) {
+	const { data, error } = await db
+		.from('manuals')
+		.select('id')
+		.eq('parent_version_id', manualId)
+		.limit(1)
+		.returns<{ id: string }[]>();
+	if (error) {
+		return fail(500, { error: `Could not check version head: ${error.message}` });
+	}
+	if ((data?.length ?? 0) > 0) {
+		return fail(409, {
+			error: 'This is an older version and is read-only. Open the latest version to edit.'
+		});
+	}
+	return null;
+}
 
 export const actions: Actions = {
 	// Persist the edited step set. The editor submits the full step array as JSON
@@ -36,6 +77,9 @@ export const actions: Actions = {
 		if (current.status !== 'ready') {
 			return fail(409, { error: 'This manual is not ready for editing.' });
 		}
+
+		const frozen = await assertHead(locals.db, current.id);
+		if (frozen) return frozen;
 
 		const raw = (await request.formData()).get('payload');
 		if (typeof raw !== 'string') return fail(400, { error: 'Missing edit payload.' });
@@ -88,6 +132,9 @@ export const actions: Actions = {
 			return fail(409, { error: 'This manual is not ready for AI regeneration.' });
 		}
 
+		const frozen = await assertHead(locals.db, manual.id);
+		if (frozen) return frozen;
+
 		const form = await request.formData();
 		const stepId = form.get('stepId');
 		const parsed = regenerateRequestSchema.safeParse({
@@ -114,5 +161,50 @@ export const actions: Actions = {
 		}
 
 		return { regenerateQueued: true };
+	},
+
+	// Enrich a video-only (or already-enriched) manual with a BOM file and/or digital
+	// model that arrived after processing (spec 17). The web app only stores the new
+	// files and calls `createManualVersion`, which copies the head onto the same step
+	// timeline as a new version and enqueues the `enrich` job for the engine — it never
+	// runs bom-map / illustrate itself. Redirects to the new version's editor.
+	enrich: async ({ params, request, locals }) => {
+		if (!UUID_RE.test(params.id)) error(404, 'Manual not found');
+
+		const manual = await getManual(locals.db, params.id);
+		if (!manual) error(404, 'Manual not found');
+		if (manual.status !== 'ready') {
+			return fail(409, { error: 'This manual is not ready to enrich.' });
+		}
+
+		const frozen = await assertHead(locals.db, manual.id);
+		if (frozen) return frozen;
+
+		const form = await request.formData();
+		const aux = readAuxFiles(form);
+		if ('error' in aux) return fail(400, { error: aux.error });
+		if (!aux.bomFile && !aux.modelFile) {
+			return fail(400, { error: 'Add a BOM file and/or a digital model to enrich.' });
+		}
+
+		// New files land under their own storage folder so they never collide with the
+		// parent's refs; createManualVersion keeps the parent's ref for whichever file
+		// the user did not replace.
+		const auxUpload = await uploadAuxFiles(locals.db, crypto.randomUUID(), aux);
+		if ('error' in auxUpload) return fail(502, { error: auxUpload.error });
+
+		let next;
+		try {
+			next = await createManualVersion(locals.db, manual.id, {
+				bomFileUrl: aux.bomFile ? auxUpload.bomFileUrl : undefined,
+				digitalModelUrl: aux.modelFile ? auxUpload.digitalModelUrl : undefined
+			});
+		} catch (err) {
+			await Promise.allSettled([locals.db.storage.from('videos').remove(auxUpload.uploadedPaths)]);
+			const message = err instanceof Error ? err.message : 'unknown error';
+			return fail(500, { error: `Could not start enrichment: ${message}` });
+		}
+
+		redirect(303, `/manuals/${next.id}`);
 	}
 };

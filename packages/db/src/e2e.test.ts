@@ -1,9 +1,9 @@
-import type { InstructionManual } from '@vitruvius/core';
-import * as exportPkg from '@vitruvius/export';
+import type { InstructionManual, Job } from '@vitruvius/core';
+import type { RenderPdfOptions } from '@vitruvius/export';
 import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,13 +11,39 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-// @ts-ignore
-import { handleProcessJob } from '../../../apps/engine/src/process.js';
-// @ts-ignore
-import { handleExportJob } from '../../../apps/engine/src/export.js';
+const pkgRoot = join(__dirname, '..');
+
+// Mock `@vitruvius/export`'s renderManualPdf dynamically to support environments without Chromium
+vi.mock('@vitruvius/export', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@vitruvius/export')>();
+	return {
+		...actual,
+		renderManualPdf: async (manual: InstructionManual, options?: RenderPdfOptions) => {
+			if (process.env.PLAYWRIGHT_CHROMIUM_PATH) {
+				return actual.renderManualPdf(manual, options);
+			}
+			const { join } = await import('node:path');
+			const { writeFile } = await import('node:fs/promises');
+			const tempFile = join(options?.outDir ?? '/tmp', `${manual.id}.pdf`);
+			await writeFile(tempFile, '%PDF-1.4 dummy pdf content');
+			return { fileRef: tempFile };
+		}
+	};
+});
+
 import { createDbClient, type DbClient } from './client.js';
 import { claimNextJob, enqueueJob } from './jobs.js';
 import { getManual, saveManual } from './manuals.js';
+
+// We dynamically import these to avoid pulling apps/engine source files into the tsconfig rootDir / compilation list of packages/db.
+const processPath = '../../../apps/engine/src/process.js';
+const exportPath = '../../../apps/engine/src/export.js';
+const { handleProcessJob } = (await import(processPath)) as {
+	handleProcessJob: (db: DbClient, job: Job) => Promise<void>;
+};
+const { handleExportJob } = (await import(exportPath)) as {
+	handleExportJob: (db: DbClient, job: Job) => Promise<void>;
+};
 
 const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 
@@ -33,10 +59,13 @@ describe('End-to-End Integration Pipeline', () => {
 		if (!serviceRoleKey) {
 			try {
 				const statusJson = execSync('npx supabase status -o json', {
-					cwd: __dirname,
+					cwd: pkgRoot,
 					stdio: ['ignore', 'pipe', 'ignore']
 				}).toString();
 				const status = JSON.parse(statusJson);
+				if (!status.SERVICE_ROLE_KEY) {
+					throw new Error('SERVICE_ROLE_KEY not found in status JSON');
+				}
 				serviceRoleKey = status.SERVICE_ROLE_KEY;
 			} catch {
 				serviceRoleKey =
@@ -58,8 +87,8 @@ describe('End-to-End Integration Pipeline', () => {
 			throw new Error('ffmpeg failed to build fixture. Is ffmpeg installed?', { cause: err });
 		}
 
-		// Upload the video fixture to local Supabase Storage
-		const videoData = await require('node:fs').readFileSync(videoFixturePath);
+		// Upload the video fixture to local Supabase Storage using ESM-friendly read
+		const videoData = readFileSync(videoFixturePath);
 		const { error: uploadError } = await client.storage
 			.from('videos')
 			.upload(videoObjectKey, videoData, { contentType: 'video/mp4' });
@@ -79,13 +108,6 @@ describe('End-to-End Integration Pipeline', () => {
 
 		if (executablePath) {
 			process.env.PLAYWRIGHT_CHROMIUM_PATH = executablePath;
-		} else {
-			// Mock the renderManualPdf call to avoid needing Playwright Chromium installed
-			vi.spyOn(exportPkg, 'renderManualPdf').mockImplementation(async (manual, options) => {
-				const tempFile = join(options?.outDir ?? tempDir, `${manual.id}.pdf`);
-				await writeFile(tempFile, '%PDF-1.4 dummy pdf content');
-				return { fileRef: tempFile };
-			});
 		}
 	});
 

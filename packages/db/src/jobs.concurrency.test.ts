@@ -1,7 +1,7 @@
 import type { InstructionManual } from '@vitruvius/core';
 import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDbClient, type DbClient } from './client.js';
@@ -10,6 +10,7 @@ import { saveManual } from './manuals.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const pkgRoot = join(__dirname, '..');
 
 // Talks to a real local Supabase stack (`pnpm db:start`). Falls back to the
 // well-known local CLI defaults so a fresh stack works with no extra config;
@@ -28,10 +29,13 @@ describe('claimNextJob concurrency', () => {
 		if (!serviceRoleKey) {
 			try {
 				const statusJson = execSync('npx supabase status -o json', {
-					cwd: __dirname,
+					cwd: pkgRoot,
 					stdio: ['ignore', 'pipe', 'ignore']
 				}).toString();
 				const status = JSON.parse(statusJson);
+				if (!status.SERVICE_ROLE_KEY) {
+					throw new Error('SERVICE_ROLE_KEY not found in status JSON');
+				}
 				serviceRoleKey = status.SERVICE_ROLE_KEY;
 			} catch {
 				serviceRoleKey =

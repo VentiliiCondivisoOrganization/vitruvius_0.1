@@ -36,8 +36,6 @@ function manual(steps: ManualStep[], title = 'Test Manual'): InstructionManual {
 		status: 'ready',
 		steps,
 		bom: [],
-		version: 1,
-		parentVersionId: null,
 		createdAt: now,
 		updatedAt: now
 	};

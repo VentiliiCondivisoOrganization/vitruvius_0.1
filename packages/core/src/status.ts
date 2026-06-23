@@ -9,8 +9,14 @@ export type StepReviewStatus = (typeof STEP_REVIEW_STATUS)[number];
 export const JOB_STATUS = ['queued', 'running', 'done', 'failed'] as const;
 export type JobStatus = (typeof JOB_STATUS)[number];
 
-export const JOB_TYPE = ['process', 'export'] as const;
+export const JOB_TYPE = ['process', 'export', 'regenerate', 'enrich'] as const;
 export type JobType = (typeof JOB_TYPE)[number];
+
+// Scope of a `regenerate` job (spec 16): which facet of the selected steps the AI
+// re-derives from the editor's prompt. `structure` (split/merge/optional re-segment)
+// is the expensive, opt-in scope.
+export const REGENERATE_SCOPE = ['text', 'illustration', 'layout', 'structure'] as const;
+export type RegenerateScope = (typeof REGENERATE_SCOPE)[number];
 
 // Whether an auxiliary digital model (CAD/mesh) primed a run (spec 12-cad-ingest). This
 // enum is the vocabulary for that outcome; wiring it onto the manual so the Critic and

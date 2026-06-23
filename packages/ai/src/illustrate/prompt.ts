@@ -7,7 +7,11 @@ import type { IllustrationMode } from './types.js';
  * parts, and tools, and an instruction for how to treat the attached base image (a video
  * keyframe for the Illustrator path, a canonical CAD view for Compositor-lite).
  */
-export function buildIllustratePrompt(step: ManualStep, mode: IllustrationMode): string {
+export function buildIllustratePrompt(
+	step: ManualStep,
+	mode: IllustrationMode,
+	guidance?: string
+): string {
 	const partLabels = step.parts.map((p) => p.label.trim()).filter((l) => l.length > 0);
 	const partsLine = partLabels.length > 0 ? `Parts in this step: ${partLabels.join(', ')}.` : '';
 	const toolsLine = step.tools.length > 0 ? `Tools used: ${step.tools.join(', ')}.` : '';
@@ -17,12 +21,15 @@ export function buildIllustratePrompt(step: ManualStep, mode: IllustrationMode):
 			? 'Use the attached canonical CAD view as the geometry reference. Lay the schematic, arrows, and callouts out on top of it; do not change its camera angle or geometry.'
 			: 'Use the attached video keyframe only as a reference for what is being assembled. Redraw it as a clean schematic — do not trace photographic detail.';
 
+	const guidanceLine =
+		guidance && guidance.trim() ? `\nEditor regeneration request: ${guidance.trim()}` : '';
+
 	return `${ILLUSTRATE_STYLE_PROMPT}
 
 Step ${step.order + 1}: ${step.title}
 Action: ${step.instruction}
 ${partsLine}
 ${toolsLine}
-${baseImageInstruction}
+${baseImageInstruction}${guidanceLine}
 Style version: ${ILLUSTRATE_STYLE_VERSION}`;
 }

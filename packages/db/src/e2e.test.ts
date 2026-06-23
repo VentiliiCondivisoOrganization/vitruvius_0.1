@@ -138,6 +138,8 @@ describe('End-to-End Integration Pipeline', () => {
 			status: 'uploaded',
 			steps: [],
 			bom: [],
+			version: 1,
+			parentVersionId: null,
 			createdAt: now,
 			updatedAt: now
 		};

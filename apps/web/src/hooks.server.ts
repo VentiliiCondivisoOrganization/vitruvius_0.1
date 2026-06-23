@@ -89,7 +89,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		event.locals.db = dbClientFromEnv(env);
 	}
 
-	event.locals.session = sessionUser ? { user: sessionUser, accessToken: activeToken! } : null;
+	event.locals.session = sessionUser ? { user: sessionUser } : null;
 
 	const path = event.url.pathname;
 	const isProtected = PROTECTED_ROUTES.some((r) => path === r || path.startsWith(r + '/'));

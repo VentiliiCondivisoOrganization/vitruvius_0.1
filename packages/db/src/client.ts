@@ -9,22 +9,35 @@ export type DbClient = SupabaseClient;
 export type DbClientConfig = {
 	url: string;
 	key: string;
+	accessToken?: string;
 };
 
-export function createDbClient({ url, key }: DbClientConfig): DbClient {
+export function createDbClient({ url, key, accessToken }: DbClientConfig): DbClient {
+	const globalHeaders: Record<string, string> = {};
+	if (accessToken) {
+		globalHeaders['Authorization'] = `Bearer ${accessToken}`;
+	}
 	return createClient(url, key, {
-		auth: { autoRefreshToken: false, persistSession: false }
+		auth: { autoRefreshToken: false, persistSession: false },
+		global: { headers: globalHeaders }
 	});
 }
 
 // Convenience for server-side consumers (engine, web server routes). Prefers the
 // service-role key when present, falling back to the public anon key.
-export function dbClientFromEnv(env: Record<string, string | undefined> = process.env): DbClient {
+export function dbClientFromEnv(
+	env: Record<string, string | undefined> = process.env,
+	accessToken?: string
+): DbClient {
 	const url = env.PUBLIC_SUPABASE_URL;
-	const key = env.SUPABASE_SERVICE_ROLE_KEY ?? env.PUBLIC_SUPABASE_ANON_KEY;
+	// When an accessToken is present, we must use the anon key. If we use service_role,
+	// Supabase will bypass RLS entirely regardless of the Authorization header.
+	const key = accessToken
+		? (env.PUBLIC_SUPABASE_ANON_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY)
+		: (env.SUPABASE_SERVICE_ROLE_KEY ?? env.PUBLIC_SUPABASE_ANON_KEY);
 
 	if (!url) throw new Error('Missing PUBLIC_SUPABASE_URL');
 	if (!key) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY or PUBLIC_SUPABASE_ANON_KEY');
 
-	return createDbClient({ url, key });
+	return createDbClient({ url, key, accessToken });
 }

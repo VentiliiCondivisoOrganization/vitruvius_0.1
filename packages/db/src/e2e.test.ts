@@ -1,4 +1,9 @@
-import type { InstructionManual, Job } from '@vitruvius/core';
+import { checkExportGate, type InstructionManual, type Job, type ManualStep } from '@vitruvius/core';
+import {
+	HeuristicBomDisambiguateProvider,
+	resetBomDisambiguateProviderFactory,
+	setBomDisambiguateProviderFactory
+} from '@vitruvius/ai';
 import type { RenderPdfOptions } from '@vitruvius/export';
 import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -34,6 +39,12 @@ vi.mock('@vitruvius/export', async (importOriginal) => {
 import { createDbClient, type DbClient } from './client.js';
 import { claimNextJob, enqueueJob } from './jobs.js';
 import { getManual, saveManual } from './manuals.js';
+import { createManualVersion, listManualVersions } from './versions.js';
+
+const enrichPath = '../../../apps/engine/src/enrich.js';
+const { handleEnrichJob } = (await import(enrichPath)) as {
+	handleEnrichJob: (db: DbClient, job: Job) => Promise<void>;
+};
 
 // We dynamically import these to avoid pulling apps/engine source files into the tsconfig rootDir / compilation list of packages/db.
 const processPath = '../../../apps/engine/src/process.js';
@@ -181,5 +192,191 @@ describe('End-to-End Integration Pipeline', () => {
 		expect(listError).toBeNull();
 		const exportedFile = list?.find((f) => f.name === `${manualId}.pdf`);
 		expect(exportedFile).toBeDefined();
+	});
+});
+
+// Spec 17 — manual versioning. Enriching a video-only v1 with a BOM file that arrives later
+// must produce v2 on the SAME step timeline (no re-segmentation), populate `PartRef` codes
+// where mappable, surface ambiguous parts as blocking `candidateBomItemIds`, carry the human
+// edits forward unchanged, and leave v1 frozen yet still exportable.
+describe('Manual versioning enrich (spec 17)', () => {
+	let client: DbClient;
+	const bomObjectKey = `test-bom-${randomUUID()}.csv`;
+	let v1Id: string;
+	let v2Id: string;
+
+	// A BOM where one part name appears alone in a step (clean map) and two appear together
+	// in another (ambiguous → blocking candidates).
+	const BOM_CSV = [
+		'part_name,part_number,description,qty',
+		'Left Bracket,LB-100,Steel left mounting bracket,1',
+		'M6 Bolt,B-M6,Hex head bolt,4',
+		'Lock Nut,N-M6,Nylon lock nut,4'
+	].join('\n');
+
+	function buildStep(overrides: Partial<ManualStep>): ManualStep {
+		return {
+			id: randomUUID(),
+			order: 0,
+			title: 'Step',
+			instruction: '',
+			caption: '',
+			startMs: 0,
+			endMs: 1000,
+			keyframeUrl: 'kf.jpg',
+			illustrationUrl: '',
+			tools: [],
+			parts: [],
+			warnings: [],
+			confidence: 0.9,
+			reviewStatus: 'confirmed',
+			sourceNotes: [],
+			alternatives: [],
+			critique: [],
+			...overrides
+		};
+	}
+
+	beforeAll(async () => {
+		let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+		if (!serviceRoleKey) {
+			try {
+				const statusJson = execSync('npx supabase status -o json', {
+					cwd: pkgRoot,
+					stdio: ['ignore', 'pipe', 'ignore']
+				}).toString();
+				serviceRoleKey = JSON.parse(statusJson).SERVICE_ROLE_KEY;
+			} catch {
+				serviceRoleKey =
+					'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q';
+			}
+		}
+		client = createDbClient({ url: SUPABASE_URL, key: serviceRoleKey! });
+
+		// Force the deterministic heuristic disambiguator so the test never depends on a
+		// GEMINI key or network — it must keep ambiguous candidates as-is, which is what
+		// blocks the export gate below.
+		setBomDisambiguateProviderFactory(() => new HeuristicBomDisambiguateProvider());
+
+		// The enrich handler reads the BOM from the `videos` bucket (same as the engine).
+		const { error: uploadError } = await client.storage
+			.from('videos')
+			.upload(bomObjectKey, Buffer.from(BOM_CSV), { contentType: 'text/csv' });
+		if (uploadError) {
+			throw new Error(`Failed to upload BOM fixture: ${uploadError.message}`);
+		}
+	});
+
+	afterAll(async () => {
+		resetBomDisambiguateProviderFactory();
+		// v2 first (child) then v1 — parent_version_id is ON DELETE SET NULL, but delete the
+		// child first to be explicit. Both cascade to steps + jobs.
+		if (v2Id) await client.from('manuals').delete().eq('id', v2Id);
+		if (v1Id) await client.from('manuals').delete().eq('id', v1Id);
+		await client.storage.from('videos').remove([bomObjectKey]);
+	});
+
+	it('enriches v1 → v2 on the same timeline, preserving edits and blocking on new BOM choices', async () => {
+		const now = new Date().toISOString();
+		v1Id = randomUUID();
+
+		// A human-reviewed, video-only v1: two confirmed steps with hand-edited instructions
+		// and no parts yet (the BOM had not arrived).
+		const v1: InstructionManual = {
+			id: v1Id,
+			title: 'Shelf assembly',
+			videoUrl: 'https://example.test/video.mp4',
+			bomFileUrl: '',
+			digitalModelUrl: '',
+			status: 'ready',
+			steps: [
+				buildStep({
+					order: 0,
+					title: 'Attach the left bracket',
+					instruction: 'Human edit: bolt the left bracket onto the frame.',
+					sourceNotes: ['mount the Left Bracket to the frame'],
+					startMs: 0,
+					endMs: 5000
+				}),
+				buildStep({
+					order: 1,
+					title: 'Secure with fasteners',
+					instruction: 'Human edit: tighten everything by hand first.',
+					sourceNotes: ['use the M6 Bolt and the Lock Nut'],
+					startMs: 5000,
+					endMs: 12000
+				})
+			],
+			bom: [],
+			version: 1,
+			parentVersionId: null,
+			createdAt: now,
+			updatedAt: now
+		};
+		await saveManual(client, v1);
+
+		// v1 (no parts, all confirmed) is exportable before enrichment.
+		expect(checkExportGate(v1).ok).toBe(true);
+
+		// The editor stores the late BOM file and calls createManualVersion → enqueues `enrich`.
+		const v2 = await createManualVersion(client, v1Id, { bomFileUrl: bomObjectKey });
+		v2Id = v2.id;
+		expect(v2.version).toBe(2);
+		expect(v2.parentVersionId).toBe(v1Id);
+		expect(v2.status).toBe('processing');
+
+		const enrichJob = await claimNextJob(client, ['enrich']);
+		expect(enrichJob).not.toBeNull();
+		expect(enrichJob!.manualId).toBe(v2Id);
+
+		await handleEnrichJob(client, enrichJob!);
+
+		const enriched = await getManual(client, v2Id);
+		expect(enriched).not.toBeNull();
+		expect(enriched!.status).toBe('ready');
+
+		// Same timeline: identical step count and time bounds (no re-segmentation).
+		expect(enriched!.steps).toHaveLength(2);
+		const step0 = enriched!.steps.find((s) => s.order === 0)!;
+		const step1 = enriched!.steps.find((s) => s.order === 1)!;
+		expect(step0.startMs).toBe(0);
+		expect(step0.endMs).toBe(5000);
+		expect(step1.startMs).toBe(5000);
+		expect(step1.endMs).toBe(12000);
+
+		// Human work carried forward unchanged.
+		expect(step0.title).toBe('Attach the left bracket');
+		expect(step0.instruction).toBe('Human edit: bolt the left bracket onto the frame.');
+		expect(step0.reviewStatus).toBe('confirmed');
+		expect(step1.instruction).toBe('Human edit: tighten everything by hand first.');
+
+		// Cleanly mappable part → populated PartRef with its BOM code.
+		expect(step0.parts).toHaveLength(1);
+		expect(step0.parts[0]!.bomItemId).not.toBeNull();
+		expect(step0.parts[0]!.bomCode).toBe('LB-100');
+
+		// Ambiguous part (two BOM names in one step) → open candidates, no resolved id.
+		expect(step1.parts).toHaveLength(1);
+		expect(step1.parts[0]!.bomItemId).toBeNull();
+		expect(step1.parts[0]!.candidateBomItemIds).toHaveLength(2);
+
+		// The reconciled BOM is carried onto the version.
+		expect(enriched!.bom).toHaveLength(3);
+
+		// Export gate blocks on the open candidate even though every step is confirmed.
+		const gate = checkExportGate(enriched!);
+		expect(gate.ok).toBe(false);
+		if (!gate.ok) expect(gate.reason).toContain('BOM');
+
+		// v1 stays frozen-but-exportable and untouched.
+		const v1After = await getManual(client, v1Id);
+		expect(v1After!.status).toBe('ready');
+		expect(v1After!.steps.every((s) => s.parts.length === 0)).toBe(true);
+		expect(checkExportGate(v1After!).ok).toBe(true);
+
+		// Lineage lists oldest-first from either id.
+		const lineage = await listManualVersions(client, v2Id);
+		expect(lineage.map((v) => v.version)).toEqual([1, 2]);
+		expect(lineage.map((v) => v.id)).toEqual([v1Id, v2Id]);
 	});
 });

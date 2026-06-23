@@ -1,9 +1,14 @@
-import { checkExportGate, type InstructionManual, type Job, type ManualStep } from '@vitruvius/core';
 import {
 	HeuristicBomDisambiguateProvider,
 	resetBomDisambiguateProviderFactory,
 	setBomDisambiguateProviderFactory
 } from '@vitruvius/ai';
+import {
+	checkExportGate,
+	type InstructionManual,
+	type Job,
+	type ManualStep
+} from '@vitruvius/core';
 import type { RenderPdfOptions } from '@vitruvius/export';
 import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';

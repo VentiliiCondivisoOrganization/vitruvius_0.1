@@ -4,6 +4,7 @@ import type {
 	JobType,
 	ManualBomSource,
 	ManualStatus,
+	RegenerateScope,
 	StepReviewStatus
 } from './status.js';
 
@@ -61,6 +62,10 @@ export type InstructionManual = {
 	status: ManualStatus;
 	steps: ManualStep[];
 	bom: ManualBomItem[];
+	// Versioning (spec 17): incremental enrichment (adding BOM/CAD to a video-only manual)
+	// produces a new version on the SAME step timeline. v1 is `version: 1, parentVersionId: null`.
+	version: number;
+	parentVersionId: string | null;
 	createdAt: string; // ISO 8601
 	updatedAt: string; // ISO 8601
 };
@@ -154,6 +159,15 @@ export type DigitalModel = {
 	contentHash: string;
 };
 
+// Parameters carried by a `regenerate` job (spec 16): the editor's natural-language
+// prompt, which facet of the steps to re-derive, and the steps it applies to. Reuses
+// the existing Instructor / Illustrator agents — there is no separate "Regenerator".
+export type RegenerateRequest = {
+	scope: RegenerateScope;
+	prompt: string;
+	stepIds: string[];
+};
+
 // The unit of work the web app enqueues and the engine consumes.
 export type Job = {
 	id: string;
@@ -161,6 +175,8 @@ export type Job = {
 	type: JobType;
 	status: JobStatus;
 	attempts: number;
+	// Present only for `regenerate` jobs (spec 16); null for process/export.
+	payload: RegenerateRequest | null;
 	createdAt: string;
 	updatedAt: string;
 };

@@ -19,10 +19,15 @@ function pickCanonicalView(model: DigitalModel | null): CanonicalView | null {
 	return model.views.find((v) => v.target === 'assembly') ?? model.views[0]!;
 }
 
-function planRequest(step: ManualStep, model: DigitalModel | null): IllustrationRequest | null {
+function planRequest(
+	step: ManualStep,
+	model: DigitalModel | null,
+	guidance?: string
+): IllustrationRequest | null {
 	const view = pickCanonicalView(model);
-	if (view) return { step, mode: 'compositor-lite', baseImageRef: view.fileRef };
-	if (step.keyframeUrl) return { step, mode: 'illustrator', baseImageRef: step.keyframeUrl };
+	if (view) return { step, mode: 'compositor-lite', baseImageRef: view.fileRef, guidance };
+	if (step.keyframeUrl)
+		return { step, mode: 'illustrator', baseImageRef: step.keyframeUrl, guidance };
 	return null;
 }
 
@@ -51,7 +56,7 @@ export async function illustrateSteps(input: IllustrateInput): Promise<ManualSte
 	const model = input.digitalModel ?? null;
 	const requests: IllustrationRequest[] = [];
 	for (const step of input.steps) {
-		const planned = planRequest(step, model);
+		const planned = planRequest(step, model, input.guidance);
 		if (planned) requests.push(planned);
 	}
 	if (requests.length === 0) return input.steps;

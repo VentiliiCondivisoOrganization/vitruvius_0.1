@@ -69,7 +69,7 @@ export class GeminiInstructProvider implements InstructProvider {
 		context: InstructProviderContext
 	): Promise<RawInstruction[]> {
 		const imageParts = await this.loadStepKeyframeParts(steps);
-		const { system, user } = buildInstructPrompt(steps, context.learnings);
+		const { system, user } = buildInstructPrompt(steps, context.learnings, context.guidance);
 
 		const body: GeminiGenerateRequest = {
 			systemInstruction: { parts: [{ text: system }] },

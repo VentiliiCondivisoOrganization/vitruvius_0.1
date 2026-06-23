@@ -20,11 +20,13 @@ export function instructCacheKey(input: {
 	promptVersion: string;
 	steps: ManualStep[];
 	learnings: string[];
+	guidance?: string;
 }): string {
 	const payload = JSON.stringify({
 		promptVersion: input.promptVersion,
 		steps: input.steps.map(stepFingerprint),
-		learnings: input.learnings
+		learnings: input.learnings,
+		guidance: input.guidance ?? ''
 	});
 	return createHash('sha256').update(payload).digest('hex');
 }

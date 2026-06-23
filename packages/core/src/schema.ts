@@ -5,6 +5,7 @@ import {
 	JOB_TYPE,
 	MANUAL_BOM_SOURCE,
 	MANUAL_STATUS,
+	REGENERATE_SCOPE,
 	STEP_REVIEW_STATUS
 } from './status.js';
 
@@ -57,6 +58,9 @@ export const instructionManualSchema = z.object({
 	status: z.enum(MANUAL_STATUS),
 	steps: z.array(manualStepSchema),
 	bom: z.array(manualBomItemSchema).default([]),
+	// Versioning (spec 17). Defaulted so legacy rows and bootstrap manuals parse as v1.
+	version: z.number().int().positive().default(1),
+	parentVersionId: z.string().nullable().default(null),
 	createdAt: z.string(),
 	updatedAt: z.string()
 });
@@ -114,12 +118,22 @@ export const digitalModelSchema = z.object({
 	contentHash: z.string()
 });
 
+// Validates a `regenerate` job's payload (spec 16). A non-empty prompt is required —
+// automatic regeneration without a user prompt is out of scope.
+export const regenerateRequestSchema = z.object({
+	scope: z.enum(REGENERATE_SCOPE),
+	prompt: z.string().trim().min(1),
+	stepIds: z.array(z.string()).min(1)
+});
+
 export const jobSchema = z.object({
 	id: z.string(),
 	manualId: z.string(),
 	type: z.enum(JOB_TYPE),
 	status: z.enum(JOB_STATUS),
 	attempts: z.number().int().nonnegative(),
+	// Null for process/export; a validated request for regenerate jobs (spec 16).
+	payload: regenerateRequestSchema.nullable().default(null),
 	createdAt: z.string(),
 	updatedAt: z.string()
 });

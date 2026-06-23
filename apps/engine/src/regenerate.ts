@@ -7,7 +7,6 @@ import {
 	type RegenerateRequest
 } from '@vitruvius/core';
 import { getManual, relevantLearnings, saveManual, type DbClient } from '@vitruvius/db';
-import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -27,19 +26,14 @@ async function regenerateTargets(
 			return writeInstructions({ steps: targets, learnings, manualId, guidance: request.prompt });
 		case 'illustration':
 		case 'layout': {
-			// Illustrations are written to a temp dir and persisted as file refs (spec 14);
-			// own and clean up the dir here so the worker never leaks regenerated images.
-			const outDir = await mkdtemp(join(tmpdir(), 'vitruvius-regenerate-'));
-			try {
-				return await illustrateSteps({
-					steps: targets,
-					outDir,
-					manualId,
-					guidance: request.prompt
-				});
-			} finally {
-				await rm(outDir, { recursive: true, force: true }).catch(() => {});
-			}
+			// Illustrations are written to a persistent dir and referenced as file refs (spec 14).
+			const outDir = join(tmpdir(), 'vitruvius', 'illustrations', manualId);
+			return await illustrateSteps({
+				steps: targets,
+				outDir,
+				manualId,
+				guidance: request.prompt
+			});
 		}
 		case 'structure':
 			// Split/merge/re-segment is the expensive, opt-in scope — editor operations cover

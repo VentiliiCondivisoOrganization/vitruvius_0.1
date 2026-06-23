@@ -122,7 +122,7 @@ export const digitalModelSchema = z.object({
 // automatic regeneration without a user prompt is out of scope.
 export const regenerateRequestSchema = z.object({
 	scope: z.enum(REGENERATE_SCOPE),
-	prompt: z.string().min(1),
+	prompt: z.string().trim().min(1),
 	stepIds: z.array(z.string()).min(1)
 });
 

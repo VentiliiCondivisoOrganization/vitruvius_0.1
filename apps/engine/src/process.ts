@@ -23,7 +23,7 @@ import {
 	type DbClient
 } from '@vitruvius/db';
 import { detectScenes, extractKeyframes, probeDurationMs } from '@vitruvius/media';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 import { downloadStorageObject, maybeDownload, resolveStorageUrl } from './storage.js';
@@ -67,9 +67,12 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 		const manualBom: ManualBomItem[] = reconcileBom(digitalModel, fileBomRows);
 
 		const videoDurationMs = await probeDurationMs(localVideo);
+		const keyframesDir = join(tmpdir(), 'vitruvius', 'keyframes', manual.id);
+		await mkdir(keyframesDir, { recursive: true });
+
 		const [scenes, keyframes] = await Promise.all([
 			detectScenes(localVideo),
-			extractKeyframes(localVideo, { outDir: join(workDir, 'keyframes') })
+			extractKeyframes(localVideo, { outDir: keyframesDir })
 		]);
 
 		const segmented = await segmentVideoIntoSteps({
@@ -111,7 +114,7 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 		try {
 			illustrated = await illustrateSteps({
 				steps: reviewed,
-				outDir: join(workDir, 'illustrations'),
+				outDir: join(tmpdir(), 'vitruvius', 'illustrations', manual.id),
 				digitalModel,
 				manualId: manual.id
 			});

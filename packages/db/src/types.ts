@@ -54,6 +54,9 @@ export type JobRow = {
 	status: JobStatus;
 	attempts: number;
 	last_error: string | null;
+	// jsonb regenerate payload (spec 16); null for process/export. Validated by the
+	// core zod schema in the mapper, so it is loosely typed here.
+	payload: unknown;
 	created_at: string;
 	updated_at: string;
 };

@@ -185,4 +185,37 @@ describe('writeInstructions', () => {
 		expect(steps).toEqual([]);
 		expect(calls).toBe(0);
 	});
+
+	it('threads regeneration guidance to the provider and busts the cache (spec 16)', async () => {
+		const seen: (string | undefined)[] = [];
+		let calls = 0;
+		setInstructProviderFactory(
+			(): InstructProvider => ({
+				name: 'guidance-recording',
+				writeInstructions: (steps, context) => {
+					calls += 1;
+					seen.push(context.guidance);
+					return Promise.resolve(
+						steps.map((s) => ({
+							order: s.order,
+							title: s.title,
+							instruction: 'do the thing',
+							tools: [],
+							parts: [],
+							warnings: [],
+							alternatives: []
+						}))
+					);
+				}
+			})
+		);
+
+		await writeInstructions({ steps: baseSteps, guidance: 'mention the 4mm hex key' });
+		await writeInstructions({ steps: baseSteps, guidance: 'mention the 4mm hex key' }); // cached
+		await writeInstructions({ steps: baseSteps, guidance: 'use a torque wrench' }); // new guidance
+
+		expect(calls).toBe(2);
+		expect(seen).toContain('mention the 4mm hex key');
+		expect(seen).toContain('use a torque wrench');
+	});
 });

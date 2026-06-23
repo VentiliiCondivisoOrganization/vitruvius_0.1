@@ -1,15 +1,15 @@
-import { JOB_TYPE, type Job, type JobType } from '@vitruvius/core';
+import { JOB_TYPE, type Job, type JobType, type RegenerateRequest } from '@vitruvius/core';
 import type { DbClient } from './client.js';
 import { rowToJob } from './mappers.js';
 import type { JobRow } from './types.js';
 
 export async function enqueueJob(
 	client: DbClient,
-	input: { manualId: string; type: JobType }
+	input: { manualId: string; type: JobType; payload?: RegenerateRequest | null }
 ): Promise<Job> {
 	const { data, error } = await client
 		.from('jobs')
-		.insert({ manual_id: input.manualId, type: input.type })
+		.insert({ manual_id: input.manualId, type: input.type, payload: input.payload ?? null })
 		.select('*')
 		.single<JobRow>();
 

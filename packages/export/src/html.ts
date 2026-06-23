@@ -20,15 +20,16 @@ function renderList(title: string, items: string[]): string {
 }
 
 function renderStep(step: ManualStep, index: number): string {
-	// Original keyframe first (spec 09): the still anchors each step before its text.
-	const figure = step.keyframeUrl
-		? `<figure><img src="${esc(step.keyframeUrl)}" alt="Keyframe for step ${index + 1}" /></figure>`
+	// Target (phase 1): template uses illustrationUrl as primary image
+	const imageUrl = step.illustrationUrl || step.keyframeUrl;
+	const figure = imageUrl
+		? `<figure><img src="${esc(imageUrl)}" alt="Image for step ${index + 1}" /></figure>`
 		: '';
 
 	const heading = step.title.trim() || `Step ${index + 1}`;
-	const instruction = step.instruction.trim()
-		? `<p class="instruction">${esc(step.instruction)}</p>`
-		: '';
+	// Target (phase 1): template uses caption for on-page text
+	const text = step.caption.trim() || step.instruction.trim();
+	const instruction = text ? `<p class="instruction">${esc(text)}</p>` : '';
 
 	return `<section class="step">
 	<header><span class="num">${index + 1}</span><h3>${esc(heading)}</h3></header>

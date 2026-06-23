@@ -4,6 +4,8 @@ import type { RawInstruction } from '../instruct/types.js';
 export type InstructProviderContext = {
 	learnings: string[];
 	manualId?: string;
+	/** Editor regeneration prompt (spec 16); folded into the prompt when present. */
+	guidance?: string;
 };
 
 export interface InstructProvider {

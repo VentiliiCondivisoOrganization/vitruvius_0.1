@@ -69,6 +69,7 @@ export function rowToJob(job: JobRow): Job {
 		type: job.type,
 		status: job.status,
 		attempts: job.attempts,
+		payload: job.payload ?? null,
 		createdAt: job.created_at,
 		updatedAt: job.updated_at
 	};

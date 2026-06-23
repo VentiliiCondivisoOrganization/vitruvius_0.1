@@ -8,6 +8,8 @@ import type { DigitalModel, ManualStep } from '@vitruvius/core';
 export type IllustrateOptions = {
 	digitalModel?: DigitalModel | null;
 	manualId?: string;
+	/** Natural-language steering from a `regenerate` illustration/layout job (spec 16). */
+	guidance?: string;
 };
 
 /**

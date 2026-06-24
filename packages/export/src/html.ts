@@ -19,12 +19,24 @@ function renderList(title: string, items: string[]): string {
 	return `<div class="meta"><h4>${esc(title)}</h4><ul>${lis}</ul></div>`;
 }
 
+function renderFigure(step: ManualStep, index: number): string {
+	// Spec 09 phase-1 target: the schematic illustration is the only primary image.
+	const illustration = step.illustrationUrl.trim();
+	if (illustration) {
+		return `<figure class="schematic"><img src="${esc(illustration)}" alt="Schematic for step ${index + 1}" /></figure>`;
+	}
+	// keyframeUrl is reference/debug only — never passed off as the finished schematic.
+	// When no illustration exists yet (Illustrator is non-fatal), show the source frame
+	// clearly marked as a reference, not as the manual's diagram.
+	const keyframe = step.keyframeUrl.trim();
+	if (keyframe) {
+		return `<figure class="reference"><img src="${esc(keyframe)}" alt="Reference frame for step ${index + 1}" /><figcaption>Reference frame — illustration pending</figcaption></figure>`;
+	}
+	return '';
+}
+
 function renderStep(step: ManualStep, index: number): string {
-	// Target (phase 1): template uses illustrationUrl as primary image
-	const imageUrl = step.illustrationUrl || step.keyframeUrl;
-	const figure = imageUrl
-		? `<figure><img src="${esc(imageUrl)}" alt="Image for step ${index + 1}" /></figure>`
-		: '';
+	const figure = renderFigure(step, index);
 
 	const heading = step.title.trim() || `Step ${index + 1}`;
 	// Target (phase 1): template uses caption for on-page text
@@ -43,8 +55,10 @@ function renderStep(step: ManualStep, index: number): string {
 
 /**
  * Render a `ready` manual as a standalone, self-contained HTML document (spec 09).
- * Original keyframes lead each step. Pure and deterministic — the engine prints this
- * to PDF with Playwright; the web app can also serve it directly.
+ * The schematic illustration leads each step (`illustrationUrl` + `caption`); the source
+ * keyframe is shown only as a clearly marked reference when no illustration exists yet.
+ * Pure and deterministic — the engine prints this to PDF with Playwright; the web app can
+ * also serve it directly.
  */
 export function renderManualHtml(manual: InstructionManual): string {
 	const steps = [...manual.steps].sort((a, b) => a.order - b.order);
@@ -66,6 +80,8 @@ export function renderManualHtml(manual: InstructionManual): string {
 	.step h3 { margin: 0; font-size: 1.2rem; }
 	figure { margin: 0.75rem 0; }
 	figure img { max-width: 100%; border-radius: 6px; border: 1px solid #e2e2e2; }
+	figure.reference img { border-style: dashed; border-color: #c9c9c9; filter: grayscale(0.15); }
+	figure.reference figcaption { margin-top: 0.35rem; font-size: 0.8rem; color: #888; font-style: italic; }
 	.instruction { font-size: 1rem; line-height: 1.5; }
 	.meta h4 { margin: 0.75rem 0 0.25rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: #666; }
 	.meta ul { margin: 0; padding-left: 1.2rem; }

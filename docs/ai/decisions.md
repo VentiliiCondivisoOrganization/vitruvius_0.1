@@ -37,7 +37,8 @@ One vendor for DB + Storage + Auth keeps the surface small. Revisit if egress co
 ### 7. Gemini for video understanding
 
 Verify the exact current model name before implementing `packages/ai`; chunk clips for fast action
-sequences. Real calls are stubbed in the bootstrap.
+sequences. Implemented in `packages/ai`: each agent role has a Gemini provider calling the REST API,
+with a deterministic heuristic fallback selected when `GEMINI_API_KEY` is absent (local dev / CI).
 
 ### 8. Quality first, then minimize credits; the AI layer is provider-pluggable (BYO future)
 

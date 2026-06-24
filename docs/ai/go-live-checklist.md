@@ -21,7 +21,7 @@ What stands between the current codebase and a **running, operational web app**.
       multi-tenant RLS `0010`).
 - [x] `typecheck` 14/14, `lint` 8/8, unit/component tests green (export, cad, engine, ai, media).
 
-## A. Supabase provisioning (verified & completed)
+## A. Supabase provisioning (Partially completed)
 
 - [x] Create a **hosted Supabase project** (Postgres + Storage + Auth).
 - [x] Apply migrations: `supabase link` + `supabase db push` (`0001–0010`).

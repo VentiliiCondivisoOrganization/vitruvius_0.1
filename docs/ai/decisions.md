@@ -91,5 +91,4 @@ The team selected Paraglide JS (inlang) as the UI localization framework. Paragl
 
 ### 14. Node-based SvelteKit Adapter
 
-For production deployment, SvelteKit is configured with `@sveltejs/kit/node` (`adapter-node`) to compile the web application into a standard Node.js server. This provides maximum compatibility with containerized deployment environments (such as Render, Fly.io, or Railway) matching the engine worker container's runtime, and avoids the runtime/V8-isolate limitations of serverless edge adapters.
-
+For production deployment, SvelteKit is configured with `@sveltejs/adapter-node` (`adapter-node`) to compile the web application into a standard Node.js server. This provides maximum compatibility with containerized deployment environments (such as Render, Fly.io, or Railway) matching the engine worker container's runtime, and avoids the runtime/V8-isolate limitations of serverless edge adapters.

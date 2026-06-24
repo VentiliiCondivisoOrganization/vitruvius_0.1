@@ -19,10 +19,11 @@ to lives here.
 
 ## Spec map
 
-| Range                  | Role                                                                                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **01–12**              | Baseline vertical slices — bootstrap through CAD priming (see [implementation-progress.md](implementation-progress.md))                   |
-| **13, 14, 15, 16, 17** | Client-alignment extensions — BOM layer, illustrate, auth, regenerate job, versioning ([assessment §5.3](client-alignment-assessment.md)) |
-| **08, 09** (extended)  | Disambiguation BOM + schematic export absorbed here — no separate spec 18                                                                 |
+| Range                  | Role                                                                                                                                                                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **01–12**              | Baseline vertical slices — bootstrap through CAD priming (see [implementation-progress.md](implementation-progress.md))                                                                                                             |
+| **13, 14, 15, 16, 17** | Client-alignment extensions — BOM layer, illustrate, auth, regenerate job, versioning ([assessment §5.3](client-alignment-assessment.md)). All merged; `16` `structure` scope deferred (see [progress](implementation-progress.md)) |
+| **08, 09** (extended)  | Disambiguation BOM + schematic export absorbed here — no separate spec 18                                                                                                                                                           |
+| _(no spec)_            | UI localization en/it/es/fr (Paraglide, #48) shipped without a spec — flagged in [implementation-progress.md](implementation-progress.md)                                                                                           |
 
 Pipeline target (phase 1): [architecture.md § Pipeline](architecture.md#pipeline-baseline-vs-target).

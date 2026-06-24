@@ -169,9 +169,10 @@ To avoid blocking:
 ## Near-term backlog (baseline 06–12)
 
 Current state: baseline 01–12 and phase-1 specs 13, 14 (tier 1), 16, 17 are implemented; spec 08
-gained BOM disambiguation + versioning UI. The sprint table below is the original baseline plan,
-kept for history. Live status is the source of truth:
-[implementation-progress.md](implementation-progress.md).
+gained BOM disambiguation + versioning UI; spec 15 (auth + multi-tenancy) is merged and UI
+localization (en/it/es/fr) shipped without a spec. The sprint table below is the original baseline
+plan, kept for history. Live status — and the open decided-vs-developed gaps — is the source of
+truth: [implementation-progress.md](implementation-progress.md).
 
 | Sprint focus | Stefano                                         | Antonio                            | Giovanni                                  |
 | ------------ | ----------------------------------------------- | ---------------------------------- | ----------------------------------------- |

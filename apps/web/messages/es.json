@@ -56,6 +56,7 @@
 	"auth_welcome_back": "Bienvenido de nuevo",
 	"auth_login_subtitle": "Inicia sesión para acceder y gestionar tus manuales de montaje.",
 	"auth_email_label": "Correo electrónico",
+	"auth_email_placeholder": "you@example.com",
 	"auth_password_label": "Contraseña",
 	"auth_forgot_password": "¿Olvidaste tu contraseña?",
 	"auth_sign_in": "Iniciar sesión",

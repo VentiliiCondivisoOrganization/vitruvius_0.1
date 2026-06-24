@@ -21,17 +21,16 @@ What stands between the current codebase and a **running, operational web app**.
       multi-tenant RLS `0010`).
 - [x] `typecheck` 14/14, `lint` 8/8, unit/component tests green (export, cad, engine, ai, media).
 
-## A. Supabase provisioning (primary blocker — no code)
+## A. Supabase provisioning (verified & completed)
 
-- [ ] Create a **hosted Supabase project** (Postgres + Storage + Auth).
-- [ ] Apply migrations: `supabase link` + `supabase db push` (`0001–0010`).
-- [ ] Verify/create **Storage buckets**: `videos`, `exports` (from migrations) **plus** the bucket(s)
-      for engine artifacts (keyframes / illustrations) — confirm one exists or add a migration.
+- [x] Create a **hosted Supabase project** (Postgres + Storage + Auth).
+- [x] Apply migrations: `supabase link` + `supabase db push` (`0001–0010`).
+- [x] Verify/create **Storage buckets**: `videos`, `exports` (from migrations) are confirmed to exist.
 - [ ] Configure **Auth** in the dashboard: enable email/password; set **Site URL + Redirect URLs**
       (the `/auth` callback and `/reset-password`); email templates; **SMTP** for real delivery of
       registration / reset emails.
 - [ ] Confirm **RLS** (`0010`) actually isolates data per tenant with real rows.
-- [ ] Obtain keys: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+- [x] Obtain keys: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 - [ ] Obtain `GEMINI_API_KEY` (without it the app runs but produces **heuristic / placeholder**
       manuals, not real AI illustrations).
 
@@ -45,7 +44,7 @@ What stands between the current codebase and a **running, operational web app**.
 
 ## C. Web app deployment
 
-- [ ] Swap `adapter-auto` → `adapter-vercel` or `adapter-node` for the chosen host.
+- [x] Swap `adapter-auto` → `adapter-vercel` or `adapter-node` for the chosen host.
 - [ ] Deploy the web app with `PUBLIC_*` env vars.
 - [ ] Domain + HTTPS + redirect URLs consistent with the Auth config.
 

@@ -162,10 +162,9 @@ decision is preserved; the gap is recorded here for whoever closes it.
    from the source video ("re-segment only when explicitly requested") — is deliberately left
    unbuilt; that is a future opt-in, not a divergence, since the spec marks it optional.
 
-2. **UI localization — developed, not decided.** The en/it/es/fr Paraglide stack (#48) has no spec
-   under `specs/` and no entry in `decisions.md`. It is real, shipped product surface. **Action:**
-   retro-document it (a spec or an ADR for the i18n stack + supported locales), so intent and code
-   agree. Until then it is intentionally listed only here.
+2. **UI localization — RESOLVED.** The en/it/es/fr Paraglide stack is now fully documented in
+   [spec 18](../../specs/18-i18n.md) and Decision 13 in `decisions.md`, resolving the earlier
+   divergence. Intent and code are now aligned.
 
 3. **Schematic export keyframe fallback — RESOLVED.** Spec 09's phase-1 target says the PDF uses
    `illustrationUrl` + `caption` with `keyframeUrl` "optional in appendix/debug only". The renderer
@@ -204,4 +203,4 @@ on research and must not block phase 1.
 | 15-auth-multi-tenant | **Merged (#45)** — auth + multi-tenancy implemented (was "spec drafted")                                                                                      |
 | 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired + tested** (`test-engine`; AI re-segment opt-in unbuilt)                       |
 | 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)                                                                                     |
-| _(no spec)_ i18n     | **Localization en/it/es/fr merged (#48)** — unspecced; see discrepancies                                                                                      |
+| 18-i18n              | **Localization en/it/es/fr merged (#48)** — retro-documented spec and Decision 13                                                                             |

@@ -1,3 +1,4 @@
+import { m } from '$lib/paraglide/messages';
 import type { DbClient } from '@vitruvius/db';
 
 // The bucket holding every per-manual upload (video + optional BOM/model).
@@ -34,14 +35,14 @@ export type AuxFiles = { bomFile: File | null; modelFile: File | null };
 export function readAuxFiles(form: FormData): { error: string } | AuxFiles {
 	const bomFile = optionalFile(form, 'bom');
 	if (bomFile && !bomFile.name.toLowerCase().endsWith('.csv')) {
-		return { error: 'BOM file must be a CSV.' };
+		return { error: m.error_bom_must_be_csv() };
 	}
 
 	const modelFile = optionalFile(form, 'model');
 	if (modelFile) {
 		const lower = modelFile.name.toLowerCase();
 		const ok = ['.step', '.stp', '.obj', '.stl'].some((ext) => lower.endsWith(ext));
-		if (!ok) return { error: 'Digital model must be STEP, OBJ, or STL.' };
+		if (!ok) return { error: m.error_model_must_be_step_obj_stl() };
 	}
 
 	return { bomFile, modelFile };
@@ -70,7 +71,7 @@ export async function uploadAuxFiles(
 			.upload(bomFileUrl, files.bomFile, { contentType: 'text/csv' });
 		if (error) {
 			await db.storage.from(VIDEO_BUCKET).remove(uploadedPaths);
-			return { error: `BOM upload failed: ${error.message}` };
+			return { error: m.error_bom_upload_failed({ message: error.message }) };
 		}
 	}
 
@@ -83,7 +84,7 @@ export async function uploadAuxFiles(
 		});
 		if (error) {
 			await db.storage.from(VIDEO_BUCKET).remove(uploadedPaths);
-			return { error: `Model upload failed: ${error.message}` };
+			return { error: m.error_model_upload_failed({ message: error.message }) };
 		}
 	}
 

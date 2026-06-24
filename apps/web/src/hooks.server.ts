@@ -1,10 +1,23 @@
 import { env } from '$env/dynamic/private';
+import { paraglideMiddleware } from '$lib/paraglide/server';
 import { redirect, type Handle } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
 import { createDbClient, dbClientFromEnv } from '@vitruvius/db';
 
 const PROTECTED_ROUTES = ['/', '/manuals'];
 
-export const handle: Handle = async ({ event, resolve }) => {
+// i18n: resolve the request locale (cookie → Accept-Language → base locale) and
+// expose it via AsyncLocalStorage so `m.*()` works during SSR in both load
+// functions and form actions. `%lang%` in app.html is set to the resolved locale.
+const handleParaglide: Handle = ({ event, resolve }) =>
+	paraglideMiddleware(event.request, ({ request, locale }) => {
+		event.request = request;
+		return resolve(event, {
+			transformPageChunk: ({ html }) => html.replace('%lang%', locale)
+		});
+	});
+
+const handleAuth: Handle = async ({ event, resolve }) => {
 	const accessToken = event.cookies.get('sb-access-token');
 	const refreshToken = event.cookies.get('sb-refresh-token');
 
@@ -107,3 +120,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	return resolve(event);
 };
+
+// Paraglide runs first so the locale is in scope before auth load/actions execute.
+export const handle = sequence(handleParaglide, handleAuth);

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { m } from '$lib/paraglide/messages';
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
@@ -8,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>Log In — Vitruvius</title>
+	<title>{m.auth_login_page_title()}</title>
 </svelte:head>
 
 <div
@@ -20,19 +22,22 @@
 	></div>
 
 	<div class="relative sm:mx-auto sm:w-full sm:max-w-md space-y-6">
+		<div class="flex justify-end">
+			<LanguageSwitcher />
+		</div>
 		<div class="text-center">
 			<div
 				class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-800 bg-slate-900/60 text-xs font-semibold tracking-wider text-slate-400 uppercase mb-4"
 			>
 				<span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-pulse"></span>
-				Vitruvius Engine v1.0
+				{m.brand_engine_version()}
 			</div>
 			<h1
 				class="text-3xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent"
 			>
-				Welcome back
+				{m.auth_welcome_back()}
 			</h1>
-			<p class="mt-2 text-sm text-slate-400">Sign in to access and manage your assembly manuals.</p>
+			<p class="mt-2 text-sm text-slate-400">{m.auth_login_subtitle()}</p>
 		</div>
 
 		<div
@@ -62,7 +67,7 @@
 						for="email"
 						class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
 					>
-						Email Address
+						{m.auth_email_label()}
 					</label>
 					<input
 						type="email"
@@ -81,13 +86,13 @@
 							for="password"
 							class="block text-xs font-semibold uppercase tracking-wider text-slate-400"
 						>
-							Password
+							{m.auth_password_label()}
 						</label>
 						<a
 							href={resolve('/reset-password')}
 							class="text-xs text-indigo-400 hover:text-indigo-300 transition"
 						>
-							Forgot password?
+							{m.auth_forgot_password()}
 						</a>
 					</div>
 					<input
@@ -122,21 +127,21 @@
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 							></path>
 						</svg>
-						Signing in...
+						{m.auth_signing_in()}
 					{:else}
-						Sign In
+						{m.auth_sign_in()}
 					{/if}
 				</button>
 			</form>
 
 			<div class="border-t border-slate-800/80 pt-4 text-center">
 				<p class="text-xs text-slate-400">
-					Don't have an account?
+					{m.auth_no_account()}
 					<a
 						href={resolve('/register')}
 						class="text-indigo-400 hover:text-indigo-300 transition font-semibold"
 					>
-						Sign up
+						{m.auth_sign_up_link()}
 					</a>
 				</p>
 			</div>

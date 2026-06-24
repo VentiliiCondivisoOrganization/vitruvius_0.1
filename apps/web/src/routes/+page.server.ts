@@ -1,3 +1,4 @@
+import { m } from '$lib/paraglide/messages';
 import { VIDEO_BUCKET, readAuxFiles, storageKey, uploadAuxFiles } from '$lib/server/uploads';
 import { fail, redirect } from '@sveltejs/kit';
 import type { InstructionManual } from '@vitruvius/core';
@@ -15,10 +16,10 @@ export const actions: Actions = {
 		const file = form.get('video');
 
 		if (!(file instanceof File) || file.size === 0) {
-			return fail(400, { error: 'Choose a video file to upload.' });
+			return fail(400, { error: m.error_choose_video() });
 		}
 		if (!file.type.startsWith('video/')) {
-			return fail(400, { error: 'That file is not a video.' });
+			return fail(400, { error: m.error_not_a_video() });
 		}
 
 		const aux = readAuxFiles(form);
@@ -32,7 +33,7 @@ export const actions: Actions = {
 			.upload(videoPath, file, { contentType: file.type });
 
 		if (uploadError) {
-			return fail(502, { error: `Upload failed: ${uploadError.message}` });
+			return fail(502, { error: m.error_upload_failed({ message: uploadError.message }) });
 		}
 
 		const auxUpload = await uploadAuxFiles(locals.db, id, aux);
@@ -69,7 +70,7 @@ export const actions: Actions = {
 				locals.db.storage.from(VIDEO_BUCKET).remove(uploadedPaths)
 			]);
 			const message = err instanceof Error ? err.message : 'unknown error';
-			return fail(500, { error: `Could not start processing: ${message}` });
+			return fail(500, { error: m.error_could_not_start_processing({ message }) });
 		}
 
 		redirect(303, `/manuals/${id}`);

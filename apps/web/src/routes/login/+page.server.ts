@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { m } from '$lib/paraglide/messages';
 import { fail, redirect } from '@sveltejs/kit';
 import { createDbClient } from '@vitruvius/db';
 import type { Actions, PageServerLoad } from './$types';
@@ -17,7 +18,7 @@ export const actions: Actions = {
 		const password = form.get('password');
 
 		if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
-			return fail(400, { error: 'Please enter both email and password.' });
+			return fail(400, { error: m.error_email_password_required() });
 		}
 
 		const supabaseUrl = env.PUBLIC_SUPABASE_URL || '';

@@ -8,3 +8,11 @@
 pnpm-lock.yaml
 package-lock.json
 yarn.lock
+
+# i18n (Paraglide/inlang) generated output. These are regenerated on `pnpm install`
+# (apps/web `prepare`), so CI sees them even though they are git-ignored. Prettier does
+# not honour the nested .gitignore files, so list the generated paths here. Only the
+# hand-edited project.inlang/settings.json is formatted.
+apps/web/src/lib/paraglide/
+apps/web/project.inlang/*
+!apps/web/project.inlang/settings.json

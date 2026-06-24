@@ -1,3 +1,4 @@
+import { m } from '$lib/paraglide/messages';
 import { readAuxFiles, uploadAuxFiles } from '$lib/server/uploads';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { instructionManualSchema, regenerateRequestSchema } from '@vitruvius/core';
@@ -26,10 +27,10 @@ function isHeadVersion(manualId: string, versions: ManualVersionSummary[]): bool
 export const load: PageServerLoad = async ({ params, locals }) => {
 	// id maps to a uuid column; a non-uuid would make the query error (500) rather
 	// than a clean 404, so reject it up front.
-	if (!UUID_RE.test(params.id)) error(404, 'Manual not found');
+	if (!UUID_RE.test(params.id)) error(404, m.error_manual_not_found());
 
 	const manual = await getManual(locals.db, params.id);
-	if (!manual) error(404, 'Manual not found');
+	if (!manual) error(404, m.error_manual_not_found());
 
 	// The version lineage drives the switcher and the freeze rule. A video-only manual
 	// that was never enriched is a one-element lineage (and its own head).
@@ -49,11 +50,11 @@ async function assertHead(db: DbClient, manualId: string) {
 		.limit(1)
 		.returns<{ id: string }[]>();
 	if (error) {
-		return fail(500, { error: `Could not check version head: ${error.message}` });
+		return fail(500, { error: m.error_could_not_check_version({ message: error.message }) });
 	}
 	if ((data?.length ?? 0) > 0) {
 		return fail(409, {
-			error: 'This is an older version and is read-only. Open the latest version to edit.'
+			error: m.error_older_version_readonly()
 		});
 	}
 	return null;
@@ -66,29 +67,29 @@ export const actions: Actions = {
 	// header fields (id, title, videoUrl, createdAt) authoritative and never trust
 	// them from the form; only the steps come from the client.
 	save: async ({ params, request, locals }) => {
-		if (!UUID_RE.test(params.id)) error(404, 'Manual not found');
+		if (!UUID_RE.test(params.id)) error(404, m.error_manual_not_found());
 
 		const current = await getManual(locals.db, params.id);
-		if (!current) error(404, 'Manual not found');
+		if (!current) error(404, m.error_manual_not_found());
 
 		// Only a finished manual is editable. saveManual replaces the whole step set, so
 		// accepting edits while the manual is uploaded/processing would race the engine
 		// (or resurrect a failed one). Reject anything not `ready`.
 		if (current.status !== 'ready') {
-			return fail(409, { error: 'This manual is not ready for editing.' });
+			return fail(409, { error: m.error_not_ready_for_editing() });
 		}
 
 		const frozen = await assertHead(locals.db, current.id);
 		if (frozen) return frozen;
 
 		const raw = (await request.formData()).get('payload');
-		if (typeof raw !== 'string') return fail(400, { error: 'Missing edit payload.' });
+		if (typeof raw !== 'string') return fail(400, { error: m.error_missing_payload() });
 
 		let steps: unknown;
 		try {
 			steps = JSON.parse(raw);
 		} catch {
-			return fail(400, { error: 'Could not read edits: malformed payload.' });
+			return fail(400, { error: m.error_malformed_payload() });
 		}
 
 		// Validate the whole manual (header + edited steps) against the core schema —
@@ -107,14 +108,14 @@ export const actions: Actions = {
 			updatedAt: new Date().toISOString()
 		});
 		if (!result.success) {
-			return fail(400, { error: `Edits are not valid: ${result.error.message}` });
+			return fail(400, { error: m.error_invalid_edits({ message: result.error.message }) });
 		}
 
 		try {
 			await saveManual(locals.db, result.data);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : 'unknown error';
-			return fail(500, { error: `Could not save edits: ${message}` });
+			return fail(500, { error: m.error_could_not_save({ message }) });
 		}
 
 		return { saved: true };
@@ -124,12 +125,12 @@ export const actions: Actions = {
 	// it only validates the request and queues a `regenerate` job for the engine, which
 	// reuses the Instructor / Illustrator. Regeneration runs on the saved manual.
 	regenerate: async ({ params, request, locals }) => {
-		if (!UUID_RE.test(params.id)) error(404, 'Manual not found');
+		if (!UUID_RE.test(params.id)) error(404, m.error_manual_not_found());
 
 		const manual = await getManual(locals.db, params.id);
-		if (!manual) error(404, 'Manual not found');
+		if (!manual) error(404, m.error_manual_not_found());
 		if (manual.status !== 'ready') {
-			return fail(409, { error: 'This manual is not ready for AI regeneration.' });
+			return fail(409, { error: m.error_not_ready_for_regen() });
 		}
 
 		const frozen = await assertHead(locals.db, manual.id);
@@ -143,10 +144,10 @@ export const actions: Actions = {
 			stepIds: typeof stepId === 'string' && stepId ? [stepId] : []
 		});
 		if (!parsed.success) {
-			return fail(400, { error: 'Pick a step and a scope, and enter a prompt to regenerate.' });
+			return fail(400, { error: m.error_regen_fields_required() });
 		}
 		if (!manual.steps.some((step) => step.id === parsed.data.stepIds[0])) {
-			return fail(400, { error: 'That step is not part of this manual.' });
+			return fail(400, { error: m.error_step_not_in_manual() });
 		}
 
 		try {
@@ -157,7 +158,7 @@ export const actions: Actions = {
 			});
 		} catch (err) {
 			const message = err instanceof Error ? err.message : 'unknown error';
-			return fail(500, { error: `Could not start regeneration: ${message}` });
+			return fail(500, { error: m.error_could_not_start_regen({ message }) });
 		}
 
 		return { regenerateQueued: true };
@@ -169,12 +170,12 @@ export const actions: Actions = {
 	// timeline as a new version and enqueues the `enrich` job for the engine — it never
 	// runs bom-map / illustrate itself. Redirects to the new version's editor.
 	enrich: async ({ params, request, locals }) => {
-		if (!UUID_RE.test(params.id)) error(404, 'Manual not found');
+		if (!UUID_RE.test(params.id)) error(404, m.error_manual_not_found());
 
 		const manual = await getManual(locals.db, params.id);
-		if (!manual) error(404, 'Manual not found');
+		if (!manual) error(404, m.error_manual_not_found());
 		if (manual.status !== 'ready') {
-			return fail(409, { error: 'This manual is not ready to enrich.' });
+			return fail(409, { error: m.error_not_ready_to_enrich() });
 		}
 
 		const frozen = await assertHead(locals.db, manual.id);
@@ -184,7 +185,7 @@ export const actions: Actions = {
 		const aux = readAuxFiles(form);
 		if ('error' in aux) return fail(400, { error: aux.error });
 		if (!aux.bomFile && !aux.modelFile) {
-			return fail(400, { error: 'Add a BOM file and/or a digital model to enrich.' });
+			return fail(400, { error: m.error_enrich_files_required() });
 		}
 
 		// New files land under their own storage folder so they never collide with the
@@ -202,7 +203,7 @@ export const actions: Actions = {
 		} catch (err) {
 			await Promise.allSettled([locals.db.storage.from('videos').remove(auxUpload.uploadedPaths)]);
 			const message = err instanceof Error ? err.message : 'unknown error';
-			return fail(500, { error: `Could not start enrichment: ${message}` });
+			return fail(500, { error: m.error_could_not_start_enrich({ message }) });
 		}
 
 		redirect(303, `/manuals/${next.id}`);

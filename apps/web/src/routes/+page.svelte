@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { m } from '$lib/paraglide/messages';
+	import { getLocale } from '$lib/paraglide/runtime';
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -9,17 +12,17 @@
 	const manuals = $derived(data.manuals ?? []);
 
 	const pipeline = [
-		{ title: 'Upload source video', desc: 'Securely store the assembly recording.' },
-		{ title: 'Deterministic media split', desc: 'Extract keyframes and detect scene cuts.' },
-		{ title: 'Segment into stages', desc: 'Segment steps using AI model context.' },
-		{ title: 'Draft instructions', desc: 'Write steps, captions, and tool listings.' },
-		{ title: 'Human-in-the-loop review', desc: 'Refine, split, or confirm steps.' },
-		{ title: 'Vector PDF/HTML export', desc: 'Download manuals with schematic layouts.' }
+		{ title: m.home_pipeline_upload_title(), desc: m.home_pipeline_upload_desc() },
+		{ title: m.home_pipeline_media_title(), desc: m.home_pipeline_media_desc() },
+		{ title: m.home_pipeline_segment_title(), desc: m.home_pipeline_segment_desc() },
+		{ title: m.home_pipeline_draft_title(), desc: m.home_pipeline_draft_desc() },
+		{ title: m.home_pipeline_review_title(), desc: m.home_pipeline_review_desc() },
+		{ title: m.home_pipeline_export_title(), desc: m.home_pipeline_export_desc() }
 	];
 
 	function formatDate(dateStr: string): string {
 		const d = new Date(dateStr);
-		return d.toLocaleDateString(undefined, {
+		return d.toLocaleDateString(getLocale(), {
 			month: 'short',
 			day: 'numeric',
 			hour: '2-digit',
@@ -33,10 +36,17 @@
 		ready: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
 		failed: 'bg-rose-500/10 text-rose-400 border-rose-500/20'
 	};
+
+	const statusLabels: Record<string, () => string> = {
+		uploaded: m.status_uploaded,
+		processing: m.status_processing,
+		ready: m.status_ready,
+		failed: m.status_failed
+	};
 </script>
 
 <svelte:head>
-	<title>Vitruvius — AI-Drafted Assembly Manuals</title>
+	<title>{m.home_page_title()}</title>
 </svelte:head>
 
 <div class="min-h-screen bg-slate-950 text-slate-100 selection:bg-slate-800 selection:text-white">
@@ -47,19 +57,20 @@
 
 	<main class="relative mx-auto max-w-6xl px-6 py-16 lg:py-24">
 		<!-- User Profile Nav -->
-		{#if data.session?.user}
-			<div class="flex justify-end items-center gap-4 mb-8">
+		<div class="flex justify-end items-center gap-4 mb-8">
+			<LanguageSwitcher />
+			{#if data.session?.user}
 				<span class="text-sm text-slate-400">{data.session.user.email}</span>
 				<form action="/logout" method="POST" use:enhance>
 					<button
 						type="submit"
 						class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer font-semibold"
 					>
-						Log Out
+						{m.nav_log_out()}
 					</button>
 				</form>
-			</div>
-		{/if}
+			{/if}
+		</div>
 
 		<!-- Header -->
 		<header class="mb-16 text-center lg:text-left space-y-4">
@@ -67,16 +78,15 @@
 				class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-800 bg-slate-900/60 text-xs font-semibold tracking-wider text-slate-400 uppercase"
 			>
 				<span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-pulse"></span>
-				Vitruvius Engine v1.0
+				{m.brand_engine_version()}
 			</div>
 			<h1
 				class="text-4xl lg:text-5xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent"
 			>
-				AI-drafted manuals, perfected by you.
+				{m.home_hero_title()}
 			</h1>
 			<p class="max-w-2xl text-lg text-slate-400">
-				Provide an assembly video recording, optionally map components via a BOM CSV or digital STEP
-				model, and let our AI orchestrator design high-fidelity instruction drafts.
+				{m.home_hero_subtitle()}
 			</p>
 		</header>
 
@@ -105,7 +115,7 @@
 								d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
 							/></svg
 						>
-						Create New Manual
+						{m.home_upload_title()}
 					</h2>
 
 					<form
@@ -128,7 +138,7 @@
 							<label
 								for="video"
 								class="block text-xs font-semibold text-slate-400 uppercase tracking-wider"
-								>Source Video *</label
+								>{m.home_field_video()} *</label
 							>
 							<div class="relative">
 								<input
@@ -148,7 +158,7 @@
 								for="bom"
 								class="block text-xs font-semibold text-slate-400 uppercase tracking-wider"
 							>
-								BOM File <span class="text-slate-600">(Optional CSV)</span>
+								{m.home_field_bom()} <span class="text-slate-600">{m.home_field_bom_hint()}</span>
 							</label>
 							<input
 								id="bom"
@@ -165,7 +175,8 @@
 								for="model"
 								class="block text-xs font-semibold text-slate-400 uppercase tracking-wider"
 							>
-								Digital Model <span class="text-slate-600">(Optional CAD/Mesh)</span>
+								{m.home_field_model()}
+								<span class="text-slate-600">{m.home_field_model_hint()}</span>
 							</label>
 							<input
 								id="model"
@@ -202,9 +213,9 @@
 										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 									></path>
 								</svg>
-								Uploading & Initializing...
+								{m.home_upload_submitting()}
 							{:else}
-								Upload and Process Video
+								{m.home_upload_submit()}
 							{/if}
 						</button>
 
@@ -229,7 +240,7 @@
 				<!-- Pipeline steps -->
 				<section class="space-y-4">
 					<h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">
-						Orchestration Pipeline
+						{m.home_pipeline_heading()}
 					</h2>
 					<div class="relative pl-6 border-l border-slate-900 space-y-5">
 						{#each pipeline as step, i (step.title)}
@@ -252,11 +263,11 @@
 				<h2
 					class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"
 				>
-					Active Manuals Gallery
+					{m.home_gallery_heading()}
 					<span
 						class="px-2 py-0.5 rounded-full border border-slate-800 bg-slate-900 text-[10px] font-semibold text-slate-400"
 					>
-						{manuals.length} total
+						{m.home_gallery_total({ count: manuals.length })}
 					</span>
 				</h2>
 
@@ -276,17 +287,16 @@
 								/></svg
 							>
 						</div>
-						<p class="text-sm font-semibold text-slate-300">No manuals uploaded yet</p>
+						<p class="text-sm font-semibold text-slate-300">{m.home_gallery_empty_title()}</p>
 						<p class="text-xs text-slate-500">
-							Choose a video file on the left to begin drafting your first assembly instructions
-							manual.
+							{m.home_gallery_empty_body()}
 						</p>
 					</div>
 				{:else}
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-						{#each manuals as m (m.id)}
+						{#each manuals as manual (manual.id)}
 							<a
-								href={resolve(`/manuals/${m.id}`)}
+								href={resolve(`/manuals/${manual.id}`)}
 								class="block rounded-xl border border-slate-900 hover:border-slate-800/80 bg-slate-900/20 hover:bg-slate-900/40 p-5 shadow-lg active:scale-[0.99] transition-all group relative overflow-hidden"
 							>
 								<!-- Hover subtle blue glow -->
@@ -298,19 +308,19 @@
 									<div>
 										<div class="flex items-center justify-between gap-2 mb-2">
 											<span class="text-[10px] font-medium text-slate-500">
-												{formatDate(m.createdAt)}
+												{formatDate(manual.createdAt)}
 											</span>
 											<span
-												class={`px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${statusColors[m.status] || 'bg-slate-900 text-slate-400 border-slate-800'}`}
+												class={`px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${statusColors[manual.status] || 'bg-slate-900 text-slate-400 border-slate-800'}`}
 											>
-												{m.status}
+												{statusLabels[manual.status]?.() ?? manual.status}
 											</span>
 										</div>
 
 										<h3
 											class="text-sm font-bold text-slate-200 group-hover:text-white line-clamp-2 transition-colors"
 										>
-											{m.title}
+											{manual.title}
 										</h3>
 									</div>
 
@@ -330,12 +340,12 @@
 													d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
 												/></svg
 											>
-											<span>{m.steps?.length ?? 0} Steps</span>
+											<span>{m.home_card_steps({ count: manual.steps?.length ?? 0 })}</span>
 										</div>
 										<span
 											class="text-indigo-400/80 group-hover:text-indigo-400 font-semibold inline-flex items-center gap-0.5 transition-colors"
 										>
-											View
+											{m.home_card_view()}
 											<svg
 												class="w-3 h-3 transition-transform group-hover:translate-x-0.5"
 												fill="none"

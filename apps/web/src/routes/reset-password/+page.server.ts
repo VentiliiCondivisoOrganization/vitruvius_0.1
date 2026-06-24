@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { m } from '$lib/paraglide/messages';
 import { fail } from '@sveltejs/kit';
 import { createDbClient } from '@vitruvius/db';
 import type { Actions, PageServerLoad } from './$types';
@@ -14,7 +15,7 @@ export const actions: Actions = {
 		const email = form.get('email');
 
 		if (typeof email !== 'string' || !email) {
-			return fail(400, { error: 'Please enter your email address.' });
+			return fail(400, { error: m.error_email_required() });
 		}
 
 		const supabaseUrl = env.PUBLIC_SUPABASE_URL || '';
@@ -34,7 +35,7 @@ export const actions: Actions = {
 
 	update: async ({ request, locals }) => {
 		if (!locals.session) {
-			return fail(401, { error: 'You must be logged in to update your password.' });
+			return fail(401, { error: m.error_must_be_logged_in_password() });
 		}
 
 		const form = await request.formData();
@@ -42,11 +43,11 @@ export const actions: Actions = {
 		const confirmPassword = form.get('confirmPassword');
 
 		if (typeof password !== 'string' || typeof confirmPassword !== 'string' || !password) {
-			return fail(400, { error: 'Please enter your new password.' });
+			return fail(400, { error: m.error_new_password_required() });
 		}
 
 		if (password !== confirmPassword) {
-			return fail(400, { error: 'Passwords do not match.' });
+			return fail(400, { error: m.error_passwords_no_match() });
 		}
 
 		const { error } = await locals.db.auth.updateUser({ password });

@@ -2,10 +2,11 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-24 (spec 15 auth + multi-tenancy merged #45; UI localization en/it/es/fr
-merged #48; CI hardened against live Supabase + Dockerfile #37; end-to-end integration flow #38;
-premium dark-theme polish #39. Earlier: spec 14 tier 1 #40; spec 16 regenerate #41; spec 17
-versioning #44/#46 + enrich integration test #47; spec 13 #34; spec 08 BOM disambiguation #35/#43)._
+_Last updated: 2026-06-24 (regenerate `structure` scope wired engine-side — split/merge + Instructor;
+spec 15 auth + multi-tenancy merged #45; UI localization en/it/es/fr merged #48; CI hardened against
+live Supabase + Dockerfile #37; end-to-end integration flow #38; premium dark-theme polish #39.
+Earlier: spec 14 tier 1 #40; spec 16 regenerate #41; spec 17 versioning #44/#46 + enrich integration
+test #47; spec 13 #34; spec 08 BOM disambiguation #35/#43)._
 
 > **How to read this file.** It tracks **what is developed** (code on `main`). Where the code and the
 > **decided** spec/architecture diverge, the gap is called out in
@@ -71,8 +72,14 @@ Docs alignment (assessment revision 2, spec stubs 13–17): [#31](https://github
   folded into the prompt and the cache key — reuse, not a new "Regenerator" agent.
 - `apps/engine`: claims `regenerate`, dispatches `text` → Instructor, `illustration` /
   `layout` → Illustrator, persists the targeted step(s) and demotes them to `edited`.
-  **`structure` scope is deferred** (`regenerate.ts` throws) — decided in spec 16 but not yet
-  developed; see [discrepancies](#decided-vs-developed--open-discrepancies).
+- **`structure` scope wired** (`regenerate.ts` → `restructureSteps`): a deterministic
+  split/merge of the selected step(s) — the same semantics as the editor's split/merge
+  (spec 08) — followed by re-running the Instructor on the affected step(s) with the prompt
+  as `guidance`. One target → split at its midpoint; ≥2 contiguous targets → merge. Reuses
+  existing agents (no re-segmentation, no source-video re-download, no segment credits). The
+  editor now offers `structure` (single-step selection → split). AI re-segmentation from the
+  source video remains the spec-optional opt-in ("re-segment only when explicitly requested")
+  and is intentionally not built.
 
 ### Manual versioning — spec 17 — merged end-to-end (#44 engine/db/contract, #46 web)
 
@@ -134,11 +141,13 @@ keyframeUrl` as the primary image and `caption || instruction` as on-page text, 
 Where the code on `main` and the **decided** spec/architecture diverge. Per the working rule, the
 decision is preserved; the gap is recorded here for whoever closes it.
 
-1. **Regenerate `structure` scope — decided, not developed.** Spec 16 lists four scopes
-   (`text` | `illustration` | `layout` | `structure`); the engine implements the first three and
-   `apps/engine/src/regenerate.ts` **throws** for `structure` ("not supported yet"). Split/merge is
-   covered editor-side (spec 08) today; engine-side structural regen / re-segmentation is the open
-   piece. **Action:** implement the scope, or amend spec 16 to formally scope it out of the MVP.
+1. **Regenerate `structure` scope — RESOLVED.** Previously the engine threw for `structure`.
+   It is now implemented (`apps/engine/src/regenerate.ts` → `restructureSteps`) as the editor's
+   split/merge semantics applied engine-side, followed by an Instructor re-run on the affected
+   step(s); the editor offers the scope. This realizes spec 16's "coordinate with editor
+   operations." The spec's _optional_ extra — AI re-segmentation from the source video
+   ("re-segment only when explicitly requested") — is deliberately left unbuilt; that is a
+   future opt-in, not a divergence, since the spec marks it optional.
 
 2. **UI localization — developed, not decided.** The en/it/es/fr Paraglide stack (#48) has no spec
    under `specs/` and no entry in `decisions.md`. It is real, shipped product surface. **Action:**
@@ -159,8 +168,9 @@ decision is preserved; the gap is recorded here for whoever closes it.
 
 Phase 1 core slices (13, 14, 16, 17) are implemented end-to-end, the spec 09 export gate
 (`checkExportGate`) blocks unconfirmed steps / open BOM candidates, and the schematic export template
-is in place. The remaining tracked work is the discrepancy list above — chiefly the regenerate
-`structure` scope (item 1) and retro-speccing localization (item 2). Phase 2 (Compositor-full / pose
+is in place, and the regenerate `structure` scope is now wired (split/merge + Instructor). The
+remaining tracked work is the discrepancy list above — chiefly retro-speccing localization (item 2)
+and the optional AI re-segmentation opt-in noted under item 1. Phase 2 (Compositor-full / pose
 alignment) stays blocked on research and must not block phase 1.
 
 ## Spec status matrix
@@ -176,6 +186,6 @@ alignment) stays blocked on research and must not block phase 1.
 | 13-bom-map           | **Merged** (#34)                                                                                                                                |
 | 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite); tier 2 blocked (phase 2)                                                               |
 | 15-auth-multi-tenant | **Merged (#45)** — auth + multi-tenancy implemented (was "spec drafted")                                                                        |
-| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout; **structure deferred — throws**)                                                                  |
+| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired** (AI re-segment opt-in unbuilt)                                 |
 | 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)                                                                       |
 | _(no spec)_ i18n     | **Localization en/it/es/fr merged (#48)** — unspecced; see discrepancies                                                                        |

@@ -98,7 +98,7 @@ Grill-me decisions and gap analysis: [`docs/ai/client-alignment-assessment.md`](
 | --------------- | --------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ |
 | BOM layer       | 13        | BOM file import + reconcile with CAD; `PartRef[]`; AI only if ambiguous        | Merged (#34)                                                 |
 | Illustrate      | 14 tier 1 | Illustrator (video-only path) + Compositor-lite (canonical CAD views + layout) | Implemented (#40)                                            |
-| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 | Implemented (#41) — `structure` scope deferred (throws)      |
+| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 | Implemented (#41); `structure` split/merge wired engine-side |
 | Versioning      | 17        | v1 → v2 enrich on same timeline; editor trigger + switcher + read-only freeze  | Implemented (#44/#46)                                        |
 | Editor + export | 08, 09    | BOM disambiguation UI (like `alternatives`); schematic PDF; export gate        | BOM UI + gate merged; **schematic PDF template implemented** |
 | Auth + tenancy  | 15        | Supabase Auth, per-tenant scoping (login/register/reset)                       | Merged (#45)                                                 |
@@ -107,8 +107,8 @@ Grill-me decisions and gap analysis: [`docs/ai/client-alignment-assessment.md`](
 **Phase 2** — Compositor-full (CAD geometry overlay per step) requires video↔CAD pose alignment
 (research; out of scope for spec 12).
 
-> Live status and the few open **decided-vs-developed** gaps (regenerate `structure` scope, unspecced
-> localization, the schematic keyframe fallback) are tracked in
+> Live status and the few open **decided-vs-developed** gaps (unspecced localization, the schematic
+> keyframe fallback) are tracked in
 > [`docs/ai/implementation-progress.md`](docs/ai/implementation-progress.md).
 
 Target pipeline order: `… → bom-map → instruct → **critic** → illustrate → …` — Critic stays

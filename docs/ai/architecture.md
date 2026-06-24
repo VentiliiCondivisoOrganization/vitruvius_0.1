@@ -14,7 +14,7 @@ The [client alignment assessment](./client-alignment-assessment.md) (grill-me, 2
 regeneration in revision, and export gated on human confirmation. That target lands in **two
 engineering phases** — see [Pipeline](#pipeline-baseline-vs-target) below. Spec baseline `01`–`12`
 is implemented; extension `13` is merged (#34), `14` tier 1 (Illustrator + Compositor-lite, #40),
-`16` (regenerate job, #41 — `structure` scope deferred), and `17` (manual versioning) are
+`16` (regenerate job, #41 — `structure` split/merge wired), and `17` (manual versioning) are
 implemented; the spec `08` editor adds BOM disambiguation (#35/#43) and the spec `17` versioning
 trigger/switcher/freeze; the spec `09` export template now renders the schematic
 `illustrationUrl`/`caption` path. Beyond the alignment specs, `15` (auth + multi-tenancy, #45) is

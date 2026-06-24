@@ -84,3 +84,11 @@ The Critic (spec 10) continues to judge **`instruction` ↔ `sourceNotes` only**
 deterministic BOM layer (spec 13), editor resolution UX (spec 08, same pattern as `alternatives`),
 and export gate rules (spec 09). Optional deterministic flags from `digitalModelStatus` (spec 12)
 may run before the Critic but do not expand its prompt or scope.
+
+### 13. UI Localization via Paraglide JS
+
+The team selected Paraglide JS (inlang) as the UI localization framework. Paraglide's compile-time code generation provides type-safe key lookup, compile-time key validation, and minimal runtime bundle size by avoiding heavy runtime string parsing. To prevent translation drift and hardcoded UI leakage, we configure locale negotiation (`en`, `es`, `fr`, `it`) in server hooks and load routes, and enforce translation compliance via a static analysis linter (`scripts/check-i18n.js`) running in package build and lint tasks.
+
+### 14. Node-based SvelteKit Adapter
+
+For production deployment, SvelteKit is configured with `@sveltejs/adapter-node` (`adapter-node`) to compile the web application into a standard Node.js server. This provides maximum compatibility with containerized deployment environments (such as Render, Fly.io, or Railway) matching the engine worker container's runtime, and avoids the runtime/V8-isolate limitations of serverless edge adapters.

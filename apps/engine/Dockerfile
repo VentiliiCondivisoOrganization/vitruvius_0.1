@@ -6,6 +6,7 @@ FROM node:lts-bookworm-slim
 # Playwright print-to-PDF (packages/export). Kept minimal but buildable.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ffmpeg \
+      chromium \
       ca-certificates \
       fonts-liberation \
       libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
@@ -13,6 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 \
       procps \
   && rm -rf /var/lib/apt/lists/*
+
+# Set Playwright Chromium path to the system-installed Chromium binary.
+ENV PLAYWRIGHT_CHROMIUM_PATH=/usr/bin/chromium
 
 # Enable pnpm via corepack.
 RUN corepack enable

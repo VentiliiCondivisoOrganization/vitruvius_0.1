@@ -6,6 +6,7 @@
 		type ManualBomItem,
 		type PartRef
 	} from '@vitruvius/core';
+	import { m } from '$lib/paraglide/messages';
 
 	let {
 		part,
@@ -39,7 +40,7 @@
 		{#if part.bomItemId}
 			<span
 				class="shrink-0 rounded-md bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-400"
-				title="Resolved BOM row"
+				title={m.bom_resolved_title()}
 			>
 				{formatPartRef(part)}
 			</span>
@@ -47,7 +48,7 @@
 		<button
 			type="button"
 			onclick={onRemove}
-			aria-label="Remove part {part.label || partIndex + 1}"
+			aria-label={m.bom_remove_part({ label: part.label || String(partIndex + 1) })}
 			class="text-slate-500 hover:text-rose-400 text-sm px-1.5 transition-colors cursor-pointer"
 		>
 			×
@@ -56,7 +57,7 @@
 	{#if partRefHasOpenCandidates(part)}
 		<div class="space-y-1">
 			<p class="text-[10px] font-bold uppercase tracking-wider text-amber-400">
-				Which BOM row matches this step?
+				{m.bom_which_row()}
 			</p>
 			<ul class="space-y-1.5">
 				{#each bomCandidates as candidate (candidate.id)}
@@ -74,12 +75,12 @@
 							onclick={() => onChooseCandidate(candidate.id)}
 							class="whitespace-nowrap rounded-lg border border-amber-500/30 bg-amber-50/10 hover:bg-amber-50/20 px-2.5 py-1 text-[10px] font-bold text-amber-300 hover:text-white transition-all cursor-pointer"
 						>
-							Use this
+							{m.bom_use_this()}
 						</button>
 					</li>
 				{:else}
 					<li class="text-[11px] text-amber-400/70 italic">
-						BOM candidates are no longer in this manual — edit the label or re-upload.
+						{m.bom_no_candidates()}
 					</li>
 				{/each}
 			</ul>

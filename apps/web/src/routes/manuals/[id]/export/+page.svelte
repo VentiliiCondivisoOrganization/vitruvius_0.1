@@ -1,16 +1,26 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { m } from '$lib/paraglide/messages';
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	const manual = $derived(data.manual);
 	const ready = $derived(manual.status === 'ready');
+
+	const statusLabels: Record<string, () => string> = {
+		uploaded: m.status_uploaded,
+		processing: m.status_processing,
+		ready: m.status_ready,
+		failed: m.status_failed
+	};
+	const statusLabel = $derived(statusLabels[manual.status]?.() ?? manual.status);
 </script>
 
 <svelte:head>
-	<title>Export Manual — {manual.title}</title>
+	<title>{m.export_page_title({ title: manual.title })}</title>
 </svelte:head>
 
 <div
@@ -23,19 +33,20 @@
 
 	<main class="relative mx-auto flex w-full max-w-xl flex-col gap-8 px-6 py-16 z-10">
 		<!-- User Profile Nav -->
-		{#if data.session?.user}
-			<div class="flex justify-end items-center gap-4 relative z-20">
+		<div class="flex justify-end items-center gap-4 relative z-20">
+			<LanguageSwitcher />
+			{#if data.session?.user}
 				<span class="text-sm text-slate-400">{data.session.user.email}</span>
 				<form action="/logout" method="POST" use:enhance>
 					<button
 						type="submit"
 						class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer font-semibold"
 					>
-						Log Out
+						{m.nav_log_out()}
 					</button>
 				</form>
-			</div>
-		{/if}
+			{/if}
+		</div>
 
 		<header class="space-y-3">
 			<a
@@ -50,12 +61,12 @@
 						d="M15 19l-7-7 7-7"
 					/>
 				</svg>
-				Back to manual
+				{m.export_back_to_manual()}
 			</a>
 			<h1
 				class="text-3xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent"
 			>
-				Export Manual
+				{m.export_heading()}
 			</h1>
 			<p class="text-xs text-slate-500 font-semibold">{manual.title}</p>
 		</header>
@@ -73,16 +84,9 @@
 					/>
 				</svg>
 				<div>
-					<p class="font-bold">Manual Not Ready</p>
+					<p class="font-bold">{m.export_not_ready_title()}</p>
 					<p class="text-amber-400/80 mt-1 leading-relaxed">
-						This manual is currently in status <span
-							class="font-mono text-white bg-slate-900 border border-slate-800 px-1 py-0.5 rounded"
-							>{manual.status}</span
-						>. Document compilation and export become available once processing is
-						<span
-							class="font-mono text-white bg-slate-900 border border-slate-800 px-1 py-0.5 rounded font-bold"
-							>ready</span
-						>.
+						{m.export_not_ready_body({ status: statusLabel, readyStatus: m.status_ready() })}
 					</p>
 				</div>
 			</div>
@@ -96,7 +100,7 @@
 
 				<div class="flex items-center justify-between pb-4 border-b border-slate-950">
 					<span class="text-xs font-bold uppercase tracking-wider text-slate-400"
-						>Format options</span
+						>{m.export_format_options()}</span
 					>
 					<a
 						href={resolve(`/manuals/${manual.id}/export/view`)}
@@ -104,7 +108,7 @@
 						rel="noopener noreferrer"
 						class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
 					>
-						HTML Print Preview
+						{m.export_html_preview()}
 						<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path
 								stroke-linecap="round"
@@ -134,7 +138,7 @@
 							/>
 						</svg>
 						<div>
-							<p class="font-bold">Export Blocked</p>
+							<p class="font-bold">{m.export_blocked_title()}</p>
 							<p class="text-amber-400/80 mt-1 leading-relaxed">{data.exportBlockedReason}</p>
 						</div>
 					</div>
@@ -154,12 +158,12 @@
 								d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
 							/>
 						</svg>
-						Generate PDF Document
+						{m.export_generate_pdf()}
 					</button>
 
 					{#if form?.queued}
 						<p class="text-xs text-emerald-400 font-bold text-center animate-pulse pt-2">
-							PDF compilation queued. Reload in a moment to download the output.
+							{m.export_queued()}
 						</p>
 					{:else if form?.error}
 						<p class="text-xs text-rose-400 font-bold text-center pt-2">{form.error}</p>
@@ -169,7 +173,7 @@
 				{#if data.downloadUrl}
 					<div class="border-t border-slate-950 pt-6 text-center space-y-3">
 						<p class="text-[11px] text-slate-500 font-medium">
-							Your manual has been compiled successfully
+							{m.export_compiled_success()}
 						</p>
 						<!-- eslint-disable svelte/no-navigation-without-resolve -->
 						<a
@@ -190,14 +194,14 @@
 									d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 								/>
 							</svg>
-							Download PDF File
+							{m.export_download_pdf()}
 						</a>
 						<!-- eslint-enable svelte/no-navigation-without-resolve -->
 					</div>
 				{:else}
 					<div class="border-t border-slate-950 pt-6 text-center">
 						<p class="text-[11px] text-slate-500 italic">
-							No PDF generated yet. Use the action button above to start.
+							{m.export_no_pdf_yet()}
 						</p>
 					</div>
 				{/if}

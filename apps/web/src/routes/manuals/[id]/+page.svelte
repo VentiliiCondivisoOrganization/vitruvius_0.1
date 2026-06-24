@@ -16,6 +16,8 @@
 		type StepReviewStatus
 	} from '@vitruvius/core';
 	import BomPartPicker from './BomPartPicker.svelte';
+	import { m } from '$lib/paraglide/messages';
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -74,15 +76,23 @@
 	let regenerating = $state(false);
 	const regenScopes = REGENERATE_SCOPE.filter((scope) => scope !== 'structure');
 	const regenScopeLabels: Record<string, string> = {
-		text: 'Instruction text',
-		illustration: 'Illustration',
-		layout: 'Layout'
+		text: m.editor_scope_text(),
+		illustration: m.editor_scope_illustration(),
+		layout: m.editor_scope_layout()
 	};
 
 	const reviewLabels: Record<StepReviewStatus, string> = {
-		hypothesis: 'Hypothesis',
-		confirmed: 'Confirmed',
-		edited: 'Edited'
+		hypothesis: m.review_hypothesis(),
+		confirmed: m.review_confirmed(),
+		edited: m.review_edited()
+	};
+
+	// Status badge/stage labels for the processing checklist (the raw enum is a code).
+	const statusLabels: Record<string, () => string> = {
+		uploaded: m.status_uploaded,
+		processing: m.status_processing,
+		ready: m.status_ready,
+		failed: m.status_failed
 	};
 	const reviewStyles: Record<StepReviewStatus, string> = {
 		hypothesis: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
@@ -195,7 +205,7 @@
 			...structuredClone($state.snapshot(step)),
 			id: crypto.randomUUID(),
 			order: step.order + 1,
-			title: `${step.title} (cont.)`,
+			title: m.editor_step_continued({ title: step.title }),
 			instruction: '',
 			startMs: mid,
 			endMs: step.endMs,
@@ -268,7 +278,7 @@
 		steps.push({
 			id: crypto.randomUUID(),
 			order: steps.length,
-			title: `Step ${steps.length + 1}`,
+			title: m.editor_default_step_title({ number: steps.length + 1 }),
 			instruction: '',
 			startMs: start,
 			endMs: start,
@@ -293,7 +303,7 @@
 </script>
 
 <svelte:head>
-	<title>{manual.title} — Edit Assembly Manual</title>
+	<title>{m.editor_page_title({ title: manual.title })}</title>
 </svelte:head>
 
 <div
@@ -306,19 +316,20 @@
 
 	<main class="relative mx-auto max-w-5xl px-6 py-12 lg:py-16 space-y-8">
 		<!-- User Profile Nav -->
-		{#if data.session?.user}
-			<div class="flex justify-end items-center gap-4 relative z-20">
+		<div class="flex justify-end items-center gap-4 relative z-20">
+			<LanguageSwitcher />
+			{#if data.session?.user}
 				<span class="text-sm text-slate-400">{data.session.user.email}</span>
 				<form action="/logout" method="POST" use:enhance>
 					<button
 						type="submit"
 						class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer font-semibold"
 					>
-						Log Out
+						{m.nav_log_out()}
 					</button>
 				</form>
-			</div>
-		{/if}
+			{/if}
+		</div>
 
 		<!-- Header -->
 		<header class="space-y-3 relative z-10">
@@ -335,7 +346,7 @@
 							d="M15 19l-7-7 7-7"
 						/>
 					</svg>
-					All manuals
+					{m.editor_all_manuals()}
 				</a>
 				<span class="text-slate-700">/</span>
 				<span
@@ -364,7 +375,7 @@
 								d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 							/>
 						</svg>
-						Export Manual
+						{m.editor_export_manual()}
 					</a>
 				{/if}
 			</div>
@@ -373,13 +384,13 @@
 			     read-only snapshots. -->
 			<div class="flex flex-wrap items-center gap-2">
 				<span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-					Version {manual.version}
+					{m.editor_version({ version: manual.version })}
 				</span>
 				{#if readOnly}
 					<span
 						class="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400"
 					>
-						Read-only snapshot
+						{m.editor_readonly_snapshot()}
 					</span>
 				{/if}
 				{#if versions.length > 1}
@@ -413,7 +424,7 @@
 					class="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2"
 				>
 					<span class="h-2 w-2 rounded-full bg-indigo-400 animate-ping"></span>
-					Processing Pipeline
+					{m.editor_processing_heading()}
 				</h2>
 
 				{#if failed}
@@ -434,10 +445,9 @@
 							/>
 						</svg>
 						<div>
-							<p class="font-semibold text-slate-200">Assembly manual creation failed</p>
+							<p class="font-semibold text-slate-200">{m.editor_failed_title()}</p>
 							<p class="text-slate-500 mt-1 leading-relaxed">
-								The processing run encountered an error. Please try uploading the source video
-								again.
+								{m.editor_failed_body()}
 							</p>
 						</div>
 					</div>
@@ -467,12 +477,12 @@
 										? 'text-white'
 										: completed
 											? 'text-slate-300 font-semibold'
-											: 'text-slate-600'}">{stage}</span
+											: 'text-slate-600'}">{statusLabels[stage]?.() ?? stage}</span
 								>
 								{#if active && stage !== 'ready'}
 									<span
 										class="text-[9px] px-2 py-0.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 font-medium animate-pulse ml-auto"
-										>in progress</span
+										>{m.editor_in_progress()}</span
 									>
 								{/if}
 							</li>
@@ -481,11 +491,7 @@
 				{/if}
 
 				<p class="text-[11px] text-slate-500 leading-relaxed pt-4 border-t border-slate-900">
-					This workspace will refresh automatically and open the interactive step editor as soon as
-					the processing status transitions to <span
-						class="font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.5 rounded text-[10px]"
-						>ready</span
-					>.
+					{m.editor_wait_note({ status: m.status_ready() })}
 				</p>
 			</section>
 		{:else}
@@ -493,8 +499,7 @@
 				<div
 					class="rounded-2xl border border-slate-800 bg-slate-900/30 backdrop-blur-md px-6 py-4 text-xs text-slate-400"
 				>
-					This is version {manual.version}, a read-only snapshot. Open the latest version to edit;
-					you can still export this one.
+					{m.editor_readonly_banner({ version: manual.version })}
 				</div>
 			{:else}
 				<!-- Enrich (spec 17): attach BOM/CAD that arrived after recording → new version -->
@@ -518,7 +523,7 @@
 						<summary
 							class="flex cursor-pointer select-none items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400 outline-none"
 						>
-							Add BOM / digital model (new version)
+							{m.editor_enrich_summary()}
 							<svg
 								class="h-3.5 w-3.5 text-slate-500 transition-transform group-open/details:rotate-180"
 								fill="none"
@@ -534,13 +539,11 @@
 							</svg>
 						</summary>
 						<p class="mt-3 text-xs leading-relaxed text-slate-500">
-							Got the parts list or CAD after recording? Attach it to create version {manual.version +
-								1} on the same step timeline — the engine re-maps parts and re-illustrates without re-watching
-							the video. This version stays as a snapshot.
+							{m.editor_enrich_body({ version: manual.version + 1 })}
 						</p>
 						<div class="mt-4 grid gap-3 sm:grid-cols-2">
 							<label class="block text-xs font-medium text-slate-400">
-								BOM file (CSV)
+								{m.editor_enrich_bom_label()}
 								<input
 									type="file"
 									name="bom"
@@ -549,7 +552,7 @@
 								/>
 							</label>
 							<label class="block text-xs font-medium text-slate-400">
-								Digital model (STEP/OBJ/STL)
+								{m.editor_enrich_model_label()}
 								<input
 									type="file"
 									name="model"
@@ -563,7 +566,9 @@
 							disabled={enriching}
 							class="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-600/10 transition-all hover:bg-indigo-500 hover:shadow-indigo-600/20 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
 						>
-							{enriching ? 'Creating version…' : `Create version ${manual.version + 1}`}
+							{enriching
+								? m.editor_enrich_creating()
+								: m.editor_enrich_submit({ version: manual.version + 1 })}
 						</button>
 					</details>
 				</form>
@@ -587,7 +592,7 @@
 						<summary
 							class="cursor-pointer text-[11px] font-bold uppercase tracking-wider text-slate-400 select-none outline-none flex items-center justify-between"
 						>
-							Regenerate a step with AI
+							{m.editor_regen_summary()}
 							<svg
 								class="w-3.5 h-3.5 text-slate-500 transition-transform group-open/details:rotate-180"
 								fill="none"
@@ -603,11 +608,7 @@
 							</svg>
 						</summary>
 						<p class="mt-3 text-xs text-slate-500 leading-relaxed">
-							Queues an AI pass on the saved manual — save your edits first. The step comes back as
-							<span
-								class="font-mono text-indigo-400 bg-indigo-500/5 border border-indigo-500/10 px-1 py-0.5 rounded text-[10px]"
-								>edited</span
-							> for you to re-confirm.
+							{m.editor_regen_body({ status: m.review_edited() })}
 						</p>
 						<div class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
 							<select
@@ -616,7 +617,7 @@
 								class="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
 							>
 								<option value="" disabled selected class="bg-slate-950 text-slate-500"
-									>Choose a step…</option
+									>{m.editor_regen_choose_step()}</option
 								>
 								{#each manual.steps as step, i (step.id)}
 									<option value={step.id} class="bg-slate-950 text-slate-200"
@@ -639,20 +640,20 @@
 								disabled={regenerating}
 								class="rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none px-4 py-2 text-xs font-bold text-white transition-all shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.98] cursor-pointer"
 							>
-								{regenerating ? 'Queuing…' : 'Regenerate'}
+								{regenerating ? m.editor_regen_queuing() : m.editor_regen_submit()}
 							</button>
 						</div>
 						<input
 							name="prompt"
 							required
-							placeholder="What should change? e.g. “mention the 4mm hex key” or “make the arrow clearer”"
+							placeholder={m.editor_regen_prompt_placeholder()}
 							class="mt-3 block w-full rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs text-white placeholder:text-slate-700 focus:outline-none focus:border-indigo-500 transition-all"
 						/>
 						{#if form?.regenerateQueued}
 							<p
 								class="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-400"
 							>
-								Regeneration queued. Reload in a moment to see the updated step.
+								{m.editor_regen_queued()}
 							</p>
 						{/if}
 					</details>
@@ -689,18 +690,17 @@
 							<span
 								class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg text-slate-200"
 							>
-								{steps.length}
-								{steps.length === 1 ? 'Step' : 'Steps'}
+								{m.editor_step_count({ count: steps.length })}
 							</span>
 							{#if dirty}
 								<span class="text-amber-400 flex items-center gap-1.5 animate-pulse">
 									<span class="h-2 w-2 rounded-full bg-amber-400"></span>
-									Unsaved changes
+									{m.editor_unsaved_changes()}
 								</span>
 							{:else if form?.saved}
 								<span class="text-emerald-400 flex items-center gap-1.5">
 									<span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-									All changes saved
+									{m.editor_all_saved()}
 								</span>
 							{/if}
 						</div>
@@ -710,21 +710,21 @@
 								href={resolve(`/manuals/${manual.id}/export`)}
 								class="rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-slate-700 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white transition-all"
 							>
-								Export
+								{m.editor_export()}
 							</a>
 							<button
 								type="button"
 								onclick={addStep}
 								class="rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-slate-700 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer"
 							>
-								+ Add Step
+								{m.editor_add_step()}
 							</button>
 							<button
 								type="submit"
 								disabled={saving || !dirty}
 								class="rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none px-4 py-2 text-xs font-bold text-white transition-all shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.98] cursor-pointer"
 							>
-								{saving ? 'Saving...' : 'Save Changes'}
+								{saving ? m.editor_saving() : m.editor_save_changes()}
 							</button>
 						</div>
 					</div>
@@ -763,10 +763,9 @@
 								/>
 							</svg>
 							<div>
-								<p class="font-bold">BOM Resolution Required</p>
+								<p class="font-bold">{m.editor_bom_required_title()}</p>
 								<p class="text-amber-400/80 mt-1 leading-relaxed">
-									{openBomPartCount} component{openBomPartCount === 1 ? '' : 's'} need a BOM choice before
-									export. Pick one option per highlighted part below, then save changes.
+									{m.editor_bom_required_body({ count: openBomPartCount })}
 								</p>
 							</div>
 						</div>
@@ -776,9 +775,9 @@
 						<div
 							class="rounded-2xl border border-dashed border-slate-800 bg-slate-900/10 p-16 text-center space-y-3"
 						>
-							<p class="text-sm font-semibold text-slate-400">This manual has no steps yet</p>
+							<p class="text-sm font-semibold text-slate-400">{m.editor_no_steps_title()}</p>
 							<p class="text-xs text-slate-600">
-								Add a new step using the toolbar above to start drafting.
+								{m.editor_no_steps_body()}
 							</p>
 						</div>
 					{/if}
@@ -811,7 +810,8 @@
 											{reviewLabels[step.reviewStatus]}
 										</span>
 										<span class="text-xs text-slate-500 font-medium">
-											Confidence: <span
+											{m.editor_confidence_label()}
+											<span
 												class={step.confidence < 0.5
 													? 'text-amber-400 font-semibold'
 													: 'text-indigo-400 font-bold'}>{confidencePct(step.confidence)}%</span
@@ -822,7 +822,7 @@
 									<div class="flex items-center gap-1.5">
 										<button
 											type="button"
-											title="Move Step Up"
+											title={m.editor_move_up()}
 											onclick={() => moveStep(i, -1)}
 											disabled={i === 0}
 											class="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-900 disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer"
@@ -838,7 +838,7 @@
 										</button>
 										<button
 											type="button"
-											title="Move Step Down"
+											title={m.editor_move_down()}
 											onclick={() => moveStep(i, 1)}
 											disabled={i === steps.length - 1}
 											class="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-900 disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer"
@@ -855,11 +855,11 @@
 										<span class="h-4 w-px bg-slate-900 mx-1"></span>
 										<button
 											type="button"
-											title="Remove Step"
+											title={m.editor_remove()}
 											onclick={() => removeStep(i)}
 											class="rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-rose-500 hover:text-white hover:bg-rose-600/95 transition-all cursor-pointer"
 										>
-											Remove
+											{m.editor_remove()}
 										</button>
 									</div>
 								</div>
@@ -899,7 +899,7 @@
 													d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
 												/>
 											</svg>
-											Critic Review Warnings
+											{m.editor_critic_warnings()}
 										</p>
 										<ul class="list-disc space-y-1 pl-4 text-xs text-amber-300/80 leading-relaxed">
 											{#each step.critique as flag, fi (fi)}
@@ -920,14 +920,14 @@
 												<!-- eslint-disable svelte/no-navigation-without-resolve -->
 												<img
 													src={step.keyframeUrl}
-													alt="Keyframe for step"
+													alt={m.editor_keyframe_alt()}
 													class="w-full h-full object-cover transition-transform group-hover/img:scale-[1.02] duration-500"
 												/>
 												<!-- eslint-enable svelte/no-navigation-without-resolve -->
 												<div
 													class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-950/80 border border-slate-900 text-[9px] text-slate-400 font-mono"
 												>
-													Keyframe
+													{m.editor_keyframe()}
 												</div>
 											</div>
 										{/if}
@@ -935,7 +935,7 @@
 										<div class="grid grid-cols-2 gap-3.5">
 											<label class="block">
 												<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
-													>Start (ms)</span
+													>{m.editor_start_ms()}</span
 												>
 												<input
 													type="number"
@@ -947,7 +947,7 @@
 											</label>
 											<label class="block">
 												<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
-													>End (ms)</span
+													>{m.editor_end_ms()}</span
 												>
 												<input
 													type="number"
@@ -964,7 +964,7 @@
 									<div class="md:col-span-8 space-y-4">
 										<label class="block">
 											<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
-												>Title</span
+												>{m.editor_field_title()}</span
 											>
 											<input
 												type="text"
@@ -976,13 +976,13 @@
 
 										<label class="block">
 											<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
-												>Instruction Detail</span
+												>{m.editor_field_instruction()}</span
 											>
 											<textarea
 												bind:value={step.instruction}
 												oninput={() => touchStep(i)}
 												rows="3"
-												placeholder="Describe what to do in this step..."
+												placeholder={m.editor_instruction_placeholder()}
 												class="mt-1.5 block w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs font-medium text-slate-300 focus:outline-none focus:border-indigo-500 focus:bg-slate-950 transition-all leading-relaxed"
 											></textarea>
 										</label>
@@ -994,14 +994,14 @@
 												<div class="flex items-center justify-between">
 													<span
 														class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
-														>Parts / Components</span
+														>{m.editor_parts_heading()}</span
 													>
 													<button
 														type="button"
 														onclick={() => addPart(i)}
 														class="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
 													>
-														+ Add Part
+														{m.editor_add_part()}
 													</button>
 												</div>
 												<div class="space-y-2">
@@ -1018,7 +1018,7 @@
 													{/each}
 													{#if step.parts.length === 0}
 														<p class="text-[11px] text-slate-600 italic">
-															No parts mapped to this step.
+															{m.editor_no_parts()}
 														</p>
 													{/if}
 												</div>
@@ -1029,14 +1029,14 @@
 												<div class="flex items-center justify-between">
 													<span
 														class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
-														>Required Tools</span
+														>{m.editor_tools_heading()}</span
 													>
 													<button
 														type="button"
 														onclick={() => addItem(i, 'tools')}
 														class="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
 													>
-														+ Add Tool
+														{m.editor_add_tool()}
 													</button>
 												</div>
 												<div class="space-y-1.5">
@@ -1059,7 +1059,7 @@
 													{/each}
 													{#if step.tools.length === 0}
 														<p class="text-[11px] text-slate-600 italic">
-															No tools mapped to this step.
+															{m.editor_no_tools()}
 														</p>
 													{/if}
 												</div>
@@ -1070,14 +1070,14 @@
 										<div class="rounded-xl border border-slate-900 bg-slate-950/40 p-4 space-y-3">
 											<div class="flex items-center justify-between">
 												<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
-													>Warnings & Quality Checks</span
+													>{m.editor_warnings_heading()}</span
 												>
 												<button
 													type="button"
 													onclick={() => addItem(i, 'warnings')}
 													class="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
 												>
-													+ Add Check
+													{m.editor_add_check()}
 												</button>
 											</div>
 											<div class="space-y-1.5">
@@ -1087,7 +1087,7 @@
 															type="text"
 															value={warning}
 															oninput={(e) => updateItem(i, 'warnings', wi, e.currentTarget.value)}
-															placeholder="e.g. Align the notches perfectly..."
+															placeholder={m.editor_warning_placeholder()}
 															class="block w-full rounded-lg border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5 text-xs text-amber-300/90 focus:outline-none focus:border-amber-500 transition-all placeholder:text-slate-700"
 														/>
 														<button
@@ -1101,7 +1101,7 @@
 												{/each}
 												{#if step.warnings.length === 0}
 													<p class="text-[11px] text-slate-600 italic">
-														No special warnings or quality checks.
+														{m.editor_no_warnings()}
 													</p>
 												{/if}
 											</div>
@@ -1111,7 +1111,7 @@
 										{#if step.alternatives.length > 0}
 											<div class="rounded-xl border border-slate-900 bg-slate-950/40 p-4 space-y-3">
 												<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"
-													>Alternative Instructions (AI)</span
+													>{m.editor_alternatives_heading()}</span
 												>
 												<ul class="space-y-2">
 													{#each step.alternatives as alt, ai (ai)}
@@ -1124,7 +1124,7 @@
 																onclick={() => chooseAlternative(i, ai)}
 																class="whitespace-nowrap rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-200 hover:text-white transition-colors cursor-pointer"
 															>
-																Use Alternative
+																{m.editor_use_alternative()}
 															</button>
 														</li>
 													{/each}
@@ -1140,7 +1140,7 @@
 												<summary
 													class="cursor-pointer text-[10px] font-bold uppercase tracking-wider text-slate-500 select-none outline-none flex items-center justify-between"
 												>
-													Source evidence notes ({step.sourceNotes.length})
+													{m.editor_source_notes({ count: step.sourceNotes.length })}
 													<svg
 														class="w-3.5 h-3.5 transition-transform group-open/details:rotate-180"
 														fill="none"
@@ -1171,7 +1171,7 @@
 								<div
 									class="mt-6 flex flex-wrap items-center gap-2 border-t border-slate-950 pt-4 text-xs"
 								>
-									<span class="text-slate-500 font-medium">Verify Step:</span>
+									<span class="text-slate-500 font-medium">{m.editor_verify_step()}</span>
 									{#each STEP_REVIEW_STATUS as status (status)}
 										<button
 											type="button"
@@ -1192,7 +1192,7 @@
 										onclick={() => splitStep(i)}
 										class="rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer"
 									>
-										Split Step
+										{m.editor_split_step()}
 									</button>
 									<button
 										type="button"
@@ -1200,7 +1200,7 @@
 										disabled={i === steps.length - 1}
 										class="rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-20 disabled:pointer-events-none"
 									>
-										Merge with Next
+										{m.editor_merge_next()}
 									</button>
 								</div>
 							</li>

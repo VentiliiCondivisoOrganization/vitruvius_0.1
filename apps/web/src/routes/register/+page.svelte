@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { m } from '$lib/paraglide/messages';
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
@@ -8,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>Sign Up — Vitruvius</title>
+	<title>{m.auth_register_page_title()}</title>
 </svelte:head>
 
 <div
@@ -20,20 +22,23 @@
 	></div>
 
 	<div class="relative sm:mx-auto sm:w-full sm:max-w-md space-y-6">
+		<div class="flex justify-end">
+			<LanguageSwitcher />
+		</div>
 		<div class="text-center">
 			<div
 				class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-800 bg-slate-900/60 text-xs font-semibold tracking-wider text-slate-400 uppercase mb-4"
 			>
 				<span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-pulse"></span>
-				Vitruvius Engine v1.0
+				{m.brand_engine_version()}
 			</div>
 			<h1
 				class="text-3xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent"
 			>
-				Create your account
+				{m.auth_create_account()}
 			</h1>
 			<p class="mt-2 text-sm text-slate-400">
-				Start drafting assembly manuals with AI context mapping.
+				{m.auth_register_subtitle()}
 			</p>
 		</div>
 
@@ -44,16 +49,16 @@
 				<div
 					class="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-400 space-y-2"
 				>
-					<p class="font-bold">Registration successful!</p>
+					<p class="font-bold">{m.auth_register_success_title()}</p>
 					<p class="text-slate-300">
-						Please check your email inbox to confirm your account before logging in.
+						{m.auth_register_success_body()}
 					</p>
 					<p class="pt-2">
 						<a
 							href={resolve('/login')}
 							class="text-indigo-400 hover:text-indigo-300 transition font-semibold"
 						>
-							← Back to login
+							{m.auth_back_to_login()}
 						</a>
 					</p>
 				</div>
@@ -82,7 +87,7 @@
 							for="email"
 							class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
 						>
-							Email Address
+							{m.auth_email_label()}
 						</label>
 						<input
 							type="email"
@@ -100,7 +105,7 @@
 							for="password"
 							class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
 						>
-							Password
+							{m.auth_password_label()}
 						</label>
 						<input
 							type="password"
@@ -118,7 +123,7 @@
 							for="confirmPassword"
 							class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
 						>
-							Confirm Password
+							{m.auth_confirm_password_label()}
 						</label>
 						<input
 							type="password"
@@ -152,9 +157,9 @@
 									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 								></path>
 							</svg>
-							Creating account...
+							{m.auth_creating_account()}
 						{:else}
-							Sign Up
+							{m.auth_sign_up_submit()}
 						{/if}
 					</button>
 				</form>
@@ -162,12 +167,12 @@
 
 			<div class="border-t border-slate-800/80 pt-4 text-center">
 				<p class="text-xs text-slate-400">
-					Already have an account?
+					{m.auth_already_have_account()}
 					<a
 						href={resolve('/login')}
 						class="text-indigo-400 hover:text-indigo-300 transition font-semibold"
 					>
-						Log in
+						{m.auth_log_in_link()}
 					</a>
 				</p>
 			</div>

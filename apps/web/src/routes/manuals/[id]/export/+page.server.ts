@@ -1,3 +1,4 @@
+import { m } from '$lib/paraglide/messages';
 import { error, fail } from '@sveltejs/kit';
 import { checkExportGate } from '@vitruvius/core';
 import { enqueueJob, getManual } from '@vitruvius/db';
@@ -12,10 +13,10 @@ function exportObjectKey(manualId: string): string {
 }
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-	if (!UUID_RE.test(params.id)) fail(404, 'Manual not found');
+	if (!UUID_RE.test(params.id)) fail(404, m.error_manual_not_found());
 
 	const manual = await getManual(locals.db, params.id);
-	if (!manual) error(404, 'Manual not found');
+	if (!manual) error(404, m.error_manual_not_found());
 
 	const gate = checkExportGate(manual);
 
@@ -32,12 +33,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 export const actions: Actions = {
 	default: async ({ params, locals }) => {
-		if (!UUID_RE.test(params.id)) return fail(404, { error: 'Manual not found' });
+		if (!UUID_RE.test(params.id)) return fail(404, { error: m.error_manual_not_found() });
 
 		const manual = await getManual(locals.db, params.id);
-		if (!manual) return fail(404, { error: 'Manual not found' });
+		if (!manual) return fail(404, { error: m.error_manual_not_found() });
 		if (manual.status !== 'ready') {
-			return fail(409, { error: 'Manual is not ready to export yet.' });
+			return fail(409, { error: m.error_not_ready_to_export() });
 		}
 
 		const gate = checkExportGate(manual);
@@ -49,7 +50,7 @@ export const actions: Actions = {
 			await enqueueJob(locals.db, { manualId: manual.id, type: 'export' });
 		} catch (err) {
 			const message = err instanceof Error ? err.message : 'unknown error';
-			return fail(500, { error: `Could not start export: ${message}` });
+			return fail(500, { error: m.error_could_not_start_export({ message }) });
 		}
 
 		return { queued: true };

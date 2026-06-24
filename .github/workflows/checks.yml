@@ -205,6 +205,25 @@ jobs:
       - name: Test
         run: pnpm --filter @vitruvius/cad test
 
+  # `@vitruvius/engine` tests cover the regenerate `structure` split/merge through
+  # `handleRegenerateJob` (spec 16). They mock `@vitruvius/db` and run the Instructor on its
+  # offline Heuristic provider — no ffmpeg, no Supabase, no network — so they run in plain CI.
+  test-engine:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Prepare
+        uses: ./.github/actions/prepare
+
+      - name: Test
+        run: pnpm --filter @vitruvius/engine test
+
   # Canonical-view RENDER smoke test (spec 12-cad-ingest). DISABLED in plain CI: rendering
   # needs a CAD/mesh kernel — a heavy native dependency that ships in the engine container
   # (see apps/engine/Dockerfile), not on the GitHub-hosted runner. Enable by building/
@@ -235,7 +254,18 @@ jobs:
   # branch protection rule never has to change.
   checks-pass:
     if: always()
-    needs: ['pr-title', 'format', 'lint', 'typecheck', 'build', 'test-db', 'test-media', 'test-cad']
+    needs:
+      [
+        'pr-title',
+        'format',
+        'lint',
+        'typecheck',
+        'build',
+        'test-db',
+        'test-media',
+        'test-cad',
+        'test-engine'
+      ]
     runs-on: ubuntu-24.04
     permissions:
       contents: read

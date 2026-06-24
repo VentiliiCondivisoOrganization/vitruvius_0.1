@@ -82,7 +82,7 @@ flowchart TD
 | 7   | **Distill learnings** · engine · `packages/ai` | **Yes** 🤖    | Finished + human-corrected run → `Learning` rows                                                                                                    | Extract reusable, generalizable heuristics (tool/part conventions, audio cues) — not per-video transcripts — and store them to prime future runs. Closes the loop: generate → critique → human-correct → learn.                                                                                                                                                 |
 | 8   | **Save** · engine                              | No            | Validated `ManualStep[]` → persisted manual; `status: processing → ready / failed`                                                                  | Persist via `packages/db` and flip the status so the web app's poll picks it up.                                                                                                                                                                                                                                                                                |
 | 9   | **Editor** · web                               | No · human    | Ready manual → confirmed / corrected steps                                                                                                          | The guided-revision core of the product: a human reviews each step with its `confidence`, `reviewStatus`, `sourceNotes`, and `critique`, then confirms or corrects. Corrections feed back to learnings.                                                                                                                                                         |
-| 10  | **Export** · web → engine                      | No            | Confirmed manual → PDF in Storage                                                                                                                   | Web enqueues `export`; engine renders HTML → PDF. **Today:** keyframes (spec 09 bootstrap). **Target:** schematic layout via `illustrationUrl` + `caption`; gate rejects open BOM candidates or unconfirmed steps.                                                                                                                                              |
+| 10  | **Export** · web → engine                      | No            | Confirmed manual → PDF in Storage                                                                                                                   | Web enqueues `export`; engine renders HTML → PDF. The template now prefers the **schematic** path (`illustrationUrl` + `caption`) and falls back to keyframes/instruction when an illustration is absent; the gate rejects open BOM candidates or unconfirmed steps.                                                                                            |
 
 > 📐 **The digital-model lane (spec 12)** is auxiliary priming, never required: when a 3D model ships
 > with the video it sharpens part names; when it doesn't, the pipeline runs on video alone. It does
@@ -94,16 +94,22 @@ Grill-me decisions and gap analysis: [`docs/ai/client-alignment-assessment.md`](
 
 **Phase 1 (client deliverable)** — illustrated manual without pose alignment:
 
-| Addition        | Spec      | Role                                                                           | Status                                      |
-| --------------- | --------- | ------------------------------------------------------------------------------ | ------------------------------------------- |
-| BOM layer       | 13        | BOM file import + reconcile with CAD; `PartRef[]`; AI only if ambiguous        | Merged (#34)                                |
-| Illustrate      | 14 tier 1 | Illustrator (video-only path) + Compositor-lite (canonical CAD views + layout) | Implemented                                 |
-| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 | Implemented                                 |
-| Versioning      | 17        | v1 → v2 enrich on same timeline; editor trigger + switcher + read-only freeze  | Implemented                                 |
-| Editor + export | 08, 09    | BOM disambiguation UI (like `alternatives`); schematic PDF; export gate        | BOM UI + gate merged; schematic PDF pending |
+| Addition        | Spec      | Role                                                                           | Status                                                       |
+| --------------- | --------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| BOM layer       | 13        | BOM file import + reconcile with CAD; `PartRef[]`; AI only if ambiguous        | Merged (#34)                                                 |
+| Illustrate      | 14 tier 1 | Illustrator (video-only path) + Compositor-lite (canonical CAD views + layout) | Implemented (#40)                                            |
+| Regenerate      | 16        | Job type from editor; reuses Instructor / Illustrator by scope                 | Implemented (#41); `structure` split/merge wired engine-side |
+| Versioning      | 17        | v1 → v2 enrich on same timeline; editor trigger + switcher + read-only freeze  | Implemented (#44/#46)                                        |
+| Editor + export | 08, 09    | BOM disambiguation UI (like `alternatives`); schematic PDF; export gate        | BOM UI + gate merged; **schematic PDF template implemented** |
+| Auth + tenancy  | 15        | Supabase Auth, per-tenant scoping (login/register/reset)                       | Merged (#45)                                                 |
+| Localization    | —         | UI in en/it/es/fr (Paraglide) — **no spec yet**                                | Merged (#48); unspecced, see progress doc                    |
 
 **Phase 2** — Compositor-full (CAD geometry overlay per step) requires video↔CAD pose alignment
 (research; out of scope for spec 12).
+
+> Live status and the few open **decided-vs-developed** gaps (unspecced localization, the schematic
+> keyframe fallback) are tracked in
+> [`docs/ai/implementation-progress.md`](docs/ai/implementation-progress.md).
 
 Target pipeline order: `… → bom-map → instruct → **critic** → illustrate → …` — Critic stays
 text-only. Details: [`docs/ai/architecture.md`](docs/ai/architecture.md).

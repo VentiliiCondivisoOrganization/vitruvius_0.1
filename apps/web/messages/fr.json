@@ -116,6 +116,7 @@
 	"editor_scope_text": "Texte de l'instruction",
 	"editor_scope_illustration": "Illustration",
 	"editor_scope_layout": "Mise en page",
+	"editor_scope_structure": "Structure (diviser / fusionner)",
 	"review_hypothesis": "Hypothèse",
 	"review_confirmed": "Confirmé",
 	"review_edited": "Modifié",

@@ -7,6 +7,11 @@
 > **Bootstrap** ships keyframe-based export. **Target** (client alignment): schematic IKEA/LEGO layout
 > using `illustrationUrl` + `caption` — no separate spec 18. See
 > [client alignment assessment](../docs/ai/client-alignment-assessment.md).
+>
+> **Status: implemented (target).** `packages/export` renders the schematic illustration as the
+> primary image with `caption` as on-page text. The keyframe is reference/debug only: a step with no
+> illustration shows the source frame as a clearly marked reference ("illustration pending"), never
+> as the finished schematic. See [implementation-progress](../docs/ai/implementation-progress.md).
 
 ## Inputs
 

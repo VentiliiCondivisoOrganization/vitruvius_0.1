@@ -1,4 +1,5 @@
-app = "vitruvius-web-antonio"
+# Override at deploy time via: fly deploy -a <app-name>
+app = "vitruvius-web"
 primary_region = "ams"
 
 [build]

@@ -136,8 +136,7 @@ keyframeUrl` as the primary image and `caption || instruction` as on-page text, 
 
 - Paraglide (inlang) message catalogs under `apps/web/messages/{en,it,es,fr}.json`, a
   `LanguageSwitcher` component, and locale negotiation in `hooks.server.ts`.
-- **No spec covers this** — it shipped ahead of the spec/decision layer; see
-  [discrepancies](#decided-vs-developed--open-discrepancies).
+- **Retro-documented**: Covered by [spec 18](../../specs/18-i18n.md) and Decision 13 in `decisions.md`.
 
 ## Cross-cutting / infra (shipped)
 

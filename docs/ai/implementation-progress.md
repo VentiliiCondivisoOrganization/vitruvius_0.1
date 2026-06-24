@@ -2,8 +2,9 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-24 (regenerate `structure` scope wired engine-side — split/merge + Instructor;
-spec 15 auth + multi-tenancy merged #45; UI localization en/it/es/fr merged #48; CI hardened against
+_Last updated: 2026-06-24 (regenerate `structure` scope wired engine-side — split/merge + Instructor,
+now with engine vitest coverage + a `test-engine` CI job; spec 15 auth + multi-tenancy merged #45; UI
+localization en/it/es/fr merged #48; CI hardened against
 live Supabase + Dockerfile #37; end-to-end integration flow #38; premium dark-theme polish #39.
 Earlier: spec 14 tier 1 #40; spec 16 regenerate #41; spec 17 versioning #44/#46 + enrich integration
 test #47; spec 13 #34; spec 08 BOM disambiguation #35/#43)._
@@ -80,6 +81,11 @@ Docs alignment (assessment revision 2, spec stubs 13–17): [#31](https://github
   editor now offers `structure` (single-step selection → split). AI re-segmentation from the
   source video remains the spec-optional opt-in ("re-segment only when explicitly requested")
   and is intentionally not built.
+- **Test coverage:** `apps/engine/src/regenerate.test.ts` (the engine's first vitest suite) drives
+  `handleRegenerateJob` with `@vitruvius/db` mocked and the offline Heuristic Instructor, asserting
+  split (1 → 3 steps, midpoint window, fresh id, demoted to `edited`), merge (contiguous → spanning
+  window + lowest confidence), and rejection of a non-contiguous merge. A `test-engine` CI job runs
+  it under the `checks-pass` gate.
 
 ### Manual versioning — spec 17 — merged end-to-end (#44 engine/db/contract, #46 web)
 
@@ -130,11 +136,12 @@ keyframeUrl` as the primary image and `caption || instruction` as on-page text, 
 
 ## Cross-cutting / infra (shipped)
 
-| Change                                                      | PR  | Notes                                        |
-| ----------------------------------------------------------- | --- | -------------------------------------------- |
-| CI runs DB tests against a live Supabase; harden Dockerfile | #37 | Engine image + DB test job hardening         |
-| End-to-end integration testing flow                         | #38 | Cross-package process/enrich/export exercise |
-| Premium dark-theme polish (landing/editor/export)           | #39 | Visual polish; no contract change            |
+| Change                                                      | PR  | Notes                                                                           |
+| ----------------------------------------------------------- | --- | ------------------------------------------------------------------------------- |
+| CI runs DB tests against a live Supabase; harden Dockerfile | #37 | Engine image + DB test job hardening                                            |
+| End-to-end integration testing flow                         | #38 | Cross-package process/enrich/export exercise                                    |
+| Premium dark-theme polish (landing/editor/export)           | #39 | Visual polish; no contract change                                               |
+| Engine vitest stack + `test-engine` CI job                  | —   | First `apps/engine` test suite (regenerate `structure`); gated by `checks-pass` |
 
 ## Decided vs developed — open discrepancies
 
@@ -145,9 +152,10 @@ decision is preserved; the gap is recorded here for whoever closes it.
    It is now implemented (`apps/engine/src/regenerate.ts` → `restructureSteps`) as the editor's
    split/merge semantics applied engine-side, followed by an Instructor re-run on the affected
    step(s); the editor offers the scope. This realizes spec 16's "coordinate with editor
-   operations." The spec's _optional_ extra — AI re-segmentation from the source video
-   ("re-segment only when explicitly requested") — is deliberately left unbuilt; that is a
-   future opt-in, not a divergence, since the spec marks it optional.
+   operations." Covered by `apps/engine/src/regenerate.test.ts` (split / merge / non-contiguous
+   reject) under the new `test-engine` CI job. The spec's _optional_ extra — AI re-segmentation
+   from the source video ("re-segment only when explicitly requested") — is deliberately left
+   unbuilt; that is a future opt-in, not a divergence, since the spec marks it optional.
 
 2. **UI localization — developed, not decided.** The en/it/es/fr Paraglide stack (#48) has no spec
    under `specs/` and no entry in `decisions.md`. It is real, shipped product surface. **Action:**
@@ -186,6 +194,6 @@ alignment) stays blocked on research and must not block phase 1.
 | 13-bom-map           | **Merged** (#34)                                                                                                                                |
 | 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite); tier 2 blocked (phase 2)                                                               |
 | 15-auth-multi-tenant | **Merged (#45)** — auth + multi-tenancy implemented (was "spec drafted")                                                                        |
-| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired** (AI re-segment opt-in unbuilt)                                 |
+| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired + tested** (`test-engine`; AI re-segment opt-in unbuilt)         |
 | 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)                                                                       |
 | _(no spec)_ i18n     | **Localization en/it/es/fr merged (#48)** — unspecced; see discrepancies                                                                        |

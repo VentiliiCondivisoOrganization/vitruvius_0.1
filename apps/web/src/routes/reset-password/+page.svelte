@@ -192,7 +192,7 @@
 								id="email"
 								required
 								autocomplete="email"
-								placeholder="you@example.com"
+								placeholder={m.auth_email_placeholder()}
 								class="w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3.5 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition"
 							/>
 						</div>

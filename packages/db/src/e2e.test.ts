@@ -63,7 +63,23 @@ const { handleExportJob } = (await import(exportPath)) as {
 
 const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 
-describe('End-to-End Integration Pipeline', () => {
+// Integration suite: needs a reachable Supabase stack (`pnpm db:start`, or a hosted project in CI).
+// Any HTTP response means the stack is up; a connection error means it's absent — skip, don't fail.
+async function supabaseReachable(url: string): Promise<boolean> {
+	try {
+		await fetch(url, { signal: AbortSignal.timeout(2000) });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+const SUPABASE_REACHABLE = await supabaseReachable(SUPABASE_URL);
+if (!SUPABASE_REACHABLE) {
+	console.warn(`[packages/db] Supabase not reachable at ${SUPABASE_URL} — skipping integration tests.`);
+}
+
+describe.skipIf(!SUPABASE_REACHABLE)('End-to-End Integration Pipeline', () => {
 	let client: DbClient;
 	let manualId: string;
 	let tempDir: string;
@@ -204,7 +220,7 @@ describe('End-to-End Integration Pipeline', () => {
 // must produce v2 on the SAME step timeline (no re-segmentation), populate `PartRef` codes
 // where mappable, surface ambiguous parts as blocking `candidateBomItemIds`, carry the human
 // edits forward unchanged, and leave v1 frozen yet still exportable.
-describe('Manual versioning enrich (spec 17)', () => {
+describe.skipIf(!SUPABASE_REACHABLE)('Manual versioning enrich (spec 17)', () => {
 	let client: DbClient;
 	const bomObjectKey = `test-bom-${randomUUID()}.csv`;
 	let v1Id: string;

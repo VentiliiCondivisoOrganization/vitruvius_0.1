@@ -136,7 +136,7 @@ its own repo without touching the web app. ffmpeg, Gemini, and Playwright live i
 | File storage      | Supabase Storage                                                                                                                                                             |
 | Auth              | Supabase Auth                                                                                                                                                                |
 | Video processing  | ffmpeg (inside the engine container)                                                                                                                                         |
-| AI runtime        | Google Gemini (video understanding) — stubbed in this bootstrap; credit-aware and provider-pluggable behind `packages/ai` (see [`docs/ai/ai-layer.md`](docs/ai/ai-layer.md)) |
+| AI runtime        | Google Gemini (video understanding) — wired via REST behind `packages/ai`, with a deterministic heuristic fallback when `GEMINI_API_KEY` is absent; credit-aware and provider-pluggable (see [`docs/ai/ai-layer.md`](docs/ai/ai-layer.md)) |
 | PDF export        | HTML template + Playwright print-to-PDF (inside the engine container)                                                                                                        |
 | Node              | current active LTS                                                                                                                                                           |
 

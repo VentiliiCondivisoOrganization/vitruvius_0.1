@@ -20,7 +20,23 @@ const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:54321'
 const JOB_COUNT = 8;
 const CLAIMER_COUNT = 16; // more claimers than jobs, so excess claims must come back empty
 
-describe('claimNextJob concurrency', () => {
+// Integration suite: needs a reachable Supabase stack (`pnpm db:start`, or a hosted project in CI).
+// Any HTTP response means the stack is up; a connection error means it's absent — skip, don't fail.
+async function supabaseReachable(url: string): Promise<boolean> {
+	try {
+		await fetch(url, { signal: AbortSignal.timeout(2000) });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+const SUPABASE_REACHABLE = await supabaseReachable(SUPABASE_URL);
+if (!SUPABASE_REACHABLE) {
+	console.warn(`[packages/db] Supabase not reachable at ${SUPABASE_URL} — skipping concurrency tests.`);
+}
+
+describe.skipIf(!SUPABASE_REACHABLE)('claimNextJob concurrency', () => {
 	let client: DbClient;
 	let manualId: string;
 

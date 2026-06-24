@@ -51,12 +51,36 @@ describe('renderManualHtml', () => {
 		expect(html).toContain('<h1>Test Manual</h1>');
 	});
 
-	it('renders the keyframe before the instruction (keyframes first)', () => {
+	it('renders the image before the instruction', () => {
 		const html = renderManualHtml(manual([step()]));
 		const imgIdx = html.indexOf('<img');
 		const instrIdx = html.indexOf('Screw leg A');
 		expect(imgIdx).toBeGreaterThan(-1);
 		expect(imgIdx).toBeLessThan(instrIdx);
+	});
+
+	it('marks a keyframe-only step as a reference frame, not a schematic', () => {
+		const html = renderManualHtml(
+			manual([step({ keyframeUrl: 'https://example.test/frame.jpg', illustrationUrl: '' })])
+		);
+		expect(html).toContain('src="https://example.test/frame.jpg"');
+		expect(html).toContain('class="reference"');
+		expect(html).toContain('illustration pending');
+		expect(html).not.toContain('class="schematic"');
+	});
+
+	it('renders an illustrated step as a schematic without the reference marker', () => {
+		const html = renderManualHtml(
+			manual([
+				step({
+					keyframeUrl: 'https://example.test/frame.jpg',
+					illustrationUrl: 'https://example.test/illustration.png'
+				})
+			])
+		);
+		expect(html).toContain('class="schematic"');
+		expect(html).not.toContain('class="reference"');
+		expect(html).not.toContain('illustration pending');
 	});
 
 	it('orders steps by their order field', () => {

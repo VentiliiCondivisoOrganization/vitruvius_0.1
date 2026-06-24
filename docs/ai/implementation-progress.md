@@ -2,7 +2,9 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-24 (regenerate `structure` scope wired engine-side — split/merge + Instructor,
+_Last updated: 2026-06-24 (spec 09 schematic export keyframe-fallback divergence resolved — keyframe
+demoted to a marked reference, illustration is the only primary image; regenerate `structure` scope
+wired engine-side — split/merge + Instructor,
 now with engine vitest coverage + a `test-engine` CI job; spec 15 auth + multi-tenancy merged #45; UI
 localization en/it/es/fr merged #48; CI hardened against
 live Supabase + Dockerfile #37; end-to-end integration flow #38; premium dark-theme polish #39.
@@ -114,9 +116,12 @@ keyframeUrl` as the primary image and `caption || instruction` as on-page text, 
   instruction"). The Illustrator (spec 14) populates `illustrationUrl`, so a primed manual
   exports schematic images today.
 - This corrects earlier notes that listed the schematic PDF as the outstanding phase-1 item — the
-  template is built. One **minor divergence** from spec 09 remains (keyframe used as a live
-  fallback rather than appendix-only); see
-  [discrepancies](#decided-vs-developed--open-discrepancies).
+  template is built. The earlier keyframe-fallback divergence is **resolved**: the keyframe is no
+  longer rendered as the primary schematic. When a step has no illustration yet (the Illustrator is
+  non-fatal), the source frame renders as a clearly marked `figure.reference` ("illustration
+  pending"), never as the finished diagram — satisfying spec 09's "schematic illustrations, not raw
+  video keyframes" while still degrading gracefully. Covered by `html.test.ts` ("marks a
+  keyframe-only step as a reference frame", "renders an illustrated step as a schematic").
 
 ## Phase 1+ slices (shipped)
 
@@ -162,38 +167,41 @@ decision is preserved; the gap is recorded here for whoever closes it.
    retro-document it (a spec or an ADR for the i18n stack + supported locales), so intent and code
    agree. Until then it is intentionally listed only here.
 
-3. **Schematic export keyframe fallback — minor divergence.** Spec 09's phase-1 target says the
-   PDF uses `illustrationUrl` + `caption` with `keyframeUrl` "optional in appendix/debug only". The
-   renderer instead falls back to `keyframeUrl`/`instruction` inline when an illustration/caption is
-   absent. This is a reasonable degrade-gracefully choice, but it is not what the spec text states.
-   **Action:** either accept the fallback in spec 09, or move keyframes to an appendix per the spec.
+3. **Schematic export keyframe fallback — RESOLVED.** Spec 09's phase-1 target says the PDF uses
+   `illustrationUrl` + `caption` with `keyframeUrl` "optional in appendix/debug only". The renderer
+   previously fell back to `keyframeUrl` inline as if it were the schematic. It now renders the
+   illustration as the only primary image; a keyframe-only step shows the source frame as a marked
+   `figure.reference` ("illustration pending"), demoting it to reference/debug per the spec instead
+   of presenting it as the finished diagram. The on-page text still uses `caption || instruction`,
+   which is human-authored copy, not a raw frame — outside this divergence's scope.
 
-4. **Stale code docstring (not a doc file, noted for cleanup).** `packages/export/src/html.ts`'s
-   function docstring still reads "Original keyframes lead each step", which predates the schematic
-   change above. Harmless, but worth correcting next time that file is touched.
+4. **Stale code docstring — RESOLVED.** `packages/export/src/html.ts`'s function docstring no
+   longer reads "Original keyframes lead each step"; it now describes the schematic-first render
+   with the keyframe as a marked reference.
 
 ## Next vertical slices
 
 Phase 1 core slices (13, 14, 16, 17) are implemented end-to-end, the spec 09 export gate
 (`checkExportGate`) blocks unconfirmed steps / open BOM candidates, and the schematic export template
-is in place, and the regenerate `structure` scope is now wired (split/merge + Instructor). The
-remaining tracked work is the discrepancy list above — chiefly retro-speccing localization (item 2)
-and the optional AI re-segmentation opt-in noted under item 1. Phase 2 (Compositor-full / pose
-alignment) stays blocked on research and must not block phase 1.
+is in place (illustration-primary, keyframe demoted to a marked reference per spec 09), and the
+regenerate `structure` scope is now wired (split/merge + Instructor). The remaining tracked work is
+the discrepancy list above — chiefly retro-speccing localization (item 2) and the optional AI
+re-segmentation opt-in noted under item 1. Phase 2 (Compositor-full / pose alignment) stays blocked
+on research and must not block phase 1.
 
 ## Spec status matrix
 
-| Spec                 | Status                                                                                                                                          |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01-core              | Bootstrap done; PartRef extension merged (#33)                                                                                                  |
-| 02-db                | Done; migrations 0006 (#33), 0007 (#34), 0008 (#41), 0009 (#44), 0010 (#45)                                                                     |
-| 03–07                | Done on `main`                                                                                                                                  |
-| 08-web-editor        | **BOM disambiguation merged (#35/#43)** + spec 17 versioning trigger/switcher/freeze                                                            |
-| 09-export            | Gate + keyframe PDF done; **schematic template (illustrationUrl/caption) implemented** (minor keyframe-fallback divergence — see discrepancies) |
-| 10–12                | Done on `main`                                                                                                                                  |
-| 13-bom-map           | **Merged** (#34)                                                                                                                                |
-| 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite); tier 2 blocked (phase 2)                                                               |
-| 15-auth-multi-tenant | **Merged (#45)** — auth + multi-tenancy implemented (was "spec drafted")                                                                        |
-| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired + tested** (`test-engine`; AI re-segment opt-in unbuilt)         |
-| 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)                                                                       |
-| _(no spec)_ i18n     | **Localization en/it/es/fr merged (#48)** — unspecced; see discrepancies                                                                        |
+| Spec                 | Status                                                                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01-core              | Bootstrap done; PartRef extension merged (#33)                                                                                                                |
+| 02-db                | Done; migrations 0006 (#33), 0007 (#34), 0008 (#41), 0009 (#44), 0010 (#45)                                                                                   |
+| 03–07                | Done on `main`                                                                                                                                                |
+| 08-web-editor        | **BOM disambiguation merged (#35/#43)** + spec 17 versioning trigger/switcher/freeze                                                                          |
+| 09-export            | Gate + PDF done; **schematic template (illustrationUrl/caption) implemented**; keyframe-fallback divergence resolved (keyframe demoted to a marked reference) |
+| 10–12                | Done on `main`                                                                                                                                                |
+| 13-bom-map           | **Merged** (#34)                                                                                                                                              |
+| 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite); tier 2 blocked (phase 2)                                                                             |
+| 15-auth-multi-tenant | **Merged (#45)** — auth + multi-tenancy implemented (was "spec drafted")                                                                                      |
+| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired + tested** (`test-engine`; AI re-segment opt-in unbuilt)                       |
+| 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)                                                                                     |
+| _(no spec)_ i18n     | **Localization en/it/es/fr merged (#48)** — unspecced; see discrepancies                                                                                      |

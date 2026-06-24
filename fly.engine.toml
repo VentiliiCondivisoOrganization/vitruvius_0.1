@@ -1,0 +1,5 @@
+app = "vitruvius-engine-antonio"
+primary_region = "ams"
+
+[build]
+  dockerfile = "apps/engine/Dockerfile"

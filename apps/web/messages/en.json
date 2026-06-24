@@ -115,6 +115,7 @@
 	"editor_scope_text": "Instruction text",
 	"editor_scope_illustration": "Illustration",
 	"editor_scope_layout": "Layout",
+	"editor_scope_structure": "Structure (split / merge)",
 	"review_hypothesis": "Hypothesis",
 	"review_confirmed": "Confirmed",
 	"review_edited": "Edited",

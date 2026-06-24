@@ -2,7 +2,18 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-23 (spec 15 auth spec drafted; spec 14 tier 1 merged #40; spec 16 regenerate merged #41; spec 17 manual versioning merged end-to-end #44/#46 + enrich integration test; spec 13 merged #34; spec 08 BOM disambiguation merged #35/#43)._
+_Last updated: 2026-06-24 (regenerate `structure` scope wired engine-side — split/merge + Instructor,
+now with engine vitest coverage + a `test-engine` CI job; spec 15 auth + multi-tenancy merged #45; UI
+localization en/it/es/fr merged #48; CI hardened against
+live Supabase + Dockerfile #37; end-to-end integration flow #38; premium dark-theme polish #39.
+Earlier: spec 14 tier 1 #40; spec 16 regenerate #41; spec 17 versioning #44/#46 + enrich integration
+test #47; spec 13 #34; spec 08 BOM disambiguation #35/#43)._
+
+> **How to read this file.** It tracks **what is developed** (code on `main`). Where the code and the
+> **decided** spec/architecture diverge, the gap is called out in
+> [Decided vs developed — open discrepancies](#decided-vs-developed--open-discrepancies) rather than
+> by quietly editing the spec. Specs and `decisions.md` remain the record of intent; this doc is the
+> record of reality.
 
 ## Client alignment roadmap
 
@@ -12,6 +23,7 @@ Full analysis: [client-alignment-assessment.md](./client-alignment-assessment.md
 | ------------ | ----------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Baseline** | Video-first pipeline, editor, keyframe PDF                              | 01–12                                      | **Done** on `main` (PRs #21–#30)                                                                                                                                                                     |
 | **Phase 1**  | BOM layer, schematic illustrations, regenerate, versioning, export gate | 13, 14 (tier 1), 16, 17 + extensions 08/09 | **13 merged (#34)**; **14 tier 1 merged (#40)**; **16 regenerate merged (#41)**; **17 versioning implemented end-to-end**; **08 BOM disambiguation merged (#35/#43)**; PartRef contract merged (#33) |
+| **Phase 1+** | Auth + multi-tenancy; UI localization                                   | 15 (+ unspecced i18n)                      | **15 auth merged (#45)**; **localization en/it/es/fr merged (#48)** — see [discrepancies](#decided-vs-developed--open-discrepancies)                                                                 |
 | **Phase 2**  | Compositor-full (CAD overlay per step)                                  | 14 tier 2                                  | Blocked on pose alignment research                                                                                                                                                                   |
 
 ## Shipped on `main` (baseline 01–12)
@@ -61,9 +73,19 @@ Docs alignment (assessment revision 2, spec stubs 13–17): [#31](https://github
   folded into the prompt and the cache key — reuse, not a new "Regenerator" agent.
 - `apps/engine`: claims `regenerate`, dispatches `text` → Instructor, `illustration` /
   `layout` → Illustrator, persists the targeted step(s) and demotes them to `edited`.
-  `structure` scope is deferred (throws for now).
-- `apps/web`: editor panel to pick a step + scope + prompt and enqueue the job (web never
-  calls AI).
+- **`structure` scope wired** (`regenerate.ts` → `restructureSteps`): a deterministic
+  split/merge of the selected step(s) — the same semantics as the editor's split/merge
+  (spec 08) — followed by re-running the Instructor on the affected step(s) with the prompt
+  as `guidance`. One target → split at its midpoint; ≥2 contiguous targets → merge. Reuses
+  existing agents (no re-segmentation, no source-video re-download, no segment credits). The
+  editor now offers `structure` (single-step selection → split). AI re-segmentation from the
+  source video remains the spec-optional opt-in ("re-segment only when explicitly requested")
+  and is intentionally not built.
+- **Test coverage:** `apps/engine/src/regenerate.test.ts` (the engine's first vitest suite) drives
+  `handleRegenerateJob` with `@vitruvius/db` mocked and the offline Heuristic Instructor, asserting
+  split (1 → 3 steps, midpoint window, fresh id, demoted to `edited`), merge (contiguous → spanning
+  window + lowest confidence), and rejection of a non-contiguous merge. A `test-engine` CI job runs
+  it under the `checks-pass` gate.
 
 ### Manual versioning — spec 17 — merged end-to-end (#44 engine/db/contract, #46 web)
 
@@ -84,28 +106,94 @@ Docs alignment (assessment revision 2, spec stubs 13–17): [#31](https://github
   file and asserts the spec's acceptance criteria — same timeline, populated `PartRef`,
   preserved human edits, a blocking BOM candidate, and a still-exportable frozen v1.
 
-### Next vertical slices (phase 1)
+### Schematic PDF export (spec 09 phase-1 target) — implemented in renderer
 
-Phase 1 core slices (13, 14, 16, 17) are implemented end-to-end, and the spec 09 export gate
-(`checkExportGate`) blocks unconfirmed steps / open BOM candidates. Remaining phase-1 work is the
-schematic PDF: the export template using `illustrationUrl` + `caption` as the primary image instead
-of the keyframe. Newly drafted (not yet built): spec 15 (auth + multi-tenant).
+- `packages/export/src/html.ts` already prefers the **schematic** path: `illustrationUrl ||
+keyframeUrl` as the primary image and `caption || instruction` as on-page text, with unit
+  coverage (`html.test.ts`: "prefers illustrationUrl over keyframeUrl", "prefers caption over
+  instruction"). The Illustrator (spec 14) populates `illustrationUrl`, so a primed manual
+  exports schematic images today.
+- This corrects earlier notes that listed the schematic PDF as the outstanding phase-1 item — the
+  template is built. One **minor divergence** from spec 09 remains (keyframe used as a live
+  fallback rather than appendix-only); see
+  [discrepancies](#decided-vs-developed--open-discrepancies).
 
-| Spec                 | Package / app   | Depends on      |
-| -------------------- | --------------- | --------------- |
-| 15-auth-multi-tenant | core + db + web | Core + db + web |
+## Phase 1+ slices (shipped)
+
+### Auth + multi-tenancy — spec 15 — merged (#45)
+
+- `@vitruvius/db`: migration `0010_auth_multi_tenant.sql` (tenancy columns + RLS scoping).
+- `apps/web`: Supabase Auth wired through `hooks.server.ts`; routes for `login`, `logout`,
+  `register`, `reset-password`, and an `auth` callback; manuals scoped per tenant.
+- Supersedes the earlier "spec drafted" status — auth is implemented, not just specced.
+
+### UI localization — en / it / es / fr — merged (#48)
+
+- Paraglide (inlang) message catalogs under `apps/web/messages/{en,it,es,fr}.json`, a
+  `LanguageSwitcher` component, and locale negotiation in `hooks.server.ts`.
+- **No spec covers this** — it shipped ahead of the spec/decision layer; see
+  [discrepancies](#decided-vs-developed--open-discrepancies).
+
+## Cross-cutting / infra (shipped)
+
+| Change                                                      | PR  | Notes                                                                           |
+| ----------------------------------------------------------- | --- | ------------------------------------------------------------------------------- |
+| CI runs DB tests against a live Supabase; harden Dockerfile | #37 | Engine image + DB test job hardening                                            |
+| End-to-end integration testing flow                         | #38 | Cross-package process/enrich/export exercise                                    |
+| Premium dark-theme polish (landing/editor/export)           | #39 | Visual polish; no contract change                                               |
+| Engine vitest stack + `test-engine` CI job                  | —   | First `apps/engine` test suite (regenerate `structure`); gated by `checks-pass` |
+
+## Decided vs developed — open discrepancies
+
+Where the code on `main` and the **decided** spec/architecture diverge. Per the working rule, the
+decision is preserved; the gap is recorded here for whoever closes it.
+
+1. **Regenerate `structure` scope — RESOLVED.** Previously the engine threw for `structure`.
+   It is now implemented (`apps/engine/src/regenerate.ts` → `restructureSteps`) as the editor's
+   split/merge semantics applied engine-side, followed by an Instructor re-run on the affected
+   step(s); the editor offers the scope. This realizes spec 16's "coordinate with editor
+   operations." Covered by `apps/engine/src/regenerate.test.ts` (split / merge / non-contiguous
+   reject) under the new `test-engine` CI job. The spec's _optional_ extra — AI re-segmentation
+   from the source video ("re-segment only when explicitly requested") — is deliberately left
+   unbuilt; that is a future opt-in, not a divergence, since the spec marks it optional.
+
+2. **UI localization — developed, not decided.** The en/it/es/fr Paraglide stack (#48) has no spec
+   under `specs/` and no entry in `decisions.md`. It is real, shipped product surface. **Action:**
+   retro-document it (a spec or an ADR for the i18n stack + supported locales), so intent and code
+   agree. Until then it is intentionally listed only here.
+
+3. **Schematic export keyframe fallback — minor divergence.** Spec 09's phase-1 target says the
+   PDF uses `illustrationUrl` + `caption` with `keyframeUrl` "optional in appendix/debug only". The
+   renderer instead falls back to `keyframeUrl`/`instruction` inline when an illustration/caption is
+   absent. This is a reasonable degrade-gracefully choice, but it is not what the spec text states.
+   **Action:** either accept the fallback in spec 09, or move keyframes to an appendix per the spec.
+
+4. **Stale code docstring (not a doc file, noted for cleanup).** `packages/export/src/html.ts`'s
+   function docstring still reads "Original keyframes lead each step", which predates the schematic
+   change above. Harmless, but worth correcting next time that file is touched.
+
+## Next vertical slices
+
+Phase 1 core slices (13, 14, 16, 17) are implemented end-to-end, the spec 09 export gate
+(`checkExportGate`) blocks unconfirmed steps / open BOM candidates, and the schematic export template
+is in place, and the regenerate `structure` scope is now wired (split/merge + Instructor). The
+remaining tracked work is the discrepancy list above — chiefly retro-speccing localization (item 2)
+and the optional AI re-segmentation opt-in noted under item 1. Phase 2 (Compositor-full / pose
+alignment) stays blocked on research and must not block phase 1.
 
 ## Spec status matrix
 
-| Spec                 | Status                                                                               |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| 01-core              | Bootstrap done; PartRef extension merged (#33)                                       |
-| 02-db                | Done; migrations 0006 (#33) + 0007 (#34)                                             |
-| 03–07                | Done on `main`                                                                       |
-| 08-web-editor        | **BOM disambiguation merged (#35/#43)** + spec 17 versioning trigger/switcher/freeze |
-| 09–12                | Done on `main`                                                                       |
-| 13-bom-map           | **Merged** (#34)                                                                     |
-| 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite)                              |
-| 15-auth-multi-tenant | **Spec drafted**                                                                     |
-| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout; structure deferred)                    |
-| 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)            |
+| Spec                 | Status                                                                                                                                          |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01-core              | Bootstrap done; PartRef extension merged (#33)                                                                                                  |
+| 02-db                | Done; migrations 0006 (#33), 0007 (#34), 0008 (#41), 0009 (#44), 0010 (#45)                                                                     |
+| 03–07                | Done on `main`                                                                                                                                  |
+| 08-web-editor        | **BOM disambiguation merged (#35/#43)** + spec 17 versioning trigger/switcher/freeze                                                            |
+| 09-export            | Gate + keyframe PDF done; **schematic template (illustrationUrl/caption) implemented** (minor keyframe-fallback divergence — see discrepancies) |
+| 10–12                | Done on `main`                                                                                                                                  |
+| 13-bom-map           | **Merged** (#34)                                                                                                                                |
+| 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite); tier 2 blocked (phase 2)                                                               |
+| 15-auth-multi-tenant | **Merged (#45)** — auth + multi-tenancy implemented (was "spec drafted")                                                                        |
+| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired + tested** (`test-engine`; AI re-segment opt-in unbuilt)         |
+| 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)                                                                       |
+| _(no spec)_ i18n     | **Localization en/it/es/fr merged (#48)** — unspecced; see discrepancies                                                                        |

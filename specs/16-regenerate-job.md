@@ -7,6 +7,13 @@
 > Design source: [client alignment assessment](../docs/ai/client-alignment-assessment.md) §5.2.
 > Extends spec 08 (today: AI re-generation is out of scope).
 
+> **Status: implemented.** `text` / `illustration` / `layout` shipped in #41. The `structure`
+> scope is wired engine-side as a deterministic split/merge of the selected step(s) (mirroring the
+> editor's spec-08 split/merge) followed by an Instructor re-run — see
+> `apps/engine/src/regenerate.ts` (`restructureSteps`), covered by `apps/engine/src/regenerate.test.ts`.
+> The optional AI **re-segmentation** from the source video ("re-segment only when explicitly
+> requested", below) is intentionally not built yet — a future opt-in, not a divergence.
+
 ## Inputs
 
 - A manual in revision (spec 08) with step id(s) and user prompt.

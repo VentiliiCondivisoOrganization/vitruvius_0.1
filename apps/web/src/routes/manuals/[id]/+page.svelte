@@ -72,13 +72,15 @@
 
 	// ---- AI regeneration (spec 16) -----------------------------------------
 	// Enqueues a `regenerate` job for one step; the engine reuses Instructor/Illustrator.
-	// `structure` scope is not wired engine-side yet, so it is not offered here.
+	// `structure` splits the selected step engine-side (split/merge); re-segmentation from
+	// the source video stays an explicit opt-in not offered here.
 	let regenerating = $state(false);
-	const regenScopes = REGENERATE_SCOPE.filter((scope) => scope !== 'structure');
+	const regenScopes = REGENERATE_SCOPE;
 	const regenScopeLabels: Record<string, string> = {
 		text: m.editor_scope_text(),
 		illustration: m.editor_scope_illustration(),
-		layout: m.editor_scope_layout()
+		layout: m.editor_scope_layout(),
+		structure: m.editor_scope_structure()
 	};
 
 	const reviewLabels: Record<StepReviewStatus, string> = {

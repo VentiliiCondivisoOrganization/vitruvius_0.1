@@ -59,7 +59,7 @@ What stands between the current codebase and a **running, operational web app**.
 - [ ] Run the DB integration / e2e suites (`@vitruvius/db`) against the real Supabase — they fail
       locally only because no live instance is reachable.
 
-## E. Operational hardening (to be *operational*, not just "works once")
+## E. Operational hardening (to be _operational_, not just "works once")
 
 - [ ] Engine **observability**: logging + error tracking + visibility of `failed` jobs.
 - [ ] Verify job **retry / attempts / dead-letter** behavior.
@@ -76,7 +76,7 @@ What stands between the current codebase and a **running, operational web app**.
 
 ---
 
-**In one line:** little is missing in *code*; what's missing is **Supabase provisioning + two deploys
+**In one line:** little is missing in _code_; what's missing is **Supabase provisioning + two deploys
 (web and engine) + a real end-to-end run** to go from "green build" to "operational web app". The
 first concrete blockers are **A** (Supabase) and **B** (engine): without those two the web app boots
 but can neither store nor process anything.

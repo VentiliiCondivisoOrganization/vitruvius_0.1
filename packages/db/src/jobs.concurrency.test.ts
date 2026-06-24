@@ -33,7 +33,9 @@ async function supabaseReachable(url: string): Promise<boolean> {
 
 const SUPABASE_REACHABLE = await supabaseReachable(SUPABASE_URL);
 if (!SUPABASE_REACHABLE) {
-	console.warn(`[packages/db] Supabase not reachable at ${SUPABASE_URL} — skipping concurrency tests.`);
+	console.warn(
+		`[packages/db] Supabase not reachable at ${SUPABASE_URL} — skipping concurrency tests.`
+	);
 }
 
 describe.skipIf(!SUPABASE_REACHABLE)('claimNextJob concurrency', () => {

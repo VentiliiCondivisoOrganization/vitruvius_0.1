@@ -76,7 +76,9 @@ async function supabaseReachable(url: string): Promise<boolean> {
 
 const SUPABASE_REACHABLE = await supabaseReachable(SUPABASE_URL);
 if (!SUPABASE_REACHABLE) {
-	console.warn(`[packages/db] Supabase not reachable at ${SUPABASE_URL} — skipping integration tests.`);
+	console.warn(
+		`[packages/db] Supabase not reachable at ${SUPABASE_URL} — skipping integration tests.`
+	);
 }
 
 describe.skipIf(!SUPABASE_REACHABLE)('End-to-End Integration Pipeline', () => {

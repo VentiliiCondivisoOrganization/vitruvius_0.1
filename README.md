@@ -125,20 +125,20 @@ its own repo without touching the web app. ffmpeg, Gemini, and Playwright live i
 
 ## Stack
 
-| Concern           | Choice                                                                                                                                                                       |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Language          | TypeScript everywhere                                                                                                                                                        |
-| Monorepo tooling  | pnpm workspaces + Turborepo                                                                                                                                                  |
-| Web app           | SvelteKit + Tailwind + shadcn-svelte                                                                                                                                         |
-| Processing engine | `apps/engine` — standalone containerized worker (own deploy/scale cadence)                                                                                                   |
-| Job queue         | Postgres-backed `jobs` table in Supabase (`FOR UPDATE SKIP LOCKED`) — no Redis                                                                                               |
-| Database          | Supabase Postgres                                                                                                                                                            |
-| File storage      | Supabase Storage                                                                                                                                                             |
-| Auth              | Supabase Auth                                                                                                                                                                |
-| Video processing  | ffmpeg (inside the engine container)                                                                                                                                         |
+| Concern           | Choice                                                                                                                                                                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Language          | TypeScript everywhere                                                                                                                                                                                                                      |
+| Monorepo tooling  | pnpm workspaces + Turborepo                                                                                                                                                                                                                |
+| Web app           | SvelteKit + Tailwind + shadcn-svelte                                                                                                                                                                                                       |
+| Processing engine | `apps/engine` — standalone containerized worker (own deploy/scale cadence)                                                                                                                                                                 |
+| Job queue         | Postgres-backed `jobs` table in Supabase (`FOR UPDATE SKIP LOCKED`) — no Redis                                                                                                                                                             |
+| Database          | Supabase Postgres                                                                                                                                                                                                                          |
+| File storage      | Supabase Storage                                                                                                                                                                                                                           |
+| Auth              | Supabase Auth                                                                                                                                                                                                                              |
+| Video processing  | ffmpeg (inside the engine container)                                                                                                                                                                                                       |
 | AI runtime        | Google Gemini (video understanding) — wired via REST behind `packages/ai`, with a deterministic heuristic fallback when `GEMINI_API_KEY` is absent; credit-aware and provider-pluggable (see [`docs/ai/ai-layer.md`](docs/ai/ai-layer.md)) |
-| PDF export        | HTML template + Playwright print-to-PDF (inside the engine container)                                                                                                        |
-| Node              | current active LTS                                                                                                                                                           |
+| PDF export        | HTML template + Playwright print-to-PDF (inside the engine container)                                                                                                                                                                      |
+| Node              | current active LTS                                                                                                                                                                                                                         |
 
 ## Getting started
 

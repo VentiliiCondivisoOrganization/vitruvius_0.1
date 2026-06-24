@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import { rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -6,6 +7,21 @@ import { splitIntoClips } from './clips.js';
 import { makeOutDir, probeDurationMs, runFfmpeg } from './ffmpeg.js';
 import { extractKeyframes } from './keyframes.js';
 import { detectScenes } from './scenes.js';
+
+// This suite drives the real ffmpeg binary. It lives in the engine container, not in every
+// dev/CI sandbox — when it's absent, skip rather than fail the build. CI (engine image) has it.
+function ffmpegAvailable(): Promise<boolean> {
+	return new Promise((resolve) => {
+		const proc = spawn('ffmpeg', ['-version'], { stdio: 'ignore' });
+		proc.on('error', () => resolve(false));
+		proc.on('exit', (code) => resolve(code === 0));
+	});
+}
+
+const HAS_FFMPEG = await ffmpegAvailable();
+if (!HAS_FFMPEG) {
+	console.warn('[packages/media] ffmpeg not found on PATH — skipping ffmpeg-backed tests.');
+}
 
 // A 3s, 320x240@25fps fixture with two hard cuts (three distinct test patterns at 1s and
 // 2s) and a 440Hz sine audio track — built on the fly with ffmpeg so no binary blob is
@@ -49,7 +65,7 @@ async function buildFixture(dir: string): Promise<string> {
 
 const fileExists = (path: string) => stat(path).then(() => true);
 
-describe('packages/media', () => {
+describe.skipIf(!HAS_FFMPEG)('packages/media', () => {
 	let workDir: string;
 	let video: string;
 

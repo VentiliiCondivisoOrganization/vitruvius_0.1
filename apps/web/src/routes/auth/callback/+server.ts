@@ -28,7 +28,9 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			}
 		});
 		const { data, error } = await db.auth.exchangeCodeForSession(code);
-		if (!error && data?.session) {
+		if (error) {
+			console.error('[auth callback] Failed to exchange code for session:', error);
+		} else if (data?.session) {
 			cookies.set('sb-access-token', data.session.access_token, {
 				path: '/',
 				httpOnly: true,

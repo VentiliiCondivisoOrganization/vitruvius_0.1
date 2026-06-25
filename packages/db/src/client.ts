@@ -27,7 +27,7 @@ export function createDbClient({ url, key, accessToken, storage }: DbClientConfi
 	return createClient(url, key, {
 		auth: {
 			autoRefreshToken: false,
-			persistSession: false,
+			persistSession: !!storage,
 			flowType: 'pkce',
 			...(storage ? { storage } : {})
 		},

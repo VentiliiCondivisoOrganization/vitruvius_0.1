@@ -1,11 +1,12 @@
 import { env as publicEnv } from '$env/dynamic/public';
+import { getSafeRedirect } from '$lib/server/redirect';
 import { redirect } from '@sveltejs/kit';
 import { createDbClient } from '@vitruvius/db';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const code = url.searchParams.get('code');
-	const next = url.searchParams.get('next') ?? '/';
+	const next = getSafeRedirect(url.searchParams.get('next'));
 
 	if (code) {
 		const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL || '';

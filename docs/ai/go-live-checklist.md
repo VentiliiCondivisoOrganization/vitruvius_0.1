@@ -2,12 +2,17 @@
 
 What stands between the current codebase and a **running, operational web app**.
 
-> **How to read this.** Phase-1 features (specs 01–17) are implemented and green
-> (`pnpm typecheck` 14/14, `pnpm lint` 8/8, all unit/component suites pass). The remaining work to
-> reach production is overwhelmingly **infrastructure provisioning, deployment, and end-to-end
-> validation** — not feature development. This file tracks that gap. For feature/spec status see
-> [`implementation-progress.md`](implementation-progress.md); for service wiring see
+> **How to read this.** Phase-1 features (specs 01–18) are implemented and green
+> (`pnpm typecheck` 14/14, `pnpm lint` 8/8, `pnpm build` 8/8, all **unit/component** suites pass). The
+> remaining work to reach production is overwhelmingly **infrastructure provisioning, deployment, and
+> end-to-end validation** — not feature development. This file tracks that gap. For feature/spec
+> status see [`implementation-progress.md`](implementation-progress.md); for service wiring see
 > [`infra.md`](infra.md).
+>
+> **Caveat on "green" (verified 2026-06-25).** The integration / e2e suites (`@vitruvius/db`
+> `e2e.test.ts`, `jobs.concurrency.test.ts`) are **skipped**, not passing — they self-skip when no
+> live Supabase is reachable. So the full happy path and the concurrent job-claim path have **never
+> actually executed**; "green" today means unit-level only (see **D**).
 
 ## Done (code / features)
 
@@ -60,8 +65,13 @@ What stands between the current codebase and a **running, operational web app**.
 
 ## E. Operational hardening (to be _operational_, not just "works once")
 
-- [ ] Engine **observability**: logging + error tracking + visibility of `failed` jobs.
-- [ ] Verify job **retry / attempts / dead-letter** behavior.
+- [ ] Engine **observability**: today the worker only `console.log`/`console.error`s
+      (`apps/engine/src/index.ts`). No structured logging, no error tracking (Sentry/etc.), no alert
+      or surfaced view of `failed` jobs. Add at least failure visibility before launch.
+- [ ] **Job retry / dead-letter — confirmed MISSING, not just "to verify".** In
+      `apps/engine/src/index.ts`, a job that throws is marked `failed` **permanently** via `failJob`;
+      there is no attempts counter, no backoff, no requeue. A transient error (network, Gemini
+      timeout) burns the manual with no recovery. Decide on at least a bounded retry before go-live.
 - [ ] Storage **lifecycle** (videos are large: retention / cleanup).
 - [ ] **Gemini cost controls** (per-`manualId` credit attribution is marked "future" in
       [`ai-layer.md`](ai-layer.md)).
@@ -79,3 +89,9 @@ What stands between the current codebase and a **running, operational web app**.
 (web and engine) + a real end-to-end run** to go from "green build" to "operational web app". The
 first concrete blockers are **A** (Supabase) and **B** (engine): without those two the web app boots
 but can neither store nor process anything.
+
+**Two things this list previously under-weighted** (added 2026-06-25 readiness review): (1) the **AI
+output quality gate (D)** is a _product_ risk, not just an infra checkbox — without a Gemini key and a
+measured pass against "printable without retouching", the deliverable is unproven; (2) **job retry /
+dead-letter (E) is missing, not merely unverified** — failed jobs are terminal today. Treat both as
+go-live decisions, not post-launch polish.

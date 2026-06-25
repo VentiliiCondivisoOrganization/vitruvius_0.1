@@ -74,7 +74,7 @@ export const actions: Actions = {
 			redirect(303, data.url);
 		}
 
-		return fail(500, { error: 'Failed to generate Google OAuth URL' });
+		return fail(500, { error: m.error_google_oauth_failed() });
 	},
 
 	magiclink: async ({ request, url }) => {

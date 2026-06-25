@@ -250,5 +250,6 @@
 	"settings_success_disconnected": "Compte Google déconnecté avec succès.",
 	"settings_back_to_dashboard": "← Retour au tableau de bord",
 	"nav_settings": "Paramètres",
-	"auth_google_oauth": "Google OAuth"
+	"auth_google_oauth": "Google OAuth",
+	"error_google_oauth_failed": "Échec de l'initialisation de la connexion Google. Veuillez réessayer."
 }

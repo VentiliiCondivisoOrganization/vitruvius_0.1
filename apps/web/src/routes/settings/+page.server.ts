@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	connectGoogle: async ({ locals, url }) => {
 		if (!locals.session) {
-			return fail(401, { error: 'Not authenticated' });
+			redirect(303, '/login?redirectTo=/settings');
 		}
 
 		// Use the user's authenticated DB client
@@ -44,24 +44,24 @@ export const actions: Actions = {
 			redirect(303, data.url);
 		}
 
-		return fail(500, { error: 'Failed to generate Google link URL' });
+		return fail(500, { error: m.error_google_oauth_failed() });
 	},
 
 	disconnectGoogle: async ({ locals }) => {
 		if (!locals.session) {
-			return fail(401, { error: 'Not authenticated' });
+			redirect(303, '/login?redirectTo=/settings');
 		}
 
 		const { data: userData, error: userError } = await locals.db.auth.getUser();
 		if (userError || !userData.user) {
-			return fail(400, { error: 'Could not fetch user details' });
+			redirect(303, '/login?redirectTo=/settings');
 		}
 
 		const identities = userData.user.identities ?? [];
 		const googleIdentity = identities.find((id) => id.provider === 'google');
 
 		if (!googleIdentity) {
-			return fail(400, { error: 'Google account is not connected' });
+			return fail(400, { error: m.settings_google_not_connected() });
 		}
 
 		// Prevent lockout: must have at least one other identity (e.g. email)

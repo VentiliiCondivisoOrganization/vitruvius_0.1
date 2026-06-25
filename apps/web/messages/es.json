@@ -250,5 +250,6 @@
 	"settings_success_disconnected": "Cuenta de Google desconectada con éxito.",
 	"settings_back_to_dashboard": "← Volver al Panel",
 	"nav_settings": "Configuración",
-	"auth_google_oauth": "Google OAuth"
+	"auth_google_oauth": "Google OAuth",
+	"error_google_oauth_failed": "No se pudo iniciar el inicio de sesión con Google. Por favor, inténtelo de nuevo."
 }

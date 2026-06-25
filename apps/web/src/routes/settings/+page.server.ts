@@ -1,5 +1,7 @@
+import { env as publicEnv } from '$env/dynamic/public';
 import { m } from '$lib/paraglide/messages';
 import { fail, redirect } from '@sveltejs/kit';
+import { createDbClient } from '@vitruvius/db';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -21,15 +23,36 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	connectGoogle: async ({ locals, url }) => {
+	connectGoogle: async ({ locals, url, cookies }) => {
 		if (!locals.session) {
 			redirect(303, '/login?redirectTo=/settings');
 		}
 
-		// Use the user's authenticated DB client
+		// Use the user's authenticated DB client with custom storage adapter
 		const callbackUrl = `${url.origin}/auth/callback?next=/settings`;
+		const accessToken = cookies.get('sb-access-token');
 
-		const { data, error } = await locals.db.auth.linkIdentity({
+		const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL || '';
+		const anonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY || '';
+		const db = createDbClient({
+			url: supabaseUrl,
+			key: anonKey,
+			accessToken,
+			storage: {
+				getItem: (key) => cookies.get(key) ?? null,
+				setItem: (key, value) =>
+					cookies.set(key, value, {
+						path: '/',
+						httpOnly: true,
+						secure: process.env.NODE_ENV === 'production',
+						sameSite: 'lax',
+						maxAge: 60 * 10
+					}),
+				removeItem: (key) => cookies.delete(key, { path: '/' })
+			}
+		});
+
+		const { data, error } = await db.auth.linkIdentity({
 			provider: 'google',
 			options: {
 				redirectTo: callbackUrl

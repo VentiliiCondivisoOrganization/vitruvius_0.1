@@ -51,10 +51,25 @@ export const actions: Actions = {
 		redirect(303, redirectTo);
 	},
 
-	google: async ({ url }) => {
+	google: async ({ url, cookies }) => {
 		const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL || '';
 		const anonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY || '';
-		const db = createDbClient({ url: supabaseUrl, key: anonKey });
+		const db = createDbClient({
+			url: supabaseUrl,
+			key: anonKey,
+			storage: {
+				getItem: (key) => cookies.get(key) ?? null,
+				setItem: (key, value) =>
+					cookies.set(key, value, {
+						path: '/',
+						httpOnly: true,
+						secure: process.env.NODE_ENV === 'production',
+						sameSite: 'lax',
+						maxAge: 60 * 10
+					}),
+				removeItem: (key) => cookies.delete(key, { path: '/' })
+			}
+		});
 
 		const redirectTo = url.searchParams.get('redirectTo') ?? '/';
 		const callbackUrl = `${url.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;

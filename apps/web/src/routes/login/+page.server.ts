@@ -52,8 +52,8 @@ export const actions: Actions = {
 	},
 
 	google: async ({ url }) => {
-		const supabaseUrl = env.PUBLIC_SUPABASE_URL || '';
-		const anonKey = env.PUBLIC_SUPABASE_ANON_KEY || '';
+		const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL || '';
+		const anonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY || '';
 		const db = createDbClient({ url: supabaseUrl, key: anonKey });
 
 		const redirectTo = url.searchParams.get('redirectTo') ?? '/';
@@ -85,8 +85,8 @@ export const actions: Actions = {
 			return fail(400, { error: m.error_email_required() });
 		}
 
-		const supabaseUrl = env.PUBLIC_SUPABASE_URL || '';
-		const anonKey = env.PUBLIC_SUPABASE_ANON_KEY || '';
+		const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL || '';
+		const anonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY || '';
 		const db = createDbClient({ url: supabaseUrl, key: anonKey });
 
 		const redirectTo = url.searchParams.get('redirectTo') ?? '/';

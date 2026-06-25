@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import { m } from '$lib/paraglide/messages';
 import { fail, redirect } from '@sveltejs/kit';
 import { createDbClient } from '@vitruvius/db';
@@ -21,8 +21,8 @@ export const actions: Actions = {
 			return fail(400, { error: m.error_email_password_required() });
 		}
 
-		const supabaseUrl = env.PUBLIC_SUPABASE_URL || '';
-		const anonKey = env.PUBLIC_SUPABASE_ANON_KEY || '';
+		const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL || '';
+		const anonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY || '';
 		const db = createDbClient({ url: supabaseUrl, key: anonKey });
 
 		const { data, error } = await db.auth.signInWithPassword({ email, password });

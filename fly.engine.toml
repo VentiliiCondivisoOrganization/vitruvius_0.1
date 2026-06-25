@@ -1,4 +1,3 @@
-# Override at deploy time via: fly deploy -a <app-name>
 app = "vitruvius-engine"
 primary_region = "ams"
 

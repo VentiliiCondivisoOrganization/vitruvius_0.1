@@ -6,19 +6,30 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 // rows are validated against the @vitruvius/core zod schemas at the boundary instead.
 export type DbClient = SupabaseClient;
 
+export interface SupportedStorage {
+	getItem(key: string): string | null | Promise<string | null>;
+	setItem(key: string, value: string): void | Promise<void>;
+	removeItem(key: string): void | Promise<void>;
+}
+
 export type DbClientConfig = {
 	url: string;
 	key: string;
 	accessToken?: string;
+	storage?: SupportedStorage;
 };
 
-export function createDbClient({ url, key, accessToken }: DbClientConfig): DbClient {
+export function createDbClient({ url, key, accessToken, storage }: DbClientConfig): DbClient {
 	const globalHeaders: Record<string, string> = {};
 	if (accessToken) {
 		globalHeaders['Authorization'] = `Bearer ${accessToken}`;
 	}
 	return createClient(url, key, {
-		auth: { autoRefreshToken: false, persistSession: false },
+		auth: {
+			autoRefreshToken: false,
+			persistSession: false,
+			...(storage ? { storage } : {})
+		},
 		global: { headers: globalHeaders }
 	});
 }
@@ -27,7 +38,8 @@ export function createDbClient({ url, key, accessToken }: DbClientConfig): DbCli
 // service-role key when present, falling back to the public anon key.
 export function dbClientFromEnv(
 	env: Record<string, string | undefined> = process.env,
-	accessToken?: string
+	accessToken?: string,
+	storage?: SupportedStorage
 ): DbClient {
 	const url = env.PUBLIC_SUPABASE_URL;
 	// When an accessToken is present we are acting on behalf of a user and MUST use the
@@ -46,5 +58,5 @@ export function dbClientFromEnv(
 				: 'Missing SUPABASE_SERVICE_ROLE_KEY or PUBLIC_SUPABASE_ANON_KEY'
 		);
 
-	return createDbClient({ url, key, accessToken });
+	return createDbClient({ url, key, accessToken, storage });
 }

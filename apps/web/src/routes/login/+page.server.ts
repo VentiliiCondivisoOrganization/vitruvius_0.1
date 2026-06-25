@@ -1,5 +1,6 @@
 import { env as publicEnv } from '$env/dynamic/public';
 import { m } from '$lib/paraglide/messages';
+import { getSafeRedirect } from '$lib/server/redirect';
 import { fail, redirect } from '@sveltejs/kit';
 import { createDbClient } from '@vitruvius/db';
 import type { Actions, PageServerLoad } from './$types';
@@ -47,16 +48,31 @@ export const actions: Actions = {
 			});
 		}
 
-		const redirectTo = url.searchParams.get('redirectTo') ?? '/';
+		const redirectTo = getSafeRedirect(url.searchParams.get('redirectTo'));
 		redirect(303, redirectTo);
 	},
 
-	google: async ({ url }) => {
+	google: async ({ url, cookies }) => {
 		const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL || '';
 		const anonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY || '';
-		const db = createDbClient({ url: supabaseUrl, key: anonKey });
+		const db = createDbClient({
+			url: supabaseUrl,
+			key: anonKey,
+			storage: {
+				getItem: (key) => cookies.get(key) ?? null,
+				setItem: (key, value) =>
+					cookies.set(key, value, {
+						path: '/',
+						httpOnly: true,
+						secure: process.env.NODE_ENV === 'production',
+						sameSite: 'lax',
+						maxAge: 60 * 10
+					}),
+				removeItem: (key) => cookies.delete(key, { path: '/' })
+			}
+		});
 
-		const redirectTo = url.searchParams.get('redirectTo') ?? '/';
+		const redirectTo = getSafeRedirect(url.searchParams.get('redirectTo'));
 		const callbackUrl = `${url.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
 
 		const { data, error } = await db.auth.signInWithOAuth({
@@ -89,7 +105,7 @@ export const actions: Actions = {
 		const anonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY || '';
 		const db = createDbClient({ url: supabaseUrl, key: anonKey });
 
-		const redirectTo = url.searchParams.get('redirectTo') ?? '/';
+		const redirectTo = getSafeRedirect(url.searchParams.get('redirectTo'));
 		const callbackUrl = `${url.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
 
 		const { error } = await db.auth.signInWithOtp({

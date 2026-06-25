@@ -93,7 +93,7 @@ export const actions: Actions = {
 		return fail(500, { error: m.error_google_oauth_failed() });
 	},
 
-	magiclink: async ({ request, url }) => {
+	magiclink: async ({ request, url, cookies }) => {
 		const form = await request.formData();
 		const email = form.get('email');
 
@@ -103,7 +103,22 @@ export const actions: Actions = {
 
 		const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL || '';
 		const anonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY || '';
-		const db = createDbClient({ url: supabaseUrl, key: anonKey });
+		const db = createDbClient({
+			url: supabaseUrl,
+			key: anonKey,
+			storage: {
+				getItem: (key) => cookies.get(key) ?? null,
+				setItem: (key, value) =>
+					cookies.set(key, value, {
+						path: '/',
+						httpOnly: true,
+						secure: process.env.NODE_ENV === 'production',
+						sameSite: 'lax',
+						maxAge: 60 * 10
+					}),
+				removeItem: (key) => cookies.delete(key, { path: '/' })
+			}
+		});
 
 		const redirectTo = getSafeRedirect(url.searchParams.get('redirectTo'));
 		const callbackUrl = `${url.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;

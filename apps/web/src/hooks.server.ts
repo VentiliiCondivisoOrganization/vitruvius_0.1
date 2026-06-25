@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
@@ -24,8 +25,8 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 	let sessionUser = null;
 	let activeToken = accessToken;
 
-	const supabaseUrl = env.PUBLIC_SUPABASE_URL || '';
-	const anonKey = env.PUBLIC_SUPABASE_ANON_KEY || '';
+	const supabaseUrl = publicEnv.PUBLIC_SUPABASE_URL || '';
+	const anonKey = publicEnv.PUBLIC_SUPABASE_ANON_KEY || '';
 
 	if (activeToken) {
 		const db = createDbClient({ url: supabaseUrl, key: anonKey, accessToken: activeToken });
@@ -99,7 +100,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 	if (!sessionUser) {
 		if (accessToken) event.cookies.delete('sb-access-token', { path: '/' });
 		if (refreshToken) event.cookies.delete('sb-refresh-token', { path: '/' });
-		event.locals.db = dbClientFromEnv(env);
+		event.locals.db = dbClientFromEnv({ ...publicEnv, ...env });
 	}
 
 	event.locals.session = sessionUser ? { user: sessionUser } : null;

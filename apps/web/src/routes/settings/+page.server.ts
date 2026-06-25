@@ -29,7 +29,7 @@ export const actions: Actions = {
 		// Use the user's authenticated DB client
 		const callbackUrl = `${url.origin}/auth/callback?next=/settings`;
 
-		const { data, error } = await locals.db.auth.signInWithOAuth({
+		const { data, error } = await locals.db.auth.linkIdentity({
 			provider: 'google',
 			options: {
 				redirectTo: callbackUrl

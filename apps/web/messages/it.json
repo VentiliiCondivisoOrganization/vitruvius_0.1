@@ -1,6 +1,7 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"brand_engine_version": "Vitruvius Engine v1.0",
+	"brand_tagline": "Bozza dall'IA · perfezionata da te",
 	"nav_log_out": "Esci",
 	"lang_switcher_label": "Lingua",
 	"lang_en": "English",

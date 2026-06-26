@@ -1,6 +1,7 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"brand_engine_version": "Vitruvius Engine v1.0",
+	"brand_tagline": "Borrador con IA · perfeccionado por ti",
 	"nav_log_out": "Cerrar sesión",
 	"lang_switcher_label": "Idioma",
 	"lang_en": "English",

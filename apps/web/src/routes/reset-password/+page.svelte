@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages';
 	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+	import Logo from '$lib/components/Logo.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -26,11 +27,8 @@
 			<LanguageSwitcher />
 		</div>
 		<div class="text-center">
-			<div
-				class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-800 bg-slate-900/60 text-xs font-semibold tracking-wider text-slate-400 uppercase mb-4"
-			>
-				<span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-pulse"></span>
-				{m.brand_engine_version()}
+			<div class="flex justify-center mb-5">
+				<Logo size={34} />
 			</div>
 			<h1
 				class="text-3xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent"

@@ -1,0 +1,24 @@
+{
+	"name": "Vitruvius — AI-Drafted Assembly Manuals",
+	"short_name": "Vitruvius",
+	"description": "Turn an assembly video into an editable, step-by-step instruction manual: AI drafts it, you perfect it.",
+	"id": "/",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"background_color": "#0a0f1e",
+	"theme_color": "#0a0f1e",
+	"lang": "en",
+	"categories": ["productivity", "utilities"],
+	"icons": [
+		{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+		{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+		{ "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+		{
+			"src": "/icon-maskable-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	]
+}

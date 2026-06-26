@@ -117,14 +117,21 @@ export async function deleteVideo(
 ): Promise<void> {
 	if (keys.length === 0) return;
 	const config = readR2Config(env);
-	if (config) {
-		await r2Client(config).send(
-			new DeleteObjectsCommand({
-				Bucket: config.bucket,
-				Delete: { Objects: keys.map((Key) => ({ Key })) }
-			})
-		);
-		return;
+	// Best-effort: this runs on rollback paths, so a delete failure must never throw and
+	// mask the original upload error (turning a clean fail(502) into an unhandled 500).
+	try {
+		if (config) {
+			await r2Client(config).send(
+				new DeleteObjectsCommand({
+					Bucket: config.bucket,
+					Delete: { Objects: keys.map((Key) => ({ Key })) }
+				})
+			);
+		} else {
+			await db.storage.from(VIDEO_BUCKET).remove(keys);
+		}
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : String(error);
+		console.warn(`[storage] best-effort video delete failed for ${keys.join(', ')}: ${reason}`);
 	}
-	await db.storage.from(VIDEO_BUCKET).remove(keys);
 }

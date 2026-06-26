@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DbClient } from './client.js';
-import { isR2Configured, presignVideoGet, uploadVideo } from './storage.js';
+import { deleteVideo, isR2Configured, presignVideoGet, uploadVideo } from './storage.js';
 
 const R2_ENV = {
 	R2_ACCOUNT_ID: 'acct123',
@@ -57,5 +57,34 @@ describe('uploadVideo', () => {
 		const db = { storage: { from: () => ({ upload }) } } as unknown as DbClient;
 
 		await expect(uploadVideo(db, 'k', Buffer.from('x'), 'video/mp4', {})).rejects.toThrow(/boom/);
+	});
+});
+
+describe('deleteVideo', () => {
+	it('no-ops on an empty key list', async () => {
+		const from = vi.fn();
+		const db = { storage: { from } } as unknown as DbClient;
+		await deleteVideo(db, [], {});
+		expect(from).not.toHaveBeenCalled();
+	});
+
+	it('removes from the Supabase videos bucket when R2 is unconfigured', async () => {
+		const remove = vi.fn().mockResolvedValue({ error: null });
+		const from = vi.fn(() => ({ remove }));
+		const db = { storage: { from } } as unknown as DbClient;
+
+		await deleteVideo(db, ['manual-1/source.mp4'], {});
+		expect(from).toHaveBeenCalledWith('videos');
+		expect(remove).toHaveBeenCalledWith(['manual-1/source.mp4']);
+	});
+
+	it('is best-effort: swallows a delete error instead of throwing (rollback path)', async () => {
+		const remove = vi.fn().mockRejectedValue(new Error('netfail'));
+		const db = { storage: { from: () => ({ remove }) } } as unknown as DbClient;
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+		await expect(deleteVideo(db, ['k'], {})).resolves.toBeUndefined();
+		expect(warn).toHaveBeenCalled();
+		warn.mockRestore();
 	});
 });

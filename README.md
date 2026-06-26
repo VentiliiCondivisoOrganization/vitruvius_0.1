@@ -166,3 +166,4 @@ Useful workspace scripts: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm tes
 - Task specs: [`specs/`](specs/) — baseline `01`–`12`; client extensions `13`, `14`, `16`, `17`
 - Client alignment (grill-me): [`docs/ai/client-alignment-assessment.md`](docs/ai/client-alignment-assessment.md)
 - Implementation status: [`docs/ai/implementation-progress.md`](docs/ai/implementation-progress.md)
+- Brand identity (logo, colour, type, voice, asset pipeline): [`docs/brand/brand-guidelines.md`](docs/brand/brand-guidelines.md)

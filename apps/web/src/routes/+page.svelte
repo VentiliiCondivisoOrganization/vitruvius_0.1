@@ -4,6 +4,7 @@
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
 	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+	import Logo from '$lib/components/Logo.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -57,25 +58,28 @@
 
 	<main class="relative mx-auto max-w-6xl px-6 py-16 lg:py-24">
 		<!-- User Profile Nav -->
-		<div class="flex justify-end items-center gap-4 mb-8">
-			<LanguageSwitcher />
-			{#if data.session?.user}
-				<span class="text-sm text-slate-400">{data.session.user.email}</span>
-				<a
-					href={resolve('/settings')}
-					class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition font-semibold"
-				>
-					{m.nav_settings()}
-				</a>
-				<form action="/logout" method="POST">
-					<button
-						type="submit"
-						class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer font-semibold"
+		<div class="flex justify-between items-center gap-4 mb-8">
+			<Logo size={30} />
+			<div class="flex items-center gap-4">
+				<LanguageSwitcher />
+				{#if data.session?.user}
+					<span class="text-sm text-slate-400">{data.session.user.email}</span>
+					<a
+						href={resolve('/settings')}
+						class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition font-semibold"
 					>
-						{m.nav_log_out()}
-					</button>
-				</form>
-			{/if}
+						{m.nav_settings()}
+					</a>
+					<form action="/logout" method="POST">
+						<button
+							type="submit"
+							class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer font-semibold"
+						>
+							{m.nav_log_out()}
+						</button>
+					</form>
+				{/if}
+			</div>
 		</div>
 
 		<!-- Header -->
@@ -84,7 +88,7 @@
 				class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-800 bg-slate-900/60 text-xs font-semibold tracking-wider text-slate-400 uppercase"
 			>
 				<span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-pulse"></span>
-				{m.brand_engine_version()}
+				{m.brand_tagline()}
 			</div>
 			<h1
 				class="text-4xl lg:text-5xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent"

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="170" height="118" viewBox="0 0 170 118" role="img" aria-label="Vitruvius">
+  <title>Vitruvius</title>
+  <defs>
+    <linearGradient id="vt-s" x1="72" y1="17" x2="98" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F4CC7C"/>
+      <stop offset=".48" stop-color="#E6982F"/>
+      <stop offset="1" stop-color="#BC5326"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(61,8)">
+    <path d="M13 12.5 A 16 16 0 0 1 35 12.5" fill="none" stroke="#5BC4DE" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M11 13 L24 38 L37 13" fill="none" stroke="url(#vt-s)" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="24" cy="38" r="2.4" fill="#5BC4DE"/>
+  </g>
+  <text x="85" y="86" text-anchor="middle" font-family="'Geist','Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif"
+        font-size="22" font-weight="800" letter-spacing="2" fill="#F4EEE1">VITRUVIUS</text>
+  <text x="85" y="104" text-anchor="middle" font-family="'Geist','Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif"
+        font-size="8.5" font-weight="600" letter-spacing="3.4" fill="#5BC4DE">DRAFTED · MEASURED · YOURS</text>
+</svg>

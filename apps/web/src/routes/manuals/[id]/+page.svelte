@@ -18,6 +18,7 @@
 	import BomPartPicker from './BomPartPicker.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+	import Logo from '$lib/components/Logo.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -342,6 +343,13 @@
 		<!-- Header -->
 		<header class="space-y-3 relative z-10">
 			<div class="flex flex-wrap items-center gap-2">
+				<a
+					href={resolve('/')}
+					class="mr-1 opacity-90 hover:opacity-100 transition-opacity"
+					aria-label="Vitruvius — home"
+				>
+					<Logo variant="mark" size={24} />
+				</a>
 				<a
 					href={resolve('/')}
 					class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"

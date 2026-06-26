@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" role="img" aria-label="Vitruvius">
+  <title>Vitruvius</title>
+  <defs>
+    <linearGradient id="vt-mark" x1="11" y1="13" x2="33" y2="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F4CC7C"/>
+      <stop offset=".48" stop-color="#E6982F"/>
+      <stop offset="1" stop-color="#BC5326"/>
+    </linearGradient>
+  </defs>
+  <path d="M13 12.5 A 16 16 0 0 1 35 12.5" fill="none" stroke="#5BC4DE" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M11 13 L24 38 L37 13" fill="none" stroke="url(#vt-mark)" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="24" cy="38" r="2.4" fill="#5BC4DE"/>
+</svg>

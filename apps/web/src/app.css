@@ -1,1 +1,63 @@
 @import 'tailwindcss';
+
+/*
+  Vitruvius brand tokens.
+  ----------------------------------------------------------------------------
+  The identity pairs a cool blueprint "ink" with a warm, hand-drawn accent —
+  cool precision (the machine drafts) meeting warm craft (the human perfects).
+  Full rationale + usage live in docs/brand/brand-guidelines.md.
+
+  The interactive accent ("indigo-*", the ramp this codebase already reaches for)
+  is remapped to the brand Saffron→Terracotta scale, so every existing accent
+  recolors on-brand without touching call sites. Lighter steps (300–400) are the
+  gold used for text/links on dark ink; darker steps (600–700) are the rust used
+  as solid button fills, kept dark enough to clear AA contrast under white text.
+*/
+@theme {
+	/* Brand palette — use directly via bg-brand-*, text-brand-*, border-brand-*. */
+	--color-brand-ink: #0a0f1e; /* page base — blueprint near-black */
+	--color-brand-ink-2: #0e1730; /* raised surface / icon tile */
+	--color-brand-navy: #142142; /* line work, hairline borders */
+	--color-brand-line: #1c2c4d; /* blueprint grid / dividers */
+	--color-brand-cyan: #5bc4de; /* technical accent — the compass arc */
+	--color-brand-gold: #f4cc7c; /* highlight tip of the mark */
+	--color-brand-ochre: #e6982f; /* signature accent */
+	--color-brand-rust: #bc5326; /* deep warm — solid fills */
+	--color-brand-vellum: #f4eee1; /* warm paper / light surface */
+	--color-brand-vellum-ink: #16203a; /* text on vellum */
+
+	/* Interactive accent ramp (Saffron → Terracotta), remapping the in-repo accent. */
+	--color-indigo-50: #fbf3e6;
+	--color-indigo-100: #f8e6c8;
+	--color-indigo-200: #f1cb91;
+	--color-indigo-300: #f0b85b;
+	--color-indigo-400: #e79b3c;
+	--color-indigo-500: #be6322;
+	--color-indigo-600: #a8551f;
+	--color-indigo-700: #8a451a;
+	--color-indigo-800: #6e3817;
+	--color-indigo-900: #532b15;
+	--color-indigo-950: #2f1709;
+
+	/* Type: a clean geometric sans for the product, gracefully falling back to the
+     system UI stack where Geist/Inter are not installed. */
+	--font-sans:
+		'Geist', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+		sans-serif;
+	--font-display:
+		'Geist', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+		sans-serif;
+}
+
+@layer base {
+	html {
+		-webkit-font-smoothing: antialiased;
+		text-rendering: optimizeLegibility;
+		/* Brand ink base prevents a white flash before page styles paint. */
+		background-color: var(--color-brand-ink);
+	}
+	::selection {
+		background-color: color-mix(in srgb, var(--color-brand-ochre) 30%, transparent);
+		color: #fff;
+	}
+}

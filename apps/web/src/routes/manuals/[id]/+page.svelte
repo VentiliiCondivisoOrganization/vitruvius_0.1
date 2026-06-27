@@ -3,7 +3,6 @@
 	import { resolve } from '$app/paths';
 	import { invalidateAll } from '$app/navigation';
 	import {
-		MANUAL_STATUS,
 		PROCESS_STAGE,
 		REGENERATE_SCOPE,
 		STEP_REVIEW_STATUS,
@@ -11,7 +10,6 @@
 		partRefHasOpenCandidates,
 		resolvePartRefBomCandidate,
 		type ManualBomItem,
-		type ManualStatus,
 		type ManualStep,
 		type PartRef,
 		type ProcessStage,
@@ -47,17 +45,30 @@
 	});
 
 	// ---- Status view (non-ready manuals) -----------------------------------
-	const stages: readonly ManualStatus[] = MANUAL_STATUS.filter((s) => s !== 'failed');
-	const currentIndex = $derived(stages.indexOf(manual.status));
-
-	// Fine-grained pipeline progress within the `processing` stage (spec 07). The engine
-	// reports its current ProcessStage; the percentage is that stage's 1-based position in
-	// the ordered enum. Null while it hasn't reported one yet (the bar simply doesn't show).
+	// The engine reports its current ProcessStage (spec 07); the status view renders the whole
+	// ordered pipeline as a checklist and derives each row's state from that reported position.
+	// `stageIndex` is -1 until the engine reports one (queued / just-started → all rows upcoming).
 	const progressStage = $derived(data.progressStage as ProcessStage | null);
 	const stageIndex = $derived(progressStage ? PROCESS_STAGE.indexOf(progressStage) : -1);
 	const stagePct = $derived(
 		stageIndex >= 0 ? Math.round(((stageIndex + 1) / PROCESS_STAGE.length) * 100) : 0
 	);
+
+	// Per-stage state for the checklist. While processing, the reported stage is `active` and the
+	// ones before it `done`. On failure, the reported stage is where the run died (`failed`) with
+	// earlier stages `done`; if the engine never reported a stage (stageIndex < 0) we can't point
+	// at one, so every row stays `upcoming` and the error banner alone explains the failure.
+	type StageState = 'done' | 'active' | 'failed' | 'upcoming';
+	function stageState(i: number): StageState {
+		if (failed) {
+			if (stageIndex < 0) return 'upcoming';
+			if (i < stageIndex) return 'done';
+			return i === stageIndex ? 'failed' : 'upcoming';
+		}
+		if (stageIndex < 0) return 'upcoming';
+		if (i < stageIndex) return 'done';
+		return i === stageIndex ? 'active' : 'upcoming';
+	}
 	const stageLabels: Record<ProcessStage, () => string> = {
 		priming: m.manual_stage_priming,
 		media: m.manual_stage_media,
@@ -111,13 +122,6 @@
 		edited: m.review_edited()
 	};
 
-	// Status badge/stage labels for the processing checklist (the raw enum is a code).
-	const statusLabels: Record<string, () => string> = {
-		uploaded: m.status_uploaded,
-		processing: m.status_processing,
-		ready: m.status_ready,
-		failed: m.status_failed
-	};
 	const reviewStyles: Record<StepReviewStatus, string> = {
 		hypothesis: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
 		confirmed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -488,44 +492,110 @@
 							</p>
 						</div>
 					</div>
-				{:else}
-					<ol class="space-y-4">
-						{#each stages as stage, i (stage)}
-							{@const active = i === currentIndex}
-							{@const completed = i < currentIndex}
-							<li class="flex items-center gap-3.5 text-xs">
-								{#if completed}
-									<div
-										class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 border border-indigo-500 text-indigo-400 text-[10px] font-bold"
-									>
-										✓
-									</div>
-								{:else}
-									<div
-										class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border {active
-											? 'border-indigo-400 bg-indigo-950/60 text-indigo-400 font-bold'
-											: 'border-slate-800 bg-slate-950 text-slate-600'} text-[9px]"
-									>
-										{i + 1}
-									</div>
-								{/if}
-								<span
-									class="font-bold uppercase tracking-wider {active
-										? 'text-white'
-										: completed
-											? 'text-slate-300 font-semibold'
-											: 'text-slate-600'}">{statusLabels[stage]?.() ?? stage}</span
-								>
-								{#if active && stage !== 'ready'}
-									<span
-										class="text-[9px] px-2 py-0.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 font-medium animate-pulse ml-auto"
-										>{m.editor_in_progress()}</span
-									>
-								{/if}
-							</li>
-						{/each}
-					</ol>
 				{/if}
+
+				<!-- Full pipeline as a checklist: each engine stage is done ✓ / active ⟳ / failed ✗ /
+				     upcoming. On failure the row where the run died turns rose; earlier rows stay done.
+				     No aria-live here — the list re-renders every 3s poll and would re-announce the whole
+				     block; the progress bar below is the small polite live region for stage changes. -->
+				<ol class="space-y-4">
+					{#each PROCESS_STAGE as stage, i (stage)}
+						{@const state = stageState(i)}
+						<li class="flex items-center gap-3.5 text-xs">
+							<div
+								class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold {state ===
+								'done'
+									? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
+									: state === 'active'
+										? 'border-indigo-400 bg-indigo-950/60 text-indigo-300'
+										: state === 'failed'
+											? 'border-rose-500 bg-rose-500/15 text-rose-400'
+											: 'border-slate-800 bg-slate-950 text-slate-600'}"
+								aria-label={state === 'active'
+									? m.editor_in_progress()
+									: state === 'failed'
+										? m.status_failed()
+										: undefined}
+							>
+								{#if state === 'done'}
+									<svg
+										class="h-3 w-3"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										aria-hidden="true"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="3"
+											d="M5 13l4 4L19 7"
+										/>
+									</svg>
+								{:else if state === 'active'}
+									<svg
+										class="h-3 w-3 animate-spin"
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										aria-hidden="true"
+									>
+										<circle
+											class="opacity-25"
+											cx="12"
+											cy="12"
+											r="10"
+											stroke="currentColor"
+											stroke-width="4"
+										></circle>
+										<path
+											class="opacity-75"
+											fill="currentColor"
+											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+										></path>
+									</svg>
+								{:else if state === 'failed'}
+									<svg
+										class="h-2.5 w-2.5"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										aria-hidden="true"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="3"
+											d="M6 18L18 6M6 6l12 12"
+										/>
+									</svg>
+								{:else}
+									{i + 1}
+								{/if}
+							</div>
+							<span
+								class="font-bold uppercase tracking-wider {state === 'active'
+									? 'text-white'
+									: state === 'done'
+										? 'text-slate-300 font-semibold'
+										: state === 'failed'
+											? 'text-rose-300'
+											: 'text-slate-600'}">{stageLabels[stage]()}</span
+							>
+							{#if state === 'active'}
+								<span
+									class="text-[9px] px-2 py-0.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 font-medium animate-pulse ml-auto"
+									>{m.editor_in_progress()}</span
+								>
+							{:else if state === 'failed'}
+								<span
+									class="text-[9px] px-2 py-0.5 rounded-full border border-rose-500/20 bg-rose-500/10 text-rose-400 font-medium ml-auto"
+									>{m.status_failed()}</span
+								>
+							{/if}
+						</li>
+					{/each}
+				</ol>
 
 				{#if manual.status === 'processing' && progressStage}
 					<div class="space-y-2 pt-4" aria-live="polite">

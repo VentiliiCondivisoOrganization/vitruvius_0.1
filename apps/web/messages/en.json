@@ -38,6 +38,8 @@
 	"home_pipeline_review_desc": "Refine, split, or confirm steps.",
 	"home_pipeline_export_title": "Vector PDF/HTML export",
 	"home_pipeline_export_desc": "Download manuals with schematic layouts.",
+	"home_pipeline_status_active": "In progress",
+	"home_pipeline_status_failed": "Failed",
 	"home_gallery_heading": "Active Manuals Gallery",
 	"home_gallery_total": "{count} total",
 	"home_gallery_empty_title": "No manuals uploaded yet",

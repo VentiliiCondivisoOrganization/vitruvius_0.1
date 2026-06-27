@@ -38,6 +38,8 @@
 	"home_pipeline_review_desc": "Affinez, divisez ou confirmez les étapes.",
 	"home_pipeline_export_title": "Export vectoriel PDF/HTML",
 	"home_pipeline_export_desc": "Téléchargez des manuels avec des mises en page schématiques.",
+	"home_pipeline_status_active": "En cours",
+	"home_pipeline_status_failed": "Échec",
 	"home_gallery_heading": "Galerie des manuels actifs",
 	"home_gallery_total": "{count} au total",
 	"home_gallery_empty_title": "Aucun manuel téléversé pour l'instant",

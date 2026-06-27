@@ -4,6 +4,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import {
 		MANUAL_STATUS,
+		PROCESS_STAGE,
 		REGENERATE_SCOPE,
 		STEP_REVIEW_STATUS,
 		emptyPartRef,
@@ -13,6 +14,7 @@
 		type ManualStatus,
 		type ManualStep,
 		type PartRef,
+		type ProcessStage,
 		type StepReviewStatus
 	} from '@vitruvius/core';
 	import BomPartPicker from './BomPartPicker.svelte';
@@ -47,6 +49,25 @@
 	// ---- Status view (non-ready manuals) -----------------------------------
 	const stages: readonly ManualStatus[] = MANUAL_STATUS.filter((s) => s !== 'failed');
 	const currentIndex = $derived(stages.indexOf(manual.status));
+
+	// Fine-grained pipeline progress within the `processing` stage (spec 07). The engine
+	// reports its current ProcessStage; the percentage is that stage's 1-based position in
+	// the ordered enum. Null while it hasn't reported one yet (the bar simply doesn't show).
+	const progressStage = $derived(data.progressStage as ProcessStage | null);
+	const stageIndex = $derived(progressStage ? PROCESS_STAGE.indexOf(progressStage) : -1);
+	const stagePct = $derived(
+		stageIndex >= 0 ? Math.round(((stageIndex + 1) / PROCESS_STAGE.length) * 100) : 0
+	);
+	const stageLabels: Record<ProcessStage, () => string> = {
+		priming: m.manual_stage_priming,
+		media: m.manual_stage_media,
+		segmenting: m.manual_stage_segmenting,
+		bom: m.manual_stage_bom,
+		instructing: m.manual_stage_instructing,
+		critiquing: m.manual_stage_critiquing,
+		illustrating: m.manual_stage_illustrating,
+		finalizing: m.manual_stage_finalizing
+	};
 
 	// ---- Editor view (ready manuals) ---------------------------------------
 	let steps = $state<ManualStep[]>([]);
@@ -504,6 +525,21 @@
 							</li>
 						{/each}
 					</ol>
+				{/if}
+
+				{#if manual.status === 'processing' && progressStage}
+					<div class="space-y-2 pt-4" aria-live="polite">
+						<div class="flex items-center justify-between text-[11px] font-semibold">
+							<span class="text-slate-200">{stageLabels[progressStage]()}</span>
+							<span class="text-slate-400 tabular-nums">{stagePct}%</span>
+						</div>
+						<div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+							<div
+								class="h-full rounded-full bg-indigo-500 transition-all duration-500"
+								style={`width: ${stagePct}%`}
+							></div>
+						</div>
+					</div>
 				{/if}
 
 				<p class="text-[11px] text-slate-500 leading-relaxed pt-4 border-t border-slate-900">

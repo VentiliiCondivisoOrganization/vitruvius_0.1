@@ -1,4 +1,9 @@
-import type { InstructionManual, ManualStatus } from '@vitruvius/core';
+import {
+	PROCESS_STAGE,
+	type InstructionManual,
+	type ManualStatus,
+	type ProcessStage
+} from '@vitruvius/core';
 import type { DbClient } from './client.js';
 import { rowToManual } from './mappers.js';
 import type { ManualRow, StepRow } from './types.js';
@@ -42,6 +47,36 @@ export async function setManualStatus(
 ): Promise<void> {
 	const { error } = await client.from('manuals').update({ status }).eq('id', id);
 	if (error) throw new Error(`setManualStatus: ${error.message}`);
+}
+
+// Record which pipeline stage a `process` run is on (spec 07), surfaced as live progress
+// while the manual is `processing`. Runtime telemetry only: written directly here and read
+// by getManualProgressStage — it never flows through save_manual or the manual document.
+export async function setManualStage(
+	client: DbClient,
+	id: string,
+	stage: ProcessStage
+): Promise<void> {
+	const { error } = await client.from('manuals').update({ progress_stage: stage }).eq('id', id);
+	if (error) throw new Error(`setManualStage: ${error.message}`);
+}
+
+// Read the current pipeline stage for a manual, or null when none is set (not yet started,
+// or a legacy row). Unknown values are treated as null so a stale code never breaks the UI.
+export async function getManualProgressStage(
+	client: DbClient,
+	id: string
+): Promise<ProcessStage | null> {
+	const { data, error } = await client
+		.from('manuals')
+		.select('progress_stage')
+		.eq('id', id)
+		.maybeSingle<{ progress_stage: string | null }>();
+	if (error) throw new Error(`getManualProgressStage: ${error.message}`);
+	const stage = data?.progress_stage;
+	return stage && (PROCESS_STAGE as readonly string[]).includes(stage)
+		? (stage as ProcessStage)
+		: null;
 }
 
 // Delete a manual and everything that references it (steps and jobs cascade via

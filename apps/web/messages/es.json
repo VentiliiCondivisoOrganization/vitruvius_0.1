@@ -255,5 +255,13 @@
 	"settings_back_to_dashboard": "← Volver al Panel",
 	"nav_settings": "Configuración",
 	"auth_google_oauth": "Google OAuth",
-	"error_google_oauth_failed": "No se pudo iniciar el inicio de sesión con Google. Por favor, inténtelo de nuevo."
+	"error_google_oauth_failed": "No se pudo iniciar el inicio de sesión con Google. Por favor, inténtelo de nuevo.",
+	"manual_stage_priming": "Preparando con aprendizajes previos",
+	"manual_stage_media": "Extrayendo fotogramas y escenas",
+	"manual_stage_segmenting": "Segmentando en pasos",
+	"manual_stage_bom": "Emparejando piezas (lista de materiales)",
+	"manual_stage_instructing": "Redactando instrucciones",
+	"manual_stage_critiquing": "Revisando la precisión",
+	"manual_stage_illustrating": "Generando ilustraciones",
+	"manual_stage_finalizing": "Finalizando el manual"
 }

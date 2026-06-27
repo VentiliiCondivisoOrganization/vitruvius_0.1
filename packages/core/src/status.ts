@@ -9,6 +9,22 @@ export type StepReviewStatus = (typeof STEP_REVIEW_STATUS)[number];
 export const JOB_STATUS = ['queued', 'running', 'done', 'failed'] as const;
 export type JobStatus = (typeof JOB_STATUS)[number];
 
+// Ordered pipeline stages of a `process` run (spec 07), surfaced as live progress while a
+// manual is `processing`. The engine advances this stage-by-stage; the web derives a
+// percentage from each stage's index, so ORDER IS SIGNIFICANT — append, never reorder.
+// This is runtime telemetry, not part of the persisted InstructionManual document.
+export const PROCESS_STAGE = [
+	'priming', // gather relevant learnings to prime the run
+	'media', // download video/aux, probe duration, detect scenes, extract keyframes
+	'segmenting', // segment the video into candidate steps
+	'bom', // map + disambiguate the bill of materials onto steps
+	'instructing', // draft step instructions, captions, and tool lists
+	'critiquing', // recalibrate confidence and raise critique flags
+	'illustrating', // render schematic illustrations (best-effort)
+	'finalizing' // persist the finished manual
+] as const;
+export type ProcessStage = (typeof PROCESS_STAGE)[number];
+
 export const JOB_TYPE = ['process', 'export', 'regenerate', 'enrich'] as const;
 export type JobType = (typeof JOB_TYPE)[number];
 

@@ -252,5 +252,13 @@
 	"settings_back_to_dashboard": "← Back to Dashboard",
 	"nav_settings": "Settings",
 	"auth_google_oauth": "Google OAuth",
-	"error_google_oauth_failed": "Failed to initialize Google login. Please try again."
+	"error_google_oauth_failed": "Failed to initialize Google login. Please try again.",
+	"manual_stage_priming": "Priming with past learnings",
+	"manual_stage_media": "Extracting keyframes & scenes",
+	"manual_stage_segmenting": "Segmenting into steps",
+	"manual_stage_bom": "Matching parts (BOM)",
+	"manual_stage_instructing": "Drafting instructions",
+	"manual_stage_critiquing": "Reviewing accuracy",
+	"manual_stage_illustrating": "Generating illustrations",
+	"manual_stage_finalizing": "Finalizing manual"
 }

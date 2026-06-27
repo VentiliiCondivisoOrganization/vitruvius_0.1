@@ -13,6 +13,9 @@ export type ManualRow = {
 	bom_file_url: string;
 	digital_model_url: string;
 	status: ManualStatus;
+	// Live pipeline stage while `processing` (spec 07); null until set / on legacy rows.
+	// Runtime telemetry — not mapped into the InstructionManual document by rowToManual.
+	progress_stage: string | null;
 	bom: unknown;
 	version: number;
 	parent_version_id: string | null;

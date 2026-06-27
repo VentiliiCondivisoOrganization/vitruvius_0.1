@@ -86,6 +86,21 @@ export async function deleteManual(client: DbClient, id: string): Promise<void> 
 	if (error) throw new Error(`deleteManual: ${error.message}`);
 }
 
+// Count the caller's manuals (head request, no rows returned). The db client is
+// RLS-scoped to the signed-in user, so this is inherently a per-user count — used by
+// the upload quota guard. Pass `sinceIso` to count only manuals created on/after that
+// timestamp (the rolling-window rate limit).
+export async function countManuals(client: DbClient, sinceIso?: string): Promise<number> {
+	// `head: true` returns no rows, only the count; select a single narrow column so
+	// intent is clear and we don't couple to the table shape.
+	let query = client.from('manuals').select('id', { count: 'exact', head: true });
+	if (sinceIso) query = query.gte('created_at', sinceIso);
+
+	const { count, error } = await query;
+	if (error) throw new Error(`countManuals: ${error.message}`);
+	return count ?? 0;
+}
+
 // Retrieve all manuals, mapped to the InstructionManual type (with steps).
 export async function getManuals(client: DbClient): Promise<InstructionManual[]> {
 	const { data: manuals, error: manualsError } = await client

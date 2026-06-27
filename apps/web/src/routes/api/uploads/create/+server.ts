@@ -1,3 +1,4 @@
+import { checkVideoBytes } from '$lib/server/limits';
 import {
 	asPositiveInt,
 	asString,
@@ -27,6 +28,10 @@ export const POST: RequestHandler = async (event) => {
 	if (!contentType.startsWith('video/')) {
 		return json({ error: 'file must be a video' }, { status: 400 });
 	}
+	// Early reject on the client's declared size (re-verified authoritatively at finalise) so an
+	// over-limit video fails before the upload starts rather than after.
+	const tooLarge = checkVideoBytes(size);
+	if (tooLarge) return json(tooLarge, { status: 413 });
 
 	const id = crypto.randomUUID();
 	const key = storageKey(id, filename, 'source');

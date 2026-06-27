@@ -1,4 +1,10 @@
 import { m } from '$lib/paraglide/messages';
+import {
+	checkAuxSizes,
+	checkUploadQuota,
+	checkVideoBytes,
+	checkVideoSize
+} from '$lib/server/limits';
 import { isValidVideoKey } from '$lib/server/multipart';
 import { VIDEO_BUCKET, readAuxFiles, storageKey, uploadAuxFiles } from '$lib/server/uploads';
 import { fail, redirect } from '@sveltejs/kit';
@@ -32,16 +38,24 @@ export const load: PageServerLoad = async ({ locals }) => {
  *  - **Server-proxied (fallback, no R2):** the `video` File rides in the form; we buffer it and
  *    upload it ourselves, as before.
  */
+type ResolvedVideo = { id: string; videoPath: string; title: string };
+type ResolveError = { status: number; error: string };
+
 async function resolveVideo(
 	form: FormData,
 	db: App.Locals['db']
-): Promise<{ error: string } | { id: string; videoPath: string; title: string }> {
+): Promise<ResolveError | ResolvedVideo> {
 	const videoKey = form.get('videoKey');
 	if (typeof videoKey === 'string' && videoKey.length > 0) {
-		if (!isValidVideoKey(videoKey)) return { error: m.error_choose_video() };
+		if (!isValidVideoKey(videoKey)) return { status: 400, error: m.error_choose_video() };
 		const head = await headVideo(videoKey).catch(() => null);
-		if (!head || head.size === 0) return { error: m.error_choose_video() };
-		if (!head.contentType.startsWith('video/')) return { error: m.error_not_a_video() };
+		if (!head || head.size === 0) return { status: 400, error: m.error_choose_video() };
+		if (!head.contentType.startsWith('video/'))
+			return { status: 400, error: m.error_not_a_video() };
+		// Authoritative size cap on the object actually in R2 (the client's declared size at /create
+		// was advisory). 413 mirrors the fallback path.
+		const tooLarge = checkVideoBytes(head.size);
+		if (tooLarge) return { status: 413, error: tooLarge.error };
 		const id = videoKey.split('/')[0];
 		const videoName = form.get('videoName');
 		const title = typeof videoName === 'string' && videoName.length > 0 ? videoName : id;
@@ -50,8 +64,11 @@ async function resolveVideo(
 
 	// Fallback: the video bytes are in the form (no R2 / local dev).
 	const file = form.get('video');
-	if (!(file instanceof File) || file.size === 0) return { error: m.error_choose_video() };
-	if (!file.type.startsWith('video/')) return { error: m.error_not_a_video() };
+	if (!(file instanceof File) || file.size === 0)
+		return { status: 400, error: m.error_choose_video() };
+	if (!file.type.startsWith('video/')) return { status: 400, error: m.error_not_a_video() };
+	const tooLarge = checkVideoSize(file);
+	if (tooLarge) return { status: 413, error: tooLarge.error };
 
 	const id = crypto.randomUUID();
 	const videoPath = storageKey(id, file.name, 'source');
@@ -60,7 +77,7 @@ async function resolveVideo(
 		await uploadVideo(db, videoPath, body, file.type);
 	} catch (err) {
 		const message = err instanceof Error ? err.message : 'unknown error';
-		return { error: m.error_upload_failed({ message }) };
+		return { status: 502, error: m.error_upload_failed({ message }) };
 	}
 	return { id, videoPath, title: file.name };
 }
@@ -69,13 +86,22 @@ export const actions: Actions = {
 	default: async ({ request, locals }) => {
 		const form = await request.formData();
 
+		// Abuse guardrails: reject oversized aux files and flood uploads before doing any
+		// storage or job-enqueue work (see $lib/server/limits + @vitruvius/core). The video
+		// size is enforced inside resolveVideo (and early, on declared size, at /api/uploads/create).
 		const aux = readAuxFiles(form);
 		if ('error' in aux) return fail(400, { error: aux.error });
+
+		const auxTooLarge = checkAuxSizes(aux);
+		if (auxTooLarge) return fail(413, auxTooLarge);
+
+		const overQuota = await checkUploadQuota(locals.db);
+		if (overQuota) return fail(429, overQuota);
 
 		// The video is already in R2 (direct upload, spec 20) or is buffered+uploaded here as a
 		// fallback. Either way we end up with an object key; BOM/CAD aux files stay on Supabase.
 		const video = await resolveVideo(form, locals.db);
-		if ('error' in video) return fail(400, { error: video.error });
+		if ('error' in video) return fail(video.status, { error: video.error });
 		const { id, videoPath, title } = video;
 
 		const auxUpload = await uploadAuxFiles(locals.db, id, aux);

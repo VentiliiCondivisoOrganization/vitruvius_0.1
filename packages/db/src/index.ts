@@ -2,6 +2,7 @@ export { createDbClient, dbClientFromEnv, type DbClient, type DbClientConfig } f
 export { claimNextJob, completeJob, enqueueJob, failJob } from './jobs.js';
 export { relevantLearnings, saveLearnings } from './learnings.js';
 export {
+	countManuals,
 	deleteManual,
 	getManual,
 	getManualProgressStage,

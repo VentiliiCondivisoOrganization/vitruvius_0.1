@@ -1,4 +1,5 @@
 import { m } from '$lib/paraglide/messages';
+import { checkAuxSizes } from '$lib/server/limits';
 import { readAuxFiles, uploadAuxFiles } from '$lib/server/uploads';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { instructionManualSchema, regenerateRequestSchema } from '@vitruvius/core';
@@ -187,6 +188,9 @@ export const actions: Actions = {
 		if (!aux.bomFile && !aux.modelFile) {
 			return fail(400, { error: m.error_enrich_files_required() });
 		}
+
+		const auxTooLarge = checkAuxSizes(aux);
+		if (auxTooLarge) return fail(413, auxTooLarge);
 
 		// New files land under their own storage folder so they never collide with the
 		// parent's refs; createManualVersion keeps the parent's ref for whichever file

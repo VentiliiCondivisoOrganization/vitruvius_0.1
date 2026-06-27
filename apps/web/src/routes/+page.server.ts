@@ -1,4 +1,5 @@
 import { m } from '$lib/paraglide/messages';
+import { checkAuxSizes, checkUploadQuota, checkVideoSize } from '$lib/server/limits';
 import { VIDEO_BUCKET, readAuxFiles, storageKey, uploadAuxFiles } from '$lib/server/uploads';
 import { fail, redirect } from '@sveltejs/kit';
 import type { InstructionManual } from '@vitruvius/core';
@@ -29,8 +30,19 @@ export const actions: Actions = {
 			return fail(400, { error: m.error_not_a_video() });
 		}
 
+		// Abuse guardrails: reject oversized files before buffering, and flood uploads
+		// before doing any storage work (see $lib/server/limits + @vitruvius/core).
+		const videoTooLarge = checkVideoSize(file);
+		if (videoTooLarge) return fail(413, videoTooLarge);
+
 		const aux = readAuxFiles(form);
 		if ('error' in aux) return fail(400, { error: aux.error });
+
+		const auxTooLarge = checkAuxSizes(aux);
+		if (auxTooLarge) return fail(413, auxTooLarge);
+
+		const overQuota = await checkUploadQuota(locals.db);
+		if (overQuota) return fail(429, overQuota);
 
 		const id = crypto.randomUUID();
 		const videoPath = storageKey(id, file.name, 'source');

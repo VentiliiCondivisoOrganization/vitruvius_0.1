@@ -7,6 +7,7 @@ import {
 	createManualVersion,
 	enqueueJob,
 	getManual,
+	getManualProgressStage,
 	listManualVersions,
 	saveManual,
 	type DbClient,
@@ -37,9 +38,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	// that was never enriched is a one-element lineage (and its own head).
 	const versions = await listManualVersions(locals.db, manual.id);
 
+	// Live pipeline stage (spec 07) for the processing view's progress bar. Only meaningful
+	// while `processing`; the page polls (invalidateAll) so this refreshes as the engine advances.
+	const progressStage =
+		manual.status === 'processing' ? await getManualProgressStage(locals.db, manual.id) : null;
+
 	// Hand the full manual to the page: the status view needs only the header
 	// fields, but the editor (shown once `ready`) needs every step field.
-	return { manual, versions, isHead: isHeadVersion(manual.id, versions) };
+	return { manual, versions, isHead: isHeadVersion(manual.id, versions), progressStage };
 };
 
 /** Reject edits/regeneration on a frozen (non-head) version. Returns a `fail` or null. */

@@ -5,8 +5,10 @@ export {
 	countManuals,
 	deleteManual,
 	getManual,
+	getManualProgressStage,
 	getManuals,
 	saveManual,
+	setManualStage,
 	setManualStatus
 } from './manuals.js';
 export { deleteVideo, isR2Configured, presignVideoGet, uploadVideo } from './storage.js';

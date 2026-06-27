@@ -21,7 +21,9 @@
 	"home_field_bom_hint": "(CSV opcional)",
 	"home_field_model": "Modelo digital",
 	"home_field_model_hint": "(CAD/malla opcional)",
-	"home_upload_submitting": "Subiendo e inicializando...",
+	"home_upload_phase_uploading": "Subiendo el vídeo",
+	"home_upload_phase_finalizing": "Finalizando y poniendo en cola el análisis",
+	"home_upload_phase_hint": "El análisis comienza tras la subida: sigue su estado en la pantalla siguiente.",
 	"home_upload_submit": "Subir y procesar el vídeo",
 	"home_pipeline_heading": "Canalización de orquestación",
 	"home_pipeline_upload_title": "Subir vídeo de origen",
@@ -207,6 +209,7 @@
 	"error_choose_video": "Elige un archivo de vídeo para subir.",
 	"error_not_a_video": "Ese archivo no es un vídeo.",
 	"error_upload_failed": "La subida ha fallado: {message}",
+	"error_upload_interrupted": "La subida se interrumpió. Comprueba tu conexión e inténtalo de nuevo.",
 	"error_could_not_start_processing": "No se pudo iniciar el procesamiento: {message}",
 	"error_bom_must_be_csv": "El archivo BOM debe ser un CSV.",
 	"error_model_must_be_step_obj_stl": "El modelo digital debe ser STEP, OBJ o STL.",
@@ -257,5 +260,13 @@
 	"settings_back_to_dashboard": "← Volver al Panel",
 	"nav_settings": "Configuración",
 	"auth_google_oauth": "Google OAuth",
-	"error_google_oauth_failed": "No se pudo iniciar el inicio de sesión con Google. Por favor, inténtelo de nuevo."
+	"error_google_oauth_failed": "No se pudo iniciar el inicio de sesión con Google. Por favor, inténtelo de nuevo.",
+	"manual_stage_priming": "Preparando con aprendizajes previos",
+	"manual_stage_media": "Extrayendo fotogramas y escenas",
+	"manual_stage_segmenting": "Segmentando en pasos",
+	"manual_stage_bom": "Emparejando piezas (lista de materiales)",
+	"manual_stage_instructing": "Redactando instrucciones",
+	"manual_stage_critiquing": "Revisando la precisión",
+	"manual_stage_illustrating": "Generando ilustraciones",
+	"manual_stage_finalizing": "Finalizando el manual"
 }

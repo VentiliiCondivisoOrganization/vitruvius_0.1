@@ -21,7 +21,9 @@
 	"home_field_bom_hint": "(Optional CSV)",
 	"home_field_model": "Digital Model",
 	"home_field_model_hint": "(Optional CAD/Mesh)",
-	"home_upload_submitting": "Uploading & Initializing...",
+	"home_upload_phase_uploading": "Uploading video",
+	"home_upload_phase_finalizing": "Finalizing & queuing analysis",
+	"home_upload_phase_hint": "Analysis runs after upload — track its progress on the next screen.",
 	"home_upload_submit": "Upload and Process Video",
 	"home_pipeline_heading": "Orchestration Pipeline",
 	"home_pipeline_upload_title": "Upload source video",
@@ -207,6 +209,7 @@
 	"error_choose_video": "Choose a video file to upload.",
 	"error_not_a_video": "That file is not a video.",
 	"error_upload_failed": "Upload failed: {message}",
+	"error_upload_interrupted": "Upload was interrupted. Please check your connection and try again.",
 	"error_could_not_start_processing": "Could not start processing: {message}",
 	"error_bom_must_be_csv": "BOM file must be a CSV.",
 	"error_model_must_be_step_obj_stl": "Digital model must be STEP, OBJ, or STL.",
@@ -257,5 +260,13 @@
 	"settings_back_to_dashboard": "← Back to Dashboard",
 	"nav_settings": "Settings",
 	"auth_google_oauth": "Google OAuth",
-	"error_google_oauth_failed": "Failed to initialize Google login. Please try again."
+	"error_google_oauth_failed": "Failed to initialize Google login. Please try again.",
+	"manual_stage_priming": "Priming with past learnings",
+	"manual_stage_media": "Extracting keyframes & scenes",
+	"manual_stage_segmenting": "Segmenting into steps",
+	"manual_stage_bom": "Matching parts (BOM)",
+	"manual_stage_instructing": "Drafting instructions",
+	"manual_stage_critiquing": "Reviewing accuracy",
+	"manual_stage_illustrating": "Generating illustrations",
+	"manual_stage_finalizing": "Finalizing manual"
 }

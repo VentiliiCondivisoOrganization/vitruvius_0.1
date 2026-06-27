@@ -1,4 +1,10 @@
-import type { JobStatus, JobType, ManualStatus, StepReviewStatus } from '@vitruvius/core';
+import type {
+	JobStatus,
+	JobType,
+	ManualStatus,
+	ProcessStage,
+	StepReviewStatus
+} from '@vitruvius/core';
 
 // Snake_case shapes as stored in Postgres. These are the raw rows returned by the
 // Supabase client; the mappers in mappers.ts convert them to the camelCase
@@ -13,6 +19,9 @@ export type ManualRow = {
 	bom_file_url: string;
 	digital_model_url: string;
 	status: ManualStatus;
+	// Live pipeline stage while `processing` (spec 07); null until set / on legacy rows.
+	// Runtime telemetry — not mapped into the InstructionManual document by rowToManual.
+	progress_stage: ProcessStage | null;
 	bom: unknown;
 	version: number;
 	parent_version_id: string | null;

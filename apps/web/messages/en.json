@@ -209,6 +209,7 @@
 	"error_choose_video": "Choose a video file to upload.",
 	"error_not_a_video": "That file is not a video.",
 	"error_upload_failed": "Upload failed: {message}",
+	"error_upload_interrupted": "Upload was interrupted. Please check your connection and try again.",
 	"error_could_not_start_processing": "Could not start processing: {message}",
 	"error_bom_must_be_csv": "BOM file must be a CSV.",
 	"error_model_must_be_step_obj_stl": "Digital model must be STEP, OBJ, or STL.",

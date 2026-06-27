@@ -209,6 +209,7 @@
 	"error_choose_video": "Choisissez un fichier vidéo à téléverser.",
 	"error_not_a_video": "Ce fichier n'est pas une vidéo.",
 	"error_upload_failed": "Le téléversement a échoué : {message}",
+	"error_upload_interrupted": "Téléversement interrompu. Vérifiez votre connexion et réessayez.",
 	"error_could_not_start_processing": "Impossible de démarrer le traitement : {message}",
 	"error_bom_must_be_csv": "Le fichier BOM doit être un CSV.",
 	"error_model_must_be_step_obj_stl": "Le modèle numérique doit être au format STEP, OBJ ou STL.",

@@ -16,6 +16,9 @@
 	// and enqueues the job. The 'analyzing' phase lives on the manual page's status badge post-redirect.
 	let uploadPhase = $state<'uploading' | 'finalizing'>('uploading');
 	let uploadProgress = $state(0);
+	// Client-side upload failure (network drop, or a response we couldn't parse as an ActionResult).
+	// Server-side validation/upload errors still arrive via the `form` prop through applyAction.
+	let clientError = $state<string | null>(null);
 	const manuals = $derived(data.manuals ?? []);
 
 	// Submit via XHR (not use:enhance) so we can surface real upload progress — fetch can't report it.
@@ -29,6 +32,7 @@
 		submitting = true;
 		uploadPhase = 'uploading';
 		uploadProgress = 0;
+		clientError = null;
 
 		const xhr = new XMLHttpRequest();
 		xhr.open('POST', formEl.action);
@@ -44,12 +48,21 @@
 		});
 
 		xhr.addEventListener('load', async () => {
-			const result = deserialize(xhr.responseText) as ActionResult;
-			// A successful upload redirects (applyAction navigates away); only re-enable on failure.
-			await applyAction(result);
-			if (result.type !== 'redirect') submitting = false;
+			// The body should be a serialized SvelteKit ActionResult, but a proxy/error page or an
+			// empty/non-2xx response would make deserialize throw — never leave the UI stuck in the
+			// progress state. Surface a generic failure and re-enable the form on any parse/apply error.
+			try {
+				const result = deserialize(xhr.responseText) as ActionResult;
+				await applyAction(result);
+				// A successful upload redirects (applyAction navigates away); only re-enable otherwise.
+				if (result.type !== 'redirect') submitting = false;
+			} catch {
+				clientError = m.error_upload_interrupted();
+				submitting = false;
+			}
 		});
 		xhr.addEventListener('error', () => {
+			clientError = m.error_upload_interrupted();
 			submitting = false;
 		});
 
@@ -264,7 +277,19 @@
 										<span class="text-slate-400 tabular-nums">{uploadProgress}%</span>
 									{/if}
 								</div>
-								<div class="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+								<div
+									class="h-2 w-full overflow-hidden rounded-full bg-slate-800"
+									role="progressbar"
+									aria-label={uploadPhase === 'uploading'
+										? m.home_upload_phase_uploading()
+										: m.home_upload_phase_finalizing()}
+									aria-valuemin={0}
+									aria-valuemax={100}
+									aria-valuenow={uploadPhase === 'uploading' ? uploadProgress : undefined}
+									aria-valuetext={uploadPhase === 'uploading'
+										? `${uploadProgress}%`
+										: m.home_upload_phase_finalizing()}
+								>
 									<div
 										class={`h-full rounded-full bg-indigo-500 transition-all duration-200 ${uploadPhase === 'finalizing' ? 'animate-pulse' : ''}`}
 										style={`width: ${uploadPhase === 'finalizing' ? 100 : uploadProgress}%`}
@@ -281,9 +306,10 @@
 							</button>
 						{/if}
 
-						{#if form?.error}
+						{#if form?.error || clientError}
 							<div
 								class="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-400 flex items-center gap-2"
+								role="alert"
 							>
 								<svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"
 									><path
@@ -293,7 +319,7 @@
 										d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
 									/></svg
 								>
-								{form.error}
+								{form?.error ?? clientError}
 							</div>
 						{/if}
 					</form>

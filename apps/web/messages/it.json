@@ -209,6 +209,7 @@
 	"error_choose_video": "Scegli un file video da caricare.",
 	"error_not_a_video": "Quel file non è un video.",
 	"error_upload_failed": "Caricamento non riuscito: {message}",
+	"error_upload_interrupted": "Caricamento interrotto. Controlla la connessione e riprova.",
 	"error_could_not_start_processing": "Impossibile avviare l'elaborazione: {message}",
 	"error_bom_must_be_csv": "Il file BOM deve essere un CSV.",
 	"error_model_must_be_step_obj_stl": "Il modello digitale deve essere STEP, OBJ o STL.",

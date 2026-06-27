@@ -209,6 +209,7 @@
 	"error_choose_video": "Elige un archivo de vídeo para subir.",
 	"error_not_a_video": "Ese archivo no es un vídeo.",
 	"error_upload_failed": "La subida ha fallado: {message}",
+	"error_upload_interrupted": "La subida se interrumpió. Comprueba tu conexión e inténtalo de nuevo.",
 	"error_could_not_start_processing": "No se pudo iniciar el procesamiento: {message}",
 	"error_bom_must_be_csv": "El archivo BOM debe ser un CSV.",
 	"error_model_must_be_step_obj_stl": "El modelo digital debe ser STEP, OBJ o STL.",

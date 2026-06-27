@@ -38,10 +38,8 @@ jobs:
       - name: Require FLY_API_TOKEN
         run: test -n "$FLY_API_TOKEN" || { echo "::error::FLY_API_TOKEN secret is not set."; exit 1; }
 
-      - name: Install flyctl
-        run: |
-          curl -L https://fly.io/install.sh | sh
-          echo "$HOME/.fly/bin" >> "$GITHUB_PATH"
+      - name: Set up flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
 
       # --remote-only builds on Fly's builder, so CI needs no Docker. Each config names its app.
       - name: Deploy web

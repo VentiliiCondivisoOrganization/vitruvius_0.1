@@ -15,7 +15,7 @@ import type { AuxFiles } from './uploads';
 // message ready for `fail(...)` or `null` when the request is within limits, so callers
 // stay a one-liner. The numbers live in `@vitruvius/core` (`limits.ts`).
 
-/** Reject an oversized source video before its bytes are buffered into memory. */
+/** Reject an oversized source video before it is uploaded to storage. */
 export function checkVideoSize(file: File): { error: string } | null {
 	if (file.size > MAX_VIDEO_BYTES) {
 		return { error: m.error_video_too_large({ limit: formatBytes(MAX_VIDEO_BYTES) }) };
@@ -38,15 +38,19 @@ export function checkAuxSizes(aux: AuxFiles): { error: string } | null {
  * Per-user flood guard: cap how many manuals a user may create in the rolling window and
  * in total. The db client is RLS-scoped to the signed-in user, so both counts are
  * inherently per-user. Returns a (429-style) error message or null.
+ *
+ * This is a deterrent guardrail, not a hard transactional cap: the count-then-insert is
+ * not atomic, so a burst of concurrent uploads from one user could marginally overshoot.
+ * That's an accepted trade-off for the MVP — a strict cap would need DB-side enforcement
+ * (a constraint/trigger or a transactional RPC), which is a heavier follow-up.
  */
 export async function checkUploadQuota(db: DbClient): Promise<{ error: string } | null> {
-	const total = await countManuals(db);
+	const sinceIso = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
+	const [total, recent] = await Promise.all([countManuals(db), countManuals(db, sinceIso)]);
+
 	if (total >= MAX_MANUALS_TOTAL) {
 		return { error: m.error_quota_reached({ limit: MAX_MANUALS_TOTAL }) };
 	}
-
-	const sinceIso = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
-	const recent = await countManuals(db, sinceIso);
 	if (recent >= MAX_MANUALS_PER_WINDOW) {
 		return { error: m.error_too_many_manuals({ limit: MAX_MANUALS_PER_WINDOW }) };
 	}

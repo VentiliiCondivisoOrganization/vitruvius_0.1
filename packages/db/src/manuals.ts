@@ -56,7 +56,9 @@ export async function deleteManual(client: DbClient, id: string): Promise<void> 
 // the upload quota guard. Pass `sinceIso` to count only manuals created on/after that
 // timestamp (the rolling-window rate limit).
 export async function countManuals(client: DbClient, sinceIso?: string): Promise<number> {
-	let query = client.from('manuals').select('*', { count: 'exact', head: true });
+	// `head: true` returns no rows, only the count; select a single narrow column so
+	// intent is clear and we don't couple to the table shape.
+	let query = client.from('manuals').select('id', { count: 'exact', head: true });
 	if (sinceIso) query = query.gte('created_at', sinceIso);
 
 	const { count, error } = await query;

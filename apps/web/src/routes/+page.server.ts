@@ -30,8 +30,8 @@ export const actions: Actions = {
 			return fail(400, { error: m.error_not_a_video() });
 		}
 
-		// Abuse guardrails: reject oversized files before buffering, and flood uploads
-		// before doing any storage work (see $lib/server/limits + @vitruvius/core).
+		// Abuse guardrails: reject oversized files and flood uploads before doing any
+		// storage or job-enqueue work (see $lib/server/limits + @vitruvius/core).
 		const videoTooLarge = checkVideoSize(file);
 		if (videoTooLarge) return fail(413, videoTooLarge);
 

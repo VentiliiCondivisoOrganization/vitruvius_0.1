@@ -11,7 +11,8 @@ yarn.lock
 
 # Owned by release-please — it generates `*` bullets and blank lines that
 # Prettier would rewrite, so let release-please control the formatting.
-CHANGELOG.md
+# Anchored so only the root changelog is ignored, not package-level ones.
+/CHANGELOG.md
 
 # i18n (Paraglide/inlang) generated output. These are regenerated on `pnpm install`
 # (apps/web `prepare`), so CI sees them even though they are git-ignored. Prettier does

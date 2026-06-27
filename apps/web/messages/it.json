@@ -22,6 +22,7 @@
 	"home_field_model": "Modello digitale",
 	"home_field_model_hint": "(CAD/Mesh facoltativo)",
 	"home_upload_submitting": "Caricamento e inizializzazione...",
+	"home_upload_uploading": "Caricamento… {percent}%",
 	"home_upload_submit": "Carica ed elabora il video",
 	"home_pipeline_heading": "Pipeline di orchestrazione",
 	"home_pipeline_upload_title": "Carica il video sorgente",

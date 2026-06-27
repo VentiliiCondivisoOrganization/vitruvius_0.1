@@ -1,4 +1,5 @@
 import { m } from '$lib/paraglide/messages';
+import { isValidVideoKey } from '$lib/server/multipart';
 import { VIDEO_BUCKET, readAuxFiles, storageKey, uploadAuxFiles } from '$lib/server/uploads';
 import { fail, redirect } from '@sveltejs/kit';
 import type { InstructionManual } from '@vitruvius/core';
@@ -7,6 +8,8 @@ import {
 	deleteVideo,
 	enqueueJob,
 	getManuals,
+	headVideo,
+	isR2Configured,
 	saveManual,
 	uploadVideo
 } from '@vitruvius/db';
@@ -14,35 +17,66 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const manuals = await getManuals(locals.db);
-	return { manuals };
+	// When R2 is configured the browser uploads the video directly to R2 (spec 20); otherwise it
+	// falls back to the server-proxied form action. The client branches on this flag.
+	return { manuals, directUpload: isR2Configured() };
 };
+
+/**
+ * Resolve the source video for this submission into an `(id, videoPath, title)` triple.
+ *
+ * Two paths share the action:
+ *  - **Direct upload (spec 20):** the browser already PUT the bytes to R2 and submits the object
+ *    `videoKey`. We verify the object actually exists (and is a video) before trusting it, so a
+ *    client can't register a key it never uploaded.
+ *  - **Server-proxied (fallback, no R2):** the `video` File rides in the form; we buffer it and
+ *    upload it ourselves, as before.
+ */
+async function resolveVideo(
+	form: FormData,
+	db: App.Locals['db']
+): Promise<{ error: string } | { id: string; videoPath: string; title: string }> {
+	const videoKey = form.get('videoKey');
+	if (typeof videoKey === 'string' && videoKey.length > 0) {
+		if (!isValidVideoKey(videoKey)) return { error: m.error_choose_video() };
+		const head = await headVideo(videoKey).catch(() => null);
+		if (!head || head.size === 0) return { error: m.error_choose_video() };
+		if (!head.contentType.startsWith('video/')) return { error: m.error_not_a_video() };
+		const id = videoKey.split('/')[0];
+		const videoName = form.get('videoName');
+		const title = typeof videoName === 'string' && videoName.length > 0 ? videoName : id;
+		return { id, videoPath: videoKey, title };
+	}
+
+	// Fallback: the video bytes are in the form (no R2 / local dev).
+	const file = form.get('video');
+	if (!(file instanceof File) || file.size === 0) return { error: m.error_choose_video() };
+	if (!file.type.startsWith('video/')) return { error: m.error_not_a_video() };
+
+	const id = crypto.randomUUID();
+	const videoPath = storageKey(id, file.name, 'source');
+	try {
+		const body = Buffer.from(await file.arrayBuffer());
+		await uploadVideo(db, videoPath, body, file.type);
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'unknown error';
+		return { error: m.error_upload_failed({ message }) };
+	}
+	return { id, videoPath, title: file.name };
+}
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
 		const form = await request.formData();
-		const file = form.get('video');
-
-		if (!(file instanceof File) || file.size === 0) {
-			return fail(400, { error: m.error_choose_video() });
-		}
-		if (!file.type.startsWith('video/')) {
-			return fail(400, { error: m.error_not_a_video() });
-		}
 
 		const aux = readAuxFiles(form);
 		if ('error' in aux) return fail(400, { error: aux.error });
 
-		const id = crypto.randomUUID();
-		const videoPath = storageKey(id, file.name, 'source');
-
-		// The video goes to R2 (no per-file size cap); BOM/CAD aux files stay on Supabase.
-		try {
-			const body = Buffer.from(await file.arrayBuffer());
-			await uploadVideo(locals.db, videoPath, body, file.type);
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'unknown error';
-			return fail(502, { error: m.error_upload_failed({ message }) });
-		}
+		// The video is already in R2 (direct upload, spec 20) or is buffered+uploaded here as a
+		// fallback. Either way we end up with an object key; BOM/CAD aux files stay on Supabase.
+		const video = await resolveVideo(form, locals.db);
+		if ('error' in video) return fail(400, { error: video.error });
+		const { id, videoPath, title } = video;
 
 		const auxUpload = await uploadAuxFiles(locals.db, id, aux);
 		if ('error' in auxUpload) {
@@ -56,7 +90,7 @@ export const actions: Actions = {
 		const now = new Date().toISOString();
 		const manual: InstructionManual = {
 			id,
-			title: file.name,
+			title,
 			videoUrl: videoPath,
 			bomFileUrl,
 			digitalModelUrl,

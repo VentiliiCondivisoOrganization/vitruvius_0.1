@@ -22,6 +22,7 @@
 	"home_field_model": "Digital Model",
 	"home_field_model_hint": "(Optional CAD/Mesh)",
 	"home_upload_submitting": "Uploading & Initializing...",
+	"home_upload_uploading": "Uploading… {percent}%",
 	"home_upload_submit": "Upload and Process Video",
 	"home_pipeline_heading": "Orchestration Pipeline",
 	"home_pipeline_upload_title": "Upload source video",

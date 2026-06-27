@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DbClient } from './client.js';
-import { deleteVideo, isR2Configured, presignVideoGet, uploadVideo } from './storage.js';
+import {
+	deleteVideo,
+	isR2Configured,
+	presignUploadParts,
+	presignVideoGet,
+	uploadVideo
+} from './storage.js';
 
 const R2_ENV = {
 	R2_ACCOUNT_ID: 'acct123',
@@ -36,6 +42,30 @@ describe('presignVideoGet', () => {
 		const url = await presignVideoGet(db, 'manual-1/source.mp4', 600, {});
 		expect(url).toBe('https://supabase/signed');
 		expect(createSignedUrl).toHaveBeenCalledWith('manual-1/source.mp4', 600);
+	});
+});
+
+describe('presignUploadParts', () => {
+	it('signs one R2 UploadPart URL per part number (offline)', async () => {
+		const sigs = await presignUploadParts(
+			'manual-1/source.mp4',
+			'upload-123',
+			[1, 2, 3],
+			600,
+			R2_ENV
+		);
+
+		expect(sigs.map((s) => s.partNumber)).toEqual([1, 2, 3]);
+		for (const sig of sigs) {
+			expect(sig.url).toContain('vitruvius-videos/manual-1/source.mp4');
+			expect(sig.url).toContain('uploadId=upload-123');
+			expect(sig.url).toContain(`partNumber=${sig.partNumber}`);
+			expect(sig.url).toContain('X-Amz-Signature=');
+		}
+	});
+
+	it('throws when R2 is unconfigured (no Supabase multipart fallback)', async () => {
+		await expect(presignUploadParts('k', 'u', [1], 600, {})).rejects.toThrow(/not configured/);
 	});
 });
 

@@ -22,6 +22,7 @@
 	"home_field_model": "Modelo digital",
 	"home_field_model_hint": "(CAD/malla opcional)",
 	"home_upload_submitting": "Subiendo e inicializando...",
+	"home_upload_uploading": "Subiendo… {percent} %",
 	"home_upload_submit": "Subir y procesar el vídeo",
 	"home_pipeline_heading": "Canalización de orquestación",
 	"home_pipeline_upload_title": "Subir vídeo de origen",

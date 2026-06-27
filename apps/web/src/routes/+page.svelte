@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { applyAction, deserialize, enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -10,7 +10,133 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let submitting = $state(false);
+	// null until the browser starts pushing bytes to R2, then 0–100 (spec 20 direct upload).
+	let uploadPercent = $state<number | null>(null);
+	// Errors raised by the client-side direct-upload flow (the action's errors arrive via `form`).
+	let uploadError = $state<string | null>(null);
 	const manuals = $derived(data.manuals ?? []);
+	const errorMessage = $derived(uploadError ?? form?.error ?? null);
+
+	type CreatedUpload = {
+		id: string;
+		key: string;
+		uploadId: string;
+		partSize: number;
+		partCount: number;
+	};
+	type PartSig = { partNumber: number; url: string };
+
+	async function postJson<T>(url: string, body: unknown): Promise<T> {
+		const res = await fetch(url, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(body)
+		});
+		if (!res.ok) {
+			const data: unknown = await res.json().catch(() => null);
+			const detail =
+				data && typeof data === 'object' && 'error' in data
+					? String((data as { error: unknown }).error)
+					: `request failed (${res.status})`;
+			throw new Error(detail);
+		}
+		return res.json() as Promise<T>;
+	}
+
+	// PUT one chunk to its presigned R2 URL via XHR (so we get upload progress and can read the
+	// ETag response header, which `fetch` can only surface when R2 CORS exposes it).
+	function putPart(
+		url: string,
+		chunk: Blob,
+		onProgress: (loaded: number) => void
+	): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const xhr = new XMLHttpRequest();
+			xhr.open('PUT', url);
+			xhr.upload.onprogress = (e) => {
+				if (e.lengthComputable) onProgress(e.loaded);
+			};
+			xhr.onload = () => {
+				if (xhr.status >= 200 && xhr.status < 300) {
+					const etag = xhr.getResponseHeader('ETag');
+					if (etag) resolve(etag);
+					else reject(new Error('R2 did not return an ETag (check bucket CORS ExposeHeaders)'));
+				} else {
+					reject(new Error(`part upload failed (${xhr.status})`));
+				}
+			};
+			xhr.onerror = () => reject(new Error('network error during upload'));
+			xhr.send(chunk);
+		});
+	}
+
+	async function uploadParts(file: File, created: CreatedUpload) {
+		const partNumbers = Array.from({ length: created.partCount }, (_, i) => i + 1);
+		const { parts: signatures } = await postJson<{ parts: PartSig[] }>('/api/uploads/sign', {
+			key: created.key,
+			uploadId: created.uploadId,
+			partNumbers
+		});
+
+		const completed: { partNumber: number; etag: string }[] = [];
+		let uploadedBytes = 0;
+		for (const { partNumber, url } of signatures) {
+			const start = (partNumber - 1) * created.partSize;
+			const chunk = file.slice(start, Math.min(start + created.partSize, file.size));
+			const etag = await putPart(url, chunk, (loaded) => {
+				uploadPercent = Math.round(((uploadedBytes + loaded) / file.size) * 100);
+			});
+			uploadedBytes += chunk.size;
+			uploadPercent = Math.round((uploadedBytes / file.size) * 100);
+			completed.push({ partNumber, etag });
+		}
+		return completed;
+	}
+
+	// Direct browser→R2 path (spec 20): upload the bytes straight to R2, then submit the form
+	// action with the object key instead of the video. `formData` still carries the aux files.
+	async function directSubmit(formData: FormData, file: File) {
+		submitting = true;
+		uploadError = null;
+		uploadPercent = 0;
+		let created: CreatedUpload | null = null;
+		try {
+			created = await postJson<CreatedUpload>('/api/uploads/create', {
+				filename: file.name,
+				contentType: file.type,
+				size: file.size
+			});
+			const parts = await uploadParts(file, created);
+			await postJson('/api/uploads/complete', {
+				key: created.key,
+				uploadId: created.uploadId,
+				parts
+			});
+
+			// Hand off to the existing action: drop the bytes, pass the R2 key + original name.
+			formData.delete('video');
+			formData.set('videoKey', created.key);
+			formData.set('videoName', file.name);
+			const response = await fetch('?/default', {
+				method: 'POST',
+				headers: { 'x-sveltekit-action': 'true' },
+				body: formData
+			});
+			// applyAction handles every result type, including performing the action's redirect.
+			await applyAction(deserialize(await response.text()));
+		} catch (e) {
+			if (created) {
+				// Best-effort: don't leave orphaned parts billing in R2.
+				void postJson('/api/uploads/abort', { key: created.key, uploadId: created.uploadId }).catch(
+					() => {}
+				);
+			}
+			uploadError = m.error_upload_failed({ message: e instanceof Error ? e.message : String(e) });
+		} finally {
+			submitting = false;
+			uploadPercent = null;
+		}
+	}
 
 	const pipeline = [
 		{ title: m.home_pipeline_upload_title(), desc: m.home_pipeline_upload_desc() },
@@ -132,7 +258,17 @@
 						method="POST"
 						enctype="multipart/form-data"
 						class="space-y-5"
-						use:enhance={() => {
+						use:enhance={({ formData, cancel }) => {
+							// With R2 configured, upload the video straight to R2 (spec 20) and submit the
+							// action ourselves; otherwise fall through to the server-proxied enhanced submit.
+							if (data.directUpload) {
+								const file = formData.get('video');
+								if (file instanceof File && file.size > 0) {
+									cancel();
+									void directSubmit(formData, file);
+									return;
+								}
+							}
 							submitting = true;
 							return async ({ update }) => {
 								try {
@@ -223,13 +359,29 @@
 										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 									></path>
 								</svg>
-								{m.home_upload_submitting()}
+								{uploadPercent !== null
+									? m.home_upload_uploading({ percent: uploadPercent })
+									: m.home_upload_submitting()}
 							{:else}
 								{m.home_upload_submit()}
 							{/if}
 						</button>
 
-						{#if form?.error}
+						{#if uploadPercent !== null}
+							<div class="space-y-1.5">
+								<div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+									<div
+										class="h-full rounded-full bg-indigo-500 transition-all duration-200"
+										style="width: {uploadPercent}%"
+									></div>
+								</div>
+								<p class="text-[11px] text-slate-500">
+									{m.home_upload_uploading({ percent: uploadPercent })}
+								</p>
+							</div>
+						{/if}
+
+						{#if errorMessage}
 							<div
 								class="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-400 flex items-center gap-2"
 							>
@@ -241,7 +393,7 @@
 										d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
 									/></svg
 								>
-								{form.error}
+								{errorMessage}
 							</div>
 						{/if}
 					</form>

@@ -9,15 +9,13 @@ primary_region = "ams"
   dockerfile = "apps/web/Dockerfile"
 
 [env]
-  # Source videos are uploaded through the SvelteKit server action, so the
-  # adapter-node body limit (default 512KB) must allow a full video. Without
-  # this, uploads fail at the web server with a 413 before reaching Storage.
-  # Sized to comfortably exceed expected videos (~175MB observed) with headroom,
-  # while staying well below VM memory (below) so a single oversized POST on any
-  # route cannot OOM the machine. Larger files should move to direct-to-Storage
-  # signed-URL uploads rather than raising this further.
-  # Note: the Supabase project/bucket storage upload limit must be raised to a
-  # matching size too, or the file is rejected at the Storage layer instead.
+  # With R2 configured, source videos upload directly browser→R2 in multipart parts
+  # (spec 20), so the video bytes never hit this server and this limit no longer bounds
+  # video size. It now only bounds the small aux files (BOM/CAD) and the server-proxied
+  # fallback used when R2 is absent (local dev). Kept comfortably below VM memory (below)
+  # so a single oversized POST on any route cannot OOM the machine.
+  # Note: direct R2 upload needs bucket CORS allowing PUT + exposing ETag — see
+  # scripts/set-r2-cors.mjs.
   BODY_SIZE_LIMIT = "512M"
 
 [http_service]

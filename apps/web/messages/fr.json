@@ -22,6 +22,7 @@
 	"home_field_model": "Modèle numérique",
 	"home_field_model_hint": "(CAO/maillage facultatif)",
 	"home_upload_submitting": "Téléversement et initialisation...",
+	"home_upload_uploading": "Téléversement… {percent} %",
 	"home_upload_submit": "Téléverser et traiter la vidéo",
 	"home_pipeline_heading": "Pipeline d'orchestration",
 	"home_pipeline_upload_title": "Téléverser la vidéo source",

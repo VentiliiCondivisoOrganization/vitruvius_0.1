@@ -1,8 +1,13 @@
 import {
+	AbortMultipartUploadCommand,
+	CompleteMultipartUploadCommand,
+	CreateMultipartUploadCommand,
 	DeleteObjectsCommand,
 	GetObjectCommand,
+	HeadObjectCommand,
 	PutObjectCommand,
-	S3Client
+	S3Client,
+	UploadPartCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { DbClient } from './client.js';
@@ -133,5 +138,129 @@ export async function deleteVideo(
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);
 		console.warn(`[storage] best-effort video delete failed for ${keys.join(', ')}: ${reason}`);
+	}
+}
+
+// --- Direct browser→R2 multipart upload (spec 20) -------------------------------------------
+//
+// These helpers let the browser PUT the video bytes straight to R2 in parts, so a multi-GB
+// video never passes through (or buffers in) the web server. They are R2-only: a single
+// presigned PutObject tops out near R2's ~5GB limit, and Supabase Storage has no S3-compatible
+// multipart API. When R2 is unconfigured the web app keeps the server-proxied `uploadVideo`
+// path instead (graceful fallback), so these are never called without R2 credentials.
+
+/** Presigned PUT URL for one part of a multipart upload. */
+export type PartSignature = { partNumber: number; url: string };
+
+/** A finished part: its number plus the ETag R2 returned from the PUT, needed to complete. */
+export type CompletedPart = { partNumber: number; etag: string };
+
+/** Lightweight metadata for an object that already exists in storage. */
+export type VideoHead = { size: number; contentType: string };
+
+function requireR2Config(env: R2Env): R2Config {
+	const config = readR2Config(env);
+	if (!config) throw new Error('R2 is not configured; multipart upload is unavailable');
+	return config;
+}
+
+/** Start a multipart upload and return its upload id (needed to sign and complete parts). */
+export async function createMultipartUpload(
+	key: string,
+	contentType: string,
+	env: R2Env = process.env
+): Promise<string> {
+	const config = requireR2Config(env);
+	const out = await r2Client(config).send(
+		new CreateMultipartUploadCommand({ Bucket: config.bucket, Key: key, ContentType: contentType })
+	);
+	if (!out.UploadId) throw new Error(`R2 did not return an upload id for ${key}`);
+	return out.UploadId;
+}
+
+/** Presign PUT URLs for the given part numbers so the browser can upload each part directly. */
+export async function presignUploadParts(
+	key: string,
+	uploadId: string,
+	partNumbers: number[],
+	ttlSeconds: number = DEFAULT_SIGNED_URL_TTL_S,
+	env: R2Env = process.env
+): Promise<PartSignature[]> {
+	const config = requireR2Config(env);
+	const client = r2Client(config);
+	return Promise.all(
+		partNumbers.map(async (partNumber) => ({
+			partNumber,
+			url: await getSignedUrl(
+				client,
+				new UploadPartCommand({
+					Bucket: config.bucket,
+					Key: key,
+					UploadId: uploadId,
+					PartNumber: partNumber
+				}),
+				{ expiresIn: ttlSeconds }
+			)
+		}))
+	);
+}
+
+/** Complete a multipart upload, assembling the parts (in order) into the final object. */
+export async function completeMultipartUpload(
+	key: string,
+	uploadId: string,
+	parts: CompletedPart[],
+	env: R2Env = process.env
+): Promise<void> {
+	const config = requireR2Config(env);
+	await r2Client(config).send(
+		new CompleteMultipartUploadCommand({
+			Bucket: config.bucket,
+			Key: key,
+			UploadId: uploadId,
+			MultipartUpload: {
+				Parts: [...parts]
+					.sort((a, b) => a.partNumber - b.partNumber)
+					.map(({ partNumber, etag }) => ({ PartNumber: partNumber, ETag: etag }))
+			}
+		})
+	);
+}
+
+/** Best-effort abort of a multipart upload (client cancel/error), so parts aren't billed. */
+export async function abortMultipartUpload(
+	key: string,
+	uploadId: string,
+	env: R2Env = process.env
+): Promise<void> {
+	const config = readR2Config(env);
+	if (!config) return;
+	try {
+		await r2Client(config).send(
+			new AbortMultipartUploadCommand({ Bucket: config.bucket, Key: key, UploadId: uploadId })
+		);
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : String(error);
+		console.warn(`[storage] best-effort multipart abort failed for ${key}: ${reason}`);
+	}
+}
+
+/** Read size + content type of a video object, or null if it does not exist (R2 only). */
+export async function headVideo(key: string, env: R2Env = process.env): Promise<VideoHead | null> {
+	const config = requireR2Config(env);
+	try {
+		const out = await r2Client(config).send(
+			new HeadObjectCommand({ Bucket: config.bucket, Key: key })
+		);
+		return {
+			size: out.ContentLength ?? 0,
+			contentType: out.ContentType ?? 'application/octet-stream'
+		};
+	} catch (error) {
+		// A missing object surfaces as a 404 / NotFound; treat that as "not there" rather than
+		// an error so callers can return a clean validation failure.
+		const name = error instanceof Error ? error.name : '';
+		if (name === 'NotFound' || name === 'NoSuchKey') return null;
+		throw error;
 	}
 }

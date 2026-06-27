@@ -28,11 +28,12 @@
 ## Out of scope
 
 - **Moving BOM/CAD aux files or export PDFs off Supabase** — they are small and stay put.
-- **Direct browser→R2 presigned-PUT upload** — would remove large bodies from the web
-  server entirely (and is the cleaner long-term shape), but is a separate web change; this
-  spec keeps the existing server-proxied form action (sized by the `fly.web.toml` body limit).
+- **Direct browser→R2 presigned upload** — removes large bodies from the web server entirely
+  (the cleaner long-term shape); delivered as a separate web change in `20-direct-r2-upload`.
+  This spec keeps the existing server-proxied form action (sized by the `fly.web.toml` body limit).
 - **Migrating already-uploaded Supabase videos** — dev data is disposable; new uploads use R2.
-- **Multipart/resumable upload** — a single presigned PUT/PutObject covers the expected sizes.
+- **Multipart/resumable upload** — delivered in `20-direct-r2-upload` to lift the single-PUT
+  size ceiling.
 
 ## Acceptance criteria
 

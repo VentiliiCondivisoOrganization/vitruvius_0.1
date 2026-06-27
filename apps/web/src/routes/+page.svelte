@@ -207,6 +207,20 @@
 		{ title: m.home_pipeline_export_title(), desc: m.home_pipeline_export_desc() }
 	];
 
+	// Only step 0 (upload) is live on this page — steps 1–5 run after the redirect and surface on the
+	// manual page's own stage progress bar. So the pipeline reflects the upload lifecycle: the first
+	// step pulses while bytes stream (and during finalize), turns red if the upload fails, and the
+	// rest stay 'upcoming'. `uploadError` covers both client-side failures and server-side action
+	// errors; either one re-enables the form (submitting=false), so it can't collide with 'active'.
+	type StepState = 'active' | 'failed' | 'upcoming';
+	const uploadError = $derived(form?.error ?? clientError ?? null);
+	function stepState(i: number): StepState {
+		if (i !== 0) return 'upcoming';
+		if (uploadError) return 'failed';
+		if (submitting) return 'active';
+		return 'upcoming';
+	}
+
 	function formatDate(dateStr: string): string {
 		const d = new Date(dateStr);
 		return d.toLocaleDateString(getLocale(), {
@@ -463,14 +477,77 @@
 					</h2>
 					<div class="relative pl-6 border-l border-slate-900 space-y-5">
 						{#each pipeline as step, i (step.title)}
+							{@const state = stepState(i)}
 							<div class="relative">
 								<div
-									class="absolute -left-[30px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-slate-800 bg-slate-950 text-[10px] font-bold text-slate-500"
+									class={`absolute -left-[30px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full border bg-slate-950 text-[10px] font-bold transition-colors ${
+										state === 'active'
+											? 'border-indigo-500/60 text-indigo-300'
+											: state === 'failed'
+												? 'border-rose-500/60 text-rose-400'
+												: 'border-slate-800 text-slate-500'
+									}`}
+									aria-label={state === 'active'
+										? m.home_pipeline_status_active()
+										: state === 'failed'
+											? m.home_pipeline_status_failed()
+											: undefined}
 								>
-									{i + 1}
+									{#if state === 'active'}
+										<svg
+											class="h-3 w-3 animate-spin"
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+										>
+											<circle
+												class="opacity-25"
+												cx="12"
+												cy="12"
+												r="10"
+												stroke="currentColor"
+												stroke-width="4"
+											></circle>
+											<path
+												class="opacity-75"
+												fill="currentColor"
+												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+											></path>
+										</svg>
+									{:else if state === 'failed'}
+										<svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="3"
+												d="M6 18L18 6M6 6l12 12"
+											/>
+										</svg>
+									{:else}
+										{i + 1}
+									{/if}
 								</div>
-								<h3 class="text-xs font-semibold text-slate-200">{step.title}</h3>
+								<h3
+									class={`text-xs font-semibold transition-colors ${
+										state === 'active'
+											? 'text-indigo-200'
+											: state === 'failed'
+												? 'text-rose-300'
+												: 'text-slate-200'
+									}`}
+								>
+									{step.title}
+								</h3>
 								<p class="text-[11px] text-slate-500 leading-relaxed">{step.desc}</p>
+								{#if state === 'active'}
+									<p class="text-[11px] font-semibold text-indigo-400/90">
+										{m.home_pipeline_status_active()}
+									</p>
+								{:else if state === 'failed'}
+									<p class="text-[11px] font-semibold text-rose-400">
+										{m.home_pipeline_status_failed()}
+									</p>
+								{/if}
 							</div>
 						{/each}
 					</div>

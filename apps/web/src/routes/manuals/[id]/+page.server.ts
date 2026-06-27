@@ -38,10 +38,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	// that was never enriched is a one-element lineage (and its own head).
 	const versions = await listManualVersions(locals.db, manual.id);
 
-	// Live pipeline stage (spec 07) for the processing view's progress bar. Only meaningful
-	// while `processing`; the page polls (invalidateAll) so this refreshes as the engine advances.
+	// Live pipeline stage (spec 07) for the processing view's stage checklist. While `processing`
+	// it's the stage in flight (the page polls via invalidateAll so it advances); on `failed` it's
+	// the last stage the engine reached before erroring, so the checklist can mark *which* stage
+	// died. Irrelevant once `ready` (the editor replaces the status view) or still `uploaded`.
 	const progressStage =
-		manual.status === 'processing' ? await getManualProgressStage(locals.db, manual.id) : null;
+		manual.status === 'processing' || manual.status === 'failed'
+			? await getManualProgressStage(locals.db, manual.id)
+			: null;
 
 	// Hand the full manual to the page: the status view needs only the header
 	// fields, but the editor (shown once `ready`) needs every step field.

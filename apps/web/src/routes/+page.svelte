@@ -155,7 +155,7 @@
 	// doesn't bill for the orphaned parts. The beacon survives unload where `fetch` would be killed;
 	// the R2 lifecycle rule (scripts/set-r2-lifecycle.mjs) is the backstop if even the beacon is lost.
 	function onBeforeUnload(event: BeforeUnloadEvent): void {
-		if (!submitting) return;
+		if (!activeUpload) return;
 		event.preventDefault();
 		// Legacy browsers need returnValue set to trigger the native "Leave site?" confirmation.
 		event.returnValue = '';
@@ -278,7 +278,10 @@
 	<title>{m.home_page_title()}</title>
 </svelte:head>
 
-<svelte:window onbeforeunload={onBeforeUnload} onpagehide={onPageHide} />
+<!-- Only attach beforeunload while a multipart upload is in flight: a permanently-registered
+	beforeunload listener warns on every submit and disables the browser's bfcache even when idle.
+	pagehide is bfcache-safe and self-guards, so it can stay attached. -->
+<svelte:window onbeforeunload={activeUpload ? onBeforeUnload : undefined} onpagehide={onPageHide} />
 
 <div class="min-h-screen bg-slate-950 text-slate-100 selection:bg-slate-800 selection:text-white">
 	<!-- Decorative grid background -->

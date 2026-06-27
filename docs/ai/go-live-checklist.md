@@ -82,7 +82,9 @@ What stands between the current codebase and a **running, operational web app**.
 - [ ] **Orphaned `running` jobs — no reaper.** `claim_next_job` flips a job to `running` but only
       ever claims `queued`; if a worker crashes mid-job the row is stranded in `running` forever (no
       visibility timeout, no requeue of stale `running` rows). Add a reaper or lease-expiry sweep.
-- [ ] Storage **lifecycle** (videos are large: retention / cleanup).
+- [ ] Storage **lifecycle** (videos are large: retention / cleanup). Orphaned multipart parts from
+      interrupted direct uploads are reaped by `scripts/set-r2-lifecycle.mjs` (run once per bucket);
+      whole-video retention is still TODO.
 - [ ] **Gemini cost controls** (per-`manualId` credit attribution is marked "future" in
       [`ai-layer.md`](ai-layer.md)).
 - [ ] DB backups; production secrets management.

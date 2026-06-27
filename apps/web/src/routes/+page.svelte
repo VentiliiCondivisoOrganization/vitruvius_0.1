@@ -82,19 +82,23 @@
 	}
 
 	async function uploadParts(file: File, created: CreatedUpload) {
-		const partNumbers = Array.from({ length: created.partCount }, (_, i) => i + 1);
-		const { parts: signatures } = await postJson<{ parts: PartSig[] }>('/api/uploads/sign', {
-			key: created.key,
-			uploadId: created.uploadId,
-			partNumbers
-		});
-
 		const completed: { partNumber: number; etag: string }[] = [];
 		let uploadedBytes = 0;
-		for (const { partNumber, url } of signatures) {
+		// Sign each part *just before* uploading it. Signing all parts up front meant a large upload
+		// (e.g. 6GB ≈ 94×64MB parts uploaded sequentially) outlived the presigned URL's TTL, so later
+		// parts 403'd with "Request has expired". Per-part signing bounds each URL's lifetime to one
+		// part's transfer, so total upload duration is unlimited.
+		for (let partNumber = 1; partNumber <= created.partCount; partNumber++) {
+			const {
+				parts: [sig]
+			} = await postJson<{ parts: PartSig[] }>('/api/uploads/sign', {
+				key: created.key,
+				uploadId: created.uploadId,
+				partNumbers: [partNumber]
+			});
 			const start = (partNumber - 1) * created.partSize;
 			const chunk = file.slice(start, Math.min(start + created.partSize, file.size));
-			const etag = await putPart(url, chunk, (loaded) => {
+			const etag = await putPart(sig.url, chunk, (loaded) => {
 				uploadProgress = Math.round(((uploadedBytes + loaded) / file.size) * 100);
 			});
 			uploadedBytes += chunk.size;

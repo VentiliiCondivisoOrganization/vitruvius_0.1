@@ -38,6 +38,8 @@
 	"home_pipeline_review_desc": "Refina, divide o confirma los pasos.",
 	"home_pipeline_export_title": "Exportación vectorial PDF/HTML",
 	"home_pipeline_export_desc": "Descarga manuales con diseños esquemáticos.",
+	"home_pipeline_status_active": "En curso",
+	"home_pipeline_status_failed": "Fallido",
 	"home_gallery_heading": "Galería de manuales activos",
 	"home_gallery_total": "{count} en total",
 	"home_gallery_empty_title": "Aún no se ha subido ningún manual",

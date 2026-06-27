@@ -18,3 +18,9 @@ coverage/
 # Claude Code agent worktrees (full repo checkouts) & local settings
 .claude/worktrees/
 .claude/settings.local.json
+
+# IDE
+.idea/
+
+# Local scratch space
+scratch/

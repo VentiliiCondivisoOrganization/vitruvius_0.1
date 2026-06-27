@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.3](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.2...v0.2.3) (2026-06-27)
+
+
+### Features
+
+* **web:** show live per-stage status in the orchestration pipeline ([#82](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/82)) ([e90f26e](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/e90f26ef941606faa5f2327a51ee87073d602d63))
+
+
+### Bug Fixes
+
+* **upload:** harden direct-to-R2 video upload (drop presigned checksum, reap orphaned parts) ([#83](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/83)) ([a2b979b](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/a2b979bb0086adcebfbb7c825ed8e8a6df307f30))
+
 ## [0.2.2](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.1...v0.2.2) (2026-06-27)
 
 

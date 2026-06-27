@@ -255,5 +255,13 @@
 	"settings_back_to_dashboard": "← Torna alla Dashboard",
 	"nav_settings": "Impostazioni",
 	"auth_google_oauth": "Google OAuth",
-	"error_google_oauth_failed": "Impossibile avviare l'accesso con Google. Riprova."
+	"error_google_oauth_failed": "Impossibile avviare l'accesso con Google. Riprova.",
+	"manual_stage_priming": "Preparazione con apprendimenti passati",
+	"manual_stage_media": "Estrazione di fotogrammi e scene",
+	"manual_stage_segmenting": "Segmentazione in passaggi",
+	"manual_stage_bom": "Abbinamento componenti (distinta)",
+	"manual_stage_instructing": "Stesura delle istruzioni",
+	"manual_stage_critiquing": "Verifica dell'accuratezza",
+	"manual_stage_illustrating": "Generazione delle illustrazioni",
+	"manual_stage_finalizing": "Finalizzazione del manuale"
 }

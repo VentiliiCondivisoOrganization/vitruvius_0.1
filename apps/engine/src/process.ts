@@ -20,6 +20,7 @@ import {
 	relevantLearnings,
 	saveLearnings,
 	saveManual,
+	setManualStage,
 	setManualStatus,
 	type DbClient
 } from '@vitruvius/db';
@@ -42,8 +43,10 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 
 	const workDir = await mkdtemp(join(tmpdir(), 'vitruvius-engine-'));
 	try {
+		await setManualStage(db, manual.id, 'priming');
 		const priming = (await relevantLearnings(db)).map((l) => l.text);
 
+		await setManualStage(db, manual.id, 'media');
 		const localVideo = join(workDir, 'source.mp4');
 		await downloadStorageObject(await presignVideoGet(db, manual.videoUrl), localVideo);
 
@@ -76,6 +79,7 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 			extractKeyframes(localVideo, { outDir: keyframesDir })
 		]);
 
+		await setManualStage(db, manual.id, 'segmenting');
 		const segmented = await segmentVideoIntoSteps({
 			videoUrl: manual.videoUrl,
 			videoDurationMs,
@@ -87,6 +91,7 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 			manualId: manual.id
 		});
 
+		await setManualStage(db, manual.id, 'bom');
 		const bomMapped = mapBomToSteps({ steps: segmented, manualBom });
 		const bomSteps = await disambiguateBomSteps(
 			{
@@ -97,11 +102,13 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 			{ manualId: manual.id }
 		);
 
+		await setManualStage(db, manual.id, 'instructing');
 		const enriched = await writeInstructions({
 			steps: bomSteps,
 			learnings: priming,
 			manualId: manual.id
 		});
+		await setManualStage(db, manual.id, 'critiquing');
 		const reviewed = await critiqueSteps({
 			steps: enriched,
 			learnings: priming,
@@ -111,6 +118,7 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 		// Illustrate (spec 14) runs after the Critic. It is enrichment: a failure must not
 		// fail the run, since keyframes remain the export evidence (spec 09). Like learnings,
 		// errors are logged and the manual still saves `ready`.
+		await setManualStage(db, manual.id, 'illustrating');
 		let illustrated = reviewed;
 		try {
 			illustrated = await illustrateSteps({
@@ -124,6 +132,7 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 			console.warn(`[engine] illustration skipped for ${manual.id}: ${reason}`);
 		}
 
+		await setManualStage(db, manual.id, 'finalizing');
 		const finished: InstructionManual = {
 			...manual,
 			status: 'ready',

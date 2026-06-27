@@ -61,7 +61,9 @@
 		cursor: pointer;
 	}
 	/* Text-entry controls get a text caret rather than the inherited pointer. */
-	input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
+	input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not(
+			[type='radio']
+		):not([type='range']):not([type='color']):not([type='file']),
 	textarea,
 	select,
 	[contenteditable='true'] {

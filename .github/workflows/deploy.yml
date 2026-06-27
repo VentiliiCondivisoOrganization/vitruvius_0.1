@@ -11,6 +11,8 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual redeploy of the checked-out ref without cutting a tag.
+  workflow_dispatch:
 
 permissions: {}
 

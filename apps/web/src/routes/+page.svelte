@@ -60,10 +60,10 @@
 		<!-- User Profile Nav -->
 		<div class="flex flex-wrap justify-between items-center gap-x-4 gap-y-3 mb-8">
 			<Logo size={30} />
-			<div class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 min-w-0">
+			<div class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 min-w-0 ml-auto">
 				<LanguageSwitcher />
 				{#if data.session?.user}
-					<span class="max-w-[55vw] truncate text-sm text-slate-400 sm:max-w-none"
+					<span class="min-w-0 max-w-[55vw] truncate text-sm text-slate-400 sm:max-w-none"
 						>{data.session.user.email}</span
 					>
 					<a

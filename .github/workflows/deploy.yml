@@ -1,0 +1,49 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Refuse a tag that isn't reachable from main, so tagging an arbitrary commit
+      # can't ship unreviewed code. Manual dispatch is exempt (it's an authorized actor).
+      - name: Verify tag is on main
+        if: github.event_name == 'push'
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "::error::tag $GITHUB_REF_NAME is not on main; refusing to deploy."; exit 1; }
+
+      - name: Require FLY_API_TOKEN
+        run: test -n "$FLY_API_TOKEN" || { echo "::error::FLY_API_TOKEN secret is not set."; exit 1; }
+
+      - name: Set up flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # --remote-only builds on Fly's builder, so CI needs no Docker. Each config names its app.
+      - name: Deploy web
+        run: flyctl deploy --remote-only --config fly.web.toml
+
+      - name: Deploy engine
+        run: flyctl deploy --remote-only --config fly.engine.toml

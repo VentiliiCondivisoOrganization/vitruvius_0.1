@@ -1,0 +1,31 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  release-please:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      # A PAT (not the default GITHUB_TOKEN) lets the release tag trigger deploy.yml —
+      # GitHub suppresses workflow events from tags created with GITHUB_TOKEN.
+      RP_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version-file: .node-version
+      # Run the CLI pinned to an exact version (matches the config $schema) instead of a
+      # floating action tag — immutable, no third-party action to SHA-pin.
+      - run: npx --yes release-please@17.1.3 release-pr --token="$RP_TOKEN" --repo-url="$GITHUB_REPOSITORY" --config-file=release-please-config.json --manifest-file=.release-please-manifest.json
+      - run: npx --yes release-please@17.1.3 github-release --token="$RP_TOKEN" --repo-url="$GITHUB_REPOSITORY" --config-file=release-please-config.json --manifest-file=.release-please-manifest.json

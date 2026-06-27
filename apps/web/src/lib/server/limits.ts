@@ -15,12 +15,17 @@ import type { AuxFiles } from './uploads';
 // message ready for `fail(...)` or `null` when the request is within limits, so callers
 // stay a one-liner. The numbers live in `@vitruvius/core` (`limits.ts`).
 
-/** Reject an oversized source video before it is uploaded to storage. */
-export function checkVideoSize(file: File): { error: string } | null {
-	if (file.size > MAX_VIDEO_BYTES) {
+/** Reject an oversized source video by byte count (direct-upload path knows only the size). */
+export function checkVideoBytes(size: number): { error: string } | null {
+	if (size > MAX_VIDEO_BYTES) {
 		return { error: m.error_video_too_large({ limit: formatBytes(MAX_VIDEO_BYTES) }) };
 	}
 	return null;
+}
+
+/** Reject an oversized source video before it is uploaded to storage. */
+export function checkVideoSize(file: File): { error: string } | null {
+	return checkVideoBytes(file.size);
 }
 
 /** Reject oversized optional BOM/model files. Shared by the upload and enrich actions. */

@@ -11,19 +11,140 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let submitting = $state(false);
-	// 'uploading' shows a real byte-progress bar (browser → server transfer, the long part for big
-	// videos); 'finalizing' is the indeterminate tail while the server stores to R2, saves the manual
-	// and enqueues the job. The 'analyzing' phase lives on the manual page's status badge post-redirect.
+	// 'uploading' shows a real byte-progress bar (the long part for big videos); 'finalizing' is the
+	// indeterminate tail while the manual is saved and the job enqueued. With R2 configured the bytes
+	// stream straight to R2 in parts (spec 20); otherwise they go through the server action. The
+	// 'analyzing' phase lives on the manual page's status badge post-redirect.
 	let uploadPhase = $state<'uploading' | 'finalizing'>('uploading');
 	let uploadProgress = $state(0);
-	// Client-side upload failure (network drop, or a response we couldn't parse as an ActionResult).
+	// Client-side upload failure (network drop, a response we couldn't parse, or a direct-to-R2 error).
 	// Server-side validation/upload errors still arrive via the `form` prop through applyAction.
 	let clientError = $state<string | null>(null);
 	const manuals = $derived(data.manuals ?? []);
 
+	type CreatedUpload = {
+		id: string;
+		key: string;
+		uploadId: string;
+		partSize: number;
+		partCount: number;
+	};
+	type PartSig = { partNumber: number; url: string };
+
+	async function postJson<T>(url: string, body: unknown): Promise<T> {
+		const res = await fetch(url, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(body)
+		});
+		if (!res.ok) {
+			const data: unknown = await res.json().catch(() => null);
+			const detail =
+				data && typeof data === 'object' && 'error' in data
+					? String((data as { error: unknown }).error)
+					: `request failed (${res.status})`;
+			throw new Error(detail);
+		}
+		return res.json() as Promise<T>;
+	}
+
+	// PUT one chunk to its presigned R2 URL via XHR (so we get upload progress and can read the
+	// ETag response header, which `fetch` can only surface when R2 CORS exposes it).
+	function putPart(
+		url: string,
+		chunk: Blob,
+		onProgress: (loaded: number) => void
+	): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const xhr = new XMLHttpRequest();
+			xhr.open('PUT', url);
+			xhr.upload.onprogress = (e) => {
+				if (e.lengthComputable) onProgress(e.loaded);
+			};
+			xhr.onload = () => {
+				if (xhr.status >= 200 && xhr.status < 300) {
+					const etag = xhr.getResponseHeader('ETag');
+					if (etag) resolve(etag);
+					else reject(new Error('R2 did not return an ETag (check bucket CORS ExposeHeaders)'));
+				} else {
+					reject(new Error(`part upload failed (${xhr.status})`));
+				}
+			};
+			xhr.onerror = () => reject(new Error('network error during upload'));
+			xhr.send(chunk);
+		});
+	}
+
+	async function uploadParts(file: File, created: CreatedUpload) {
+		const partNumbers = Array.from({ length: created.partCount }, (_, i) => i + 1);
+		const { parts: signatures } = await postJson<{ parts: PartSig[] }>('/api/uploads/sign', {
+			key: created.key,
+			uploadId: created.uploadId,
+			partNumbers
+		});
+
+		const completed: { partNumber: number; etag: string }[] = [];
+		let uploadedBytes = 0;
+		for (const { partNumber, url } of signatures) {
+			const start = (partNumber - 1) * created.partSize;
+			const chunk = file.slice(start, Math.min(start + created.partSize, file.size));
+			const etag = await putPart(url, chunk, (loaded) => {
+				uploadProgress = Math.round(((uploadedBytes + loaded) / file.size) * 100);
+			});
+			uploadedBytes += chunk.size;
+			uploadProgress = Math.round((uploadedBytes / file.size) * 100);
+			completed.push({ partNumber, etag });
+		}
+		return completed;
+	}
+
+	// Direct browser→R2 path (spec 20): stream the bytes to R2 in parts (real progress), then submit
+	// the action with the object key instead of the video. `body` still carries the aux files.
+	async function directSubmit(action: string, body: FormData, file: File): Promise<void> {
+		let created: CreatedUpload | null = null;
+		try {
+			created = await postJson<CreatedUpload>('/api/uploads/create', {
+				filename: file.name,
+				contentType: file.type,
+				size: file.size
+			});
+			const parts = await uploadParts(file, created);
+			uploadPhase = 'finalizing';
+			await postJson('/api/uploads/complete', {
+				key: created.key,
+				uploadId: created.uploadId,
+				parts
+			});
+
+			// Hand off to the action: drop the bytes, pass the R2 key + original name.
+			body.delete('video');
+			body.set('videoKey', created.key);
+			body.set('videoName', file.name);
+			const response = await fetch(action, {
+				method: 'POST',
+				headers: { 'x-sveltekit-action': 'true' },
+				body
+			});
+			const result = deserialize(await response.text()) as ActionResult;
+			await applyAction(result);
+			// A successful upload redirects (applyAction navigates away); only re-enable otherwise.
+			if (result.type !== 'redirect') submitting = false;
+		} catch (e) {
+			if (created) {
+				// Best-effort: don't leave orphaned parts billing in R2.
+				void postJson('/api/uploads/abort', { key: created.key, uploadId: created.uploadId }).catch(
+					() => {}
+				);
+			}
+			clientError = m.error_upload_failed({ message: e instanceof Error ? e.message : String(e) });
+			submitting = false;
+		}
+	}
+
 	// Submit via XHR (not use:enhance) so we can surface real upload progress — fetch can't report it.
 	// The response is still a SvelteKit ActionResult, so we deserialize + applyAction to keep the
-	// server redirect and form-failure handling intact.
+	// server redirect and form-failure handling intact. With R2 configured the video instead streams
+	// directly to R2 (directSubmit) and only the key + aux files go through the action.
 	function handleUpload(event: SubmitEvent): void {
 		event.preventDefault();
 		const formEl = event.currentTarget as HTMLFormElement;
@@ -33,6 +154,14 @@
 		uploadPhase = 'uploading';
 		uploadProgress = 0;
 		clientError = null;
+
+		if (data.directUpload) {
+			const file = body.get('video');
+			if (file instanceof File && file.size > 0) {
+				void directSubmit(formEl.action, body, file);
+				return;
+			}
+		}
 
 		const xhr = new XMLHttpRequest();
 		xhr.open('POST', formEl.action);

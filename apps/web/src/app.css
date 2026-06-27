@@ -55,6 +55,24 @@
 		text-rendering: optimizeLegibility;
 		/* Brand ink base prevents a white flash before page styles paint. */
 		background-color: var(--color-brand-ink);
+		/* App-wide default: a pointer cursor everywhere. `cursor` is inherited, so
+		   this cascades to every descendant; the resets below restore the right
+		   cursor for cases where a pointer would be wrong. */
+		cursor: pointer;
+	}
+	/* Text-entry controls get a text caret rather than the inherited pointer. */
+	input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not(
+			[type='radio']
+		):not([type='range']):not([type='color']):not([type='file']),
+	textarea,
+	select,
+	[contenteditable='true'] {
+		cursor: text;
+	}
+	/* Disabled controls signal non-interactivity instead of a pointer. */
+	:disabled,
+	[aria-disabled='true'] {
+		cursor: not-allowed;
 	}
 	::selection {
 		background-color: color-mix(in srgb, var(--color-brand-ochre) 30%, transparent);

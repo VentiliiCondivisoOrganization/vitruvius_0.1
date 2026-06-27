@@ -257,10 +257,13 @@ export async function headVideo(key: string, env: R2Env = process.env): Promise<
 			contentType: out.ContentType ?? 'application/octet-stream'
 		};
 	} catch (error) {
-		// A missing object surfaces as a 404 / NotFound; treat that as "not there" rather than
-		// an error so callers can return a clean validation failure.
+		// A missing object surfaces as a 404; treat that as "not there" rather than an error so
+		// callers can return a clean validation failure. Prefer the HTTP status from `$metadata`
+		// (reliable across SDK/provider versions) and fall back to the error name.
+		const status = (error as { $metadata?: { httpStatusCode?: number } } | undefined)?.$metadata
+			?.httpStatusCode;
 		const name = error instanceof Error ? error.name : '';
-		if (name === 'NotFound' || name === 'NoSuchKey') return null;
+		if (status === 404 || name === 'NotFound' || name === 'NoSuchKey') return null;
 		throw error;
 	}
 }

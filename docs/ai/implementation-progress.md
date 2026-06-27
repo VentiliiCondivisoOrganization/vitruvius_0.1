@@ -203,3 +203,4 @@ on research and must not block phase 1.
 | 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired + tested** (`test-engine`; AI re-segment opt-in unbuilt)                       |
 | 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)                                                                                     |
 | 18-i18n              | **Localization en/it/es/fr merged (#48)** — retro-documented spec and Decision 13                                                                             |
+| 19-r2-video-storage  | **In review** — source video moved to Cloudflare R2 (S3-compatible) to escape Supabase's free-plan per-file cap; Supabase fallback when R2 env absent         |

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.1...v0.2.2) (2026-06-27)
+
+
+### Features
+
+* **web:** cap upload sizes and rate-limit uploads per user ([#77](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/77)) ([08ecb1d](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/08ecb1d03a18072a957a929392592dfd8b326255))
+* **web:** upload videos directly to R2 via multipart ([#80](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/80)) ([5fefe7f](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/5fefe7f87d153cf2c48d074ea9f4c3bd173b78ea))
+
 ## [0.2.1](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.0...v0.2.1) (2026-06-27)
 
 

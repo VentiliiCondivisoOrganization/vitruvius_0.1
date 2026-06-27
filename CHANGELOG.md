@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.1](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.0...v0.2.1) (2026-06-27)
+
+
+### Features
+
+* **engine:** report live pipeline stage for analysis progress ([#78](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/78)) ([08e0ede](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/08e0edeaf74986cb4ba2bcc14087019c7ccec975))
+* **web:** surface real upload progress and phases on the home upload ([#74](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/74)) ([547bd53](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/547bd53a78b62109de71673b6cdf3a3813d96a6b))
+
+
+### Bug Fixes
+
+* **web:** stop the mobile home header from overflowing ([#75](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/75)) ([96248e3](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/96248e367a2f382ee0909be0c671901c65187561))
+
+
+### Styles
+
+* **web:** default the whole app to a pointer cursor ([#73](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/73)) ([efa7dd5](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/efa7dd5327d85987956489d4d003c7c8e34e020a))
+
 ## [0.2.0](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.1.0...v0.2.0) (2026-06-27)
 
 

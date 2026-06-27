@@ -19,30 +19,14 @@ jobs:
         with:
           persist-credentials: false
 
-      # Act as the org-owned GitHub App, not GITHUB_TOKEN: the default token is barred
-      # from opening PRs ("GitHub Actions is not permitted to create or approve pull
-      # requests") and its tags can't trigger deploy.yml. Mint a short-lived installation
-      # token inline so there's no third-party action to pin.
-      - name: Mint GitHub App token
+      # Act as the org-owned GitHub App, not GITHUB_TOKEN: the default token is barred from
+      # opening PRs ("GitHub Actions is not permitted to create or approve pull requests")
+      # and its tags can't trigger deploy.yml.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app
-        env:
-          APP_ID: ${{ secrets.RELEASE_PLEASE_APP_ID }}
-          PRIVATE_KEY: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
-        run: |
-          set -euo pipefail
-          b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
-          now=$(date +%s)
-          header=$(printf '{"alg":"RS256","typ":"JWT"}' | b64url)
-          payload=$(printf '{"iat":%s,"exp":%s,"iss":"%s"}' "$((now - 60))" "$((now + 540))" "$APP_ID" | b64url)
-          signing_input="${header}.${payload}"
-          signature=$(printf '%s' "$signing_input" | openssl dgst -sha256 -sign <(printf '%s' "$PRIVATE_KEY") | b64url)
-          jwt="${signing_input}.${signature}"
-          install_id=$(curl -sf -H "Authorization: Bearer ${jwt}" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/installation" | jq -r .id)
-          token=$(curl -sf -X POST -H "Authorization: Bearer ${jwt}" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/app/installations/${install_id}/access_tokens" | jq -r .token)
-          echo "::add-mask::${token}"
-          echo "token=${token}" >> "$GITHUB_OUTPUT"
+        with:
+          app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
 
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
         with:

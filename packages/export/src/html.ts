@@ -30,7 +30,7 @@ function renderFigure(step: ManualStep, index: number): string {
 	// clearly marked as a reference, not as the manual's diagram.
 	const keyframe = step.keyframeUrl.trim();
 	if (keyframe) {
-		return `<figure class="reference"><img src="${esc(keyframe)}" alt="Reference frame for step ${index + 1}" /><figcaption>Reference frame — illustration pending</figcaption></figure>`;
+		return `<figure class="reference"><img src="${esc(keyframe)}" alt="Reference frame for step ${index + 1}" /><figcaption>Reference frame (illustration pending)</figcaption></figure>`;
 	}
 	return '';
 }

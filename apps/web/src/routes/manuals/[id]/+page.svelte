@@ -371,7 +371,7 @@
 				<a
 					href={resolve('/')}
 					class="mr-1 opacity-90 hover:opacity-100 transition-opacity"
-					aria-label="Vitruvius — home"
+					aria-label="Vitruvius home"
 				>
 					<Logo variant="mark" size={24} />
 				</a>

@@ -67,7 +67,7 @@
 						>
 							{formatManualBomItem(candidate)}
 							{#if candidate.description.trim()}
-								<span class="text-slate-500"> — {candidate.description.trim()}</span>
+								<span class="text-slate-500"> ({candidate.description.trim()})</span>
 							{/if}
 						</span>
 						<button

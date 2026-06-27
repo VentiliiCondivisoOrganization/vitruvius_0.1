@@ -16,6 +16,7 @@ import {
 import type { DigitalModel, InstructionManual, Job, ManualBomItem } from '@vitruvius/core';
 import {
 	getManual,
+	presignVideoGet,
 	relevantLearnings,
 	saveLearnings,
 	saveManual,
@@ -26,7 +27,7 @@ import { detectScenes, extractKeyframes, probeDurationMs } from '@vitruvius/medi
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
-import { downloadStorageObject, maybeDownload, resolveStorageUrl } from './storage.js';
+import { downloadStorageObject, maybeDownload } from './storage.js';
 
 /**
  * Run the full draft pipeline for a `process` job (spec 07):
@@ -44,7 +45,7 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 		const priming = (await relevantLearnings(db)).map((l) => l.text);
 
 		const localVideo = join(workDir, 'source.mp4');
-		await downloadStorageObject(await resolveStorageUrl(db, manual.videoUrl), localVideo);
+		await downloadStorageObject(await presignVideoGet(db, manual.videoUrl), localVideo);
 
 		let digitalModel: DigitalModel | null = null;
 		if (manual.digitalModelUrl) {

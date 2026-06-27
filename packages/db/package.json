@@ -22,15 +22,17 @@
 		"db:stop": "supabase stop"
 	},
 	"dependencies": {
-		"@vitruvius/core": "workspace:*",
-		"@supabase/supabase-js": "^2.45.0"
+		"@aws-sdk/client-s3": "^3.1075.0",
+		"@aws-sdk/s3-request-presigner": "^3.1075.0",
+		"@supabase/supabase-js": "^2.45.0",
+		"@vitruvius/core": "workspace:*"
 	},
 	"devDependencies": {
-		"typescript": "6.0.3",
-		"vitest": "^3.0.0",
-		"dotenv": "^16.4.0",
 		"@types/node": "24.7.0",
 		"@vitruvius/ai": "workspace:*",
-		"@vitruvius/export": "workspace:*"
+		"@vitruvius/export": "workspace:*",
+		"dotenv": "^16.4.0",
+		"typescript": "6.0.3",
+		"vitest": "^3.0.0"
 	}
 }

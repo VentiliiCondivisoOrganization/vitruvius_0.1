@@ -2,7 +2,14 @@ import { m } from '$lib/paraglide/messages';
 import { VIDEO_BUCKET, readAuxFiles, storageKey, uploadAuxFiles } from '$lib/server/uploads';
 import { fail, redirect } from '@sveltejs/kit';
 import type { InstructionManual } from '@vitruvius/core';
-import { deleteManual, enqueueJob, getManuals, saveManual } from '@vitruvius/db';
+import {
+	deleteManual,
+	deleteVideo,
+	enqueueJob,
+	getManuals,
+	saveManual,
+	uploadVideo
+} from '@vitruvius/db';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -28,22 +35,23 @@ export const actions: Actions = {
 		const id = crypto.randomUUID();
 		const videoPath = storageKey(id, file.name, 'source');
 
-		const { error: uploadError } = await locals.db.storage
-			.from(VIDEO_BUCKET)
-			.upload(videoPath, file, { contentType: file.type });
-
-		if (uploadError) {
-			return fail(502, { error: m.error_upload_failed({ message: uploadError.message }) });
+		// The video goes to R2 (no per-file size cap); BOM/CAD aux files stay on Supabase.
+		try {
+			const body = Buffer.from(await file.arrayBuffer());
+			await uploadVideo(locals.db, videoPath, body, file.type);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'unknown error';
+			return fail(502, { error: m.error_upload_failed({ message }) });
 		}
 
 		const auxUpload = await uploadAuxFiles(locals.db, id, aux);
 		if ('error' in auxUpload) {
 			// The aux helper cleaned up its own writes; roll back the video too.
-			await locals.db.storage.from(VIDEO_BUCKET).remove([videoPath]);
+			await deleteVideo(locals.db, [videoPath]);
 			return fail(502, { error: auxUpload.error });
 		}
 		const { bomFileUrl, digitalModelUrl } = auxUpload;
-		const uploadedPaths = [videoPath, ...auxUpload.uploadedPaths];
+		const auxPaths = auxUpload.uploadedPaths;
 
 		const now = new Date().toISOString();
 		const manual: InstructionManual = {
@@ -67,7 +75,8 @@ export const actions: Actions = {
 		} catch (err) {
 			await Promise.allSettled([
 				deleteManual(locals.db, id),
-				locals.db.storage.from(VIDEO_BUCKET).remove(uploadedPaths)
+				deleteVideo(locals.db, [videoPath]),
+				auxPaths.length ? locals.db.storage.from(VIDEO_BUCKET).remove(auxPaths) : Promise.resolve()
 			]);
 			const message = err instanceof Error ? err.message : 'unknown error';
 			return fail(500, { error: m.error_could_not_start_processing({ message }) });

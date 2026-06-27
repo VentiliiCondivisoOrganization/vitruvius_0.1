@@ -495,8 +495,10 @@
 				{/if}
 
 				<!-- Full pipeline as a checklist: each engine stage is done ✓ / active ⟳ / failed ✗ /
-				     upcoming. On failure the row where the run died turns rose; earlier rows stay done. -->
-				<ol class="space-y-4" aria-live="polite">
+				     upcoming. On failure the row where the run died turns rose; earlier rows stay done.
+				     No aria-live here — the list re-renders every 3s poll and would re-announce the whole
+				     block; the progress bar below is the small polite live region for stage changes. -->
+				<ol class="space-y-4">
 					{#each PROCESS_STAGE as stage, i (stage)}
 						{@const state = stageState(i)}
 						<li class="flex items-center gap-3.5 text-xs">

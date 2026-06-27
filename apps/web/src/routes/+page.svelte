@@ -211,13 +211,15 @@
 	// manual page's own stage progress bar. So the pipeline reflects the upload lifecycle: the first
 	// step pulses while bytes stream (and during finalize), turns red if the upload fails, and the
 	// rest stay 'upcoming'. `uploadError` covers both client-side failures and server-side action
-	// errors; either one re-enables the form (submitting=false), so it can't collide with 'active'.
+	// errors. `submitting` wins over `uploadError`: a server-side `form.error` can land mid-applyAction
+	// before the handler resets `submitting`, so we keep showing 'active' until the form is re-enabled,
+	// then surface 'failed' — never flip to failed while the upload UI still reads as in-progress.
 	type StepState = 'active' | 'failed' | 'upcoming';
 	const uploadError = $derived(form?.error ?? clientError ?? null);
 	function stepState(i: number): StepState {
 		if (i !== 0) return 'upcoming';
-		if (uploadError) return 'failed';
 		if (submitting) return 'active';
+		if (uploadError) return 'failed';
 		return 'upcoming';
 	}
 

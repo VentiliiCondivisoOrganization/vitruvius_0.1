@@ -1,16 +1,60 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { applyAction, deserialize } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
 	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 	import Logo from '$lib/components/Logo.svelte';
+	import type { ActionResult } from '@sveltejs/kit';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let submitting = $state(false);
+	// 'uploading' shows a real byte-progress bar (browser → server transfer, the long part for big
+	// videos); 'finalizing' is the indeterminate tail while the server stores to R2, saves the manual
+	// and enqueues the job. The 'analyzing' phase lives on the manual page's status badge post-redirect.
+	let uploadPhase = $state<'uploading' | 'finalizing'>('uploading');
+	let uploadProgress = $state(0);
 	const manuals = $derived(data.manuals ?? []);
+
+	// Submit via XHR (not use:enhance) so we can surface real upload progress — fetch can't report it.
+	// The response is still a SvelteKit ActionResult, so we deserialize + applyAction to keep the
+	// server redirect and form-failure handling intact.
+	function handleUpload(event: SubmitEvent): void {
+		event.preventDefault();
+		const formEl = event.currentTarget as HTMLFormElement;
+		const body = new FormData(formEl);
+
+		submitting = true;
+		uploadPhase = 'uploading';
+		uploadProgress = 0;
+
+		const xhr = new XMLHttpRequest();
+		xhr.open('POST', formEl.action);
+		xhr.setRequestHeader('x-sveltekit-action', 'true');
+
+		xhr.upload.addEventListener('progress', (e) => {
+			if (!e.lengthComputable) return;
+			uploadProgress = Math.round((e.loaded / e.total) * 100);
+			if (uploadProgress >= 100) uploadPhase = 'finalizing';
+		});
+		xhr.upload.addEventListener('load', () => {
+			uploadPhase = 'finalizing';
+		});
+
+		xhr.addEventListener('load', async () => {
+			const result = deserialize(xhr.responseText) as ActionResult;
+			// A successful upload redirects (applyAction navigates away); only re-enable on failure.
+			await applyAction(result);
+			if (result.type !== 'redirect') submitting = false;
+		});
+		xhr.addEventListener('error', () => {
+			submitting = false;
+		});
+
+		xhr.send(body);
+	}
 
 	const pipeline = [
 		{ title: m.home_pipeline_upload_title(), desc: m.home_pipeline_upload_desc() },
@@ -132,16 +176,7 @@
 						method="POST"
 						enctype="multipart/form-data"
 						class="space-y-5"
-						use:enhance={() => {
-							submitting = true;
-							return async ({ update }) => {
-								try {
-									await update();
-								} finally {
-									submitting = false;
-								}
-							};
-						}}
+						onsubmit={handleUpload}
 					>
 						<!-- Video Input -->
 						<div class="space-y-1.5">
@@ -197,37 +232,54 @@
 							/>
 						</div>
 
-						<button
-							type="submit"
-							disabled={submitting}
-							class="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 px-4 shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-						>
-							{#if submitting}
-								<svg
-									class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-									xmlns="http://www.w3.org/2000/svg"
-									fill="none"
-									viewBox="0 0 24 24"
-								>
-									<circle
-										class="opacity-25"
-										cx="12"
-										cy="12"
-										r="10"
-										stroke="currentColor"
-										stroke-width="4"
-									></circle>
-									<path
-										class="opacity-75"
-										fill="currentColor"
-										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-									></path>
-								</svg>
-								{m.home_upload_submitting()}
-							{:else}
+						{#if submitting}
+							<div class="space-y-2" aria-live="polite">
+								<div class="flex items-center justify-between text-xs font-semibold">
+									<span class="flex items-center gap-2 text-slate-200">
+										<svg
+											class="animate-spin h-4 w-4 text-indigo-400"
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+										>
+											<circle
+												class="opacity-25"
+												cx="12"
+												cy="12"
+												r="10"
+												stroke="currentColor"
+												stroke-width="4"
+											></circle>
+											<path
+												class="opacity-75"
+												fill="currentColor"
+												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+											></path>
+										</svg>
+										{uploadPhase === 'uploading'
+											? m.home_upload_phase_uploading()
+											: m.home_upload_phase_finalizing()}
+									</span>
+									{#if uploadPhase === 'uploading'}
+										<span class="text-slate-400 tabular-nums">{uploadProgress}%</span>
+									{/if}
+								</div>
+								<div class="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+									<div
+										class={`h-full rounded-full bg-indigo-500 transition-all duration-200 ${uploadPhase === 'finalizing' ? 'animate-pulse' : ''}`}
+										style={`width: ${uploadPhase === 'finalizing' ? 100 : uploadProgress}%`}
+									></div>
+								</div>
+								<p class="text-[11px] text-slate-500">{m.home_upload_phase_hint()}</p>
+							</div>
+						{:else}
+							<button
+								type="submit"
+								class="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 px-4 shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+							>
 								{m.home_upload_submit()}
-							{/if}
-						</button>
+							</button>
+						{/if}
 
 						{#if form?.error}
 							<div

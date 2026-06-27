@@ -89,13 +89,13 @@
 		// parts 403'd with "Request has expired". Per-part signing bounds each URL's lifetime to one
 		// part's transfer, so total upload duration is unlimited.
 		for (let partNumber = 1; partNumber <= created.partCount; partNumber++) {
-			const {
-				parts: [sig]
-			} = await postJson<{ parts: PartSig[] }>('/api/uploads/sign', {
+			const { parts } = await postJson<{ parts: PartSig[] }>('/api/uploads/sign', {
 				key: created.key,
 				uploadId: created.uploadId,
 				partNumbers: [partNumber]
 			});
+			const sig = parts?.find((p) => p.partNumber === partNumber);
+			if (!sig?.url) throw new Error(`no presigned URL returned for part ${partNumber}`);
 			const start = (partNumber - 1) * created.partSize;
 			const chunk = file.slice(start, Math.min(start + created.partSize, file.size));
 			const etag = await putPart(sig.url, chunk, (loaded) => {

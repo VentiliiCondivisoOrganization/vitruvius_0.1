@@ -29,6 +29,12 @@
 		partSize: number;
 		partCount: number;
 	};
+
+	// The in-flight direct-to-R2 multipart upload, lifted to component state so the unload handler
+	// can abort it if the user leaves mid-upload (the in-code `catch` abort never fires on a refresh).
+	// Null whenever there is no multipart upload that still needs aborting (before create, after
+	// complete, or once aborted).
+	let activeUpload = $state<CreatedUpload | null>(null);
 	type PartSig = { partNumber: number; url: string };
 
 	async function postJson<T>(url: string, body: unknown): Promise<T> {
@@ -101,13 +107,13 @@
 	// Direct browser→R2 path (spec 20): stream the bytes to R2 in parts (real progress), then submit
 	// the action with the object key instead of the video. `body` still carries the aux files.
 	async function directSubmit(action: string, body: FormData, file: File): Promise<void> {
-		let created: CreatedUpload | null = null;
 		try {
-			created = await postJson<CreatedUpload>('/api/uploads/create', {
+			const created = await postJson<CreatedUpload>('/api/uploads/create', {
 				filename: file.name,
 				contentType: file.type,
 				size: file.size
 			});
+			activeUpload = created;
 			const parts = await uploadParts(file, created);
 			uploadPhase = 'finalizing';
 			await postJson('/api/uploads/complete', {
@@ -115,6 +121,9 @@
 				uploadId: created.uploadId,
 				parts
 			});
+			// The parts are now assembled into a real object; there is no longer a multipart upload
+			// to abort, so clear it before the action runs (and before any later unload).
+			activeUpload = null;
 
 			// Hand off to the action: drop the bytes, pass the R2 key + original name.
 			body.delete('video');
@@ -130,15 +139,32 @@
 			// A successful upload redirects (applyAction navigates away); only re-enable otherwise.
 			if (result.type !== 'redirect') submitting = false;
 		} catch (e) {
-			if (created) {
+			if (activeUpload) {
 				// Best-effort: don't leave orphaned parts billing in R2.
-				void postJson('/api/uploads/abort', { key: created.key, uploadId: created.uploadId }).catch(
-					() => {}
-				);
+				const { key, uploadId } = activeUpload;
+				activeUpload = null;
+				void postJson('/api/uploads/abort', { key, uploadId }).catch(() => {});
 			}
 			clientError = m.error_upload_failed({ message: e instanceof Error ? e.message : String(e) });
 			submitting = false;
 		}
+	}
+
+	// Guard against losing an in-flight upload to a refresh/close: warn before the page tears down,
+	// and — if it tears down anyway — fire a best-effort beacon to abort the multipart upload so R2
+	// doesn't bill for the orphaned parts. The beacon survives unload where `fetch` would be killed;
+	// the R2 lifecycle rule (scripts/set-r2-lifecycle.mjs) is the backstop if even the beacon is lost.
+	function onBeforeUnload(event: BeforeUnloadEvent): void {
+		if (!activeUpload) return;
+		event.preventDefault();
+		// Legacy browsers need returnValue set to trigger the native "Leave site?" confirmation.
+		event.returnValue = '';
+	}
+
+	function onPageHide(): void {
+		if (!activeUpload) return;
+		const payload = JSON.stringify({ key: activeUpload.key, uploadId: activeUpload.uploadId });
+		navigator.sendBeacon('/api/uploads/abort', new Blob([payload], { type: 'application/json' }));
 	}
 
 	// Submit via XHR (not use:enhance) so we can surface real upload progress — fetch can't report it.
@@ -251,6 +277,11 @@
 <svelte:head>
 	<title>{m.home_page_title()}</title>
 </svelte:head>
+
+<!-- Only attach beforeunload while a multipart upload is in flight: a permanently-registered
+	beforeunload listener warns on every submit and disables the browser's bfcache even when idle.
+	pagehide is bfcache-safe and self-guards, so it can stay attached. -->
+<svelte:window onbeforeunload={activeUpload ? onBeforeUnload : undefined} onpagehide={onPageHide} />
 
 <div class="min-h-screen bg-slate-950 text-slate-100 selection:bg-slate-800 selection:text-white">
 	<!-- Decorative grid background -->

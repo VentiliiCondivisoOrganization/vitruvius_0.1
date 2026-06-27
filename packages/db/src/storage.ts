@@ -54,6 +54,13 @@ function r2Client(config: R2Config): S3Client {
 		// Path-style keeps the bucket in the URL path (not a host subdomain), which is
 		// the reliable form for R2 and for deterministic presigned URLs.
 		forcePathStyle: true,
+		// The SDK default (WHEN_SUPPORTED) bakes an x-amz-checksum-crc32 — computed over an empty
+		// body — into presigned UploadPart URLs. The browser then PUTs the real part bytes, the
+		// checksum no longer matches, and R2 rejects the PUT with 403 (surfaced in the browser as a
+		// CORS error, since R2 omits CORS headers on that error response). WHEN_REQUIRED stops the
+		// SDK adding a checksum the browser can't reproduce, so presigned part uploads succeed.
+		requestChecksumCalculation: 'WHEN_REQUIRED',
+		responseChecksumValidation: 'WHEN_REQUIRED',
 		credentials: {
 			accessKeyId: config.accessKeyId,
 			secretAccessKey: config.secretAccessKey

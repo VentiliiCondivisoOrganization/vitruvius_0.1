@@ -61,6 +61,10 @@ describe('presignUploadParts', () => {
 			expect(sig.url).toContain('uploadId=upload-123');
 			expect(sig.url).toContain(`partNumber=${sig.partNumber}`);
 			expect(sig.url).toContain('X-Amz-Signature=');
+			// Regression: the SDK must NOT bake an x-amz-checksum-* into the presigned URL. It would
+			// be computed over an empty body, so the browser's real part PUT would fail R2's checksum
+			// check with a 403. WHEN_REQUIRED on the client keeps the URL checksum-free.
+			expect(sig.url.toLowerCase()).not.toContain('checksum');
 		}
 	});
 

@@ -55,6 +55,10 @@
 		text-rendering: optimizeLegibility;
 		/* Brand ink base prevents a white flash before page styles paint. */
 		background-color: var(--color-brand-ink);
+		/* App-wide default: a pointer cursor everywhere. `cursor` is inherited, so
+		   elements with their own UA cursor (text fields → text, disabled → not-allowed)
+		   still override this where it matters. */
+		cursor: pointer;
 	}
 	::selection {
 		background-color: color-mix(in srgb, var(--color-brand-ochre) 30%, transparent);

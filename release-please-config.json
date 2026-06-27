@@ -1,11 +1,26 @@
 {
-	"$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-	"release-type": "node",
-	"include-component-in-tag": false,
-	"bootstrap-sha": "bd9805688c9af3bb0efdc595eaa06637ba8efdf4",
+	"$schema": "https://raw.githubusercontent.com/googleapis/release-please/v17.1.3/schemas/config.json",
+	"bump-minor-pre-major": true,
+	"bump-patch-for-minor-pre-major": true,
+	"pull-request-title-pattern": "chore(release): v${version}",
 	"packages": {
 		".": {
-			"package-name": "vitruvius"
+			"release-type": "node",
+			"include-component-in-tag": false
 		}
-	}
+	},
+	"changelog-sections": [
+		{ "type": "feat", "section": "Features" },
+		{ "type": "fix", "section": "Bug Fixes" },
+		{ "type": "perf", "section": "Performance Improvements" },
+		{ "type": "deps", "section": "Dependencies" },
+		{ "type": "revert", "section": "Reverts" },
+		{ "type": "docs", "section": "Documentation" },
+		{ "type": "style", "section": "Styles" },
+		{ "type": "chore", "section": "Miscellaneous Chores" },
+		{ "type": "refactor", "section": "Code Refactoring" },
+		{ "type": "test", "section": "Tests" },
+		{ "type": "build", "section": "Build System" },
+		{ "type": "ci", "section": "Continuous Integration" }
+	]
 }

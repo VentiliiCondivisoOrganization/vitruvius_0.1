@@ -1,20 +1,9 @@
 name: Release Please
 
-# Maintains a release PR off `main` from the Conventional Commit history. Merging that
-# PR bumps the version (root package.json), updates CHANGELOG.md, and creates a GitHub
-# Release + a clean `vX.Y.Z` tag — which the Deploy workflow (deploy.yml) reacts to.
-#
-# Cascade caveat: tags/releases created with the default GITHUB_TOKEN do NOT trigger
-# other workflows. To make a release tag auto-trigger Deploy, add a PAT secret named
-# RELEASE_PLEASE_TOKEN (repo+workflow scope); release-please then tags as that identity
-# and the `v*` push fires deploy.yml. Without it, release PRs still work — you'd just push
-# the tag (or re-run Deploy) manually.
-
 on:
   push:
     branches:
       - main
-  # Manually re-run release-please (e.g. to refresh the release PR on demand).
   workflow_dispatch:
 
 permissions: {}
@@ -26,9 +15,8 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      # Pinned to the v4 major tag: external action SHAs could not be resolved from the
-      # authoring environment. Repinning to a full commit SHA (repo convention) is a safe
-      # follow-up.
+      # A PAT (not the default GITHUB_TOKEN) is required for the release tag to trigger
+      # deploy.yml — GitHub suppresses workflow events from tags created by GITHUB_TOKEN.
       - uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}

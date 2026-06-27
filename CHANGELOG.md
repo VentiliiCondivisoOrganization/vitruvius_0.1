@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.3...v0.2.4) (2026-06-27)
+
+
+### Bug Fixes
+
+* **web:** sign R2 upload parts just-in-time so large uploads don't expire ([#85](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/85)) ([a21c173](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/a21c1730efcf4d3400f4922f6f9a7c7f223be960))
+
 ## [0.2.3](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.2...v0.2.3) (2026-06-27)
 
 

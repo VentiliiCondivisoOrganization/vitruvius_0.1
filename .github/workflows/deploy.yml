@@ -1,0 +1,53 @@
+name: Deploy
+
+# Deploys both Fly apps when a release tag is pushed. Release tags come from the Release
+# Please workflow (see release-please.yml); a human-pushed `v*` tag works too. The tagged
+# commit already passed `checks.yml` on its PR, so this does not re-run the test gate.
+#
+# Requires a FLY_API_TOKEN repo secret (Fly deploy/API token). Without it, the deploy
+# steps fail fast.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: {}
+
+# Serialize deploys per tag; never cancel an in-flight production deploy.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Fail if FLY_API_TOKEN is missing
+        run: |
+          if [ -z "${FLY_API_TOKEN}" ]; then
+            echo "::error::FLY_API_TOKEN secret is not set — add it in repo settings to enable deploys."
+            exit 1
+          fi
+
+      - name: Install flyctl
+        run: |
+          curl -L https://fly.io/install.sh | sh
+          echo "$HOME/.fly/bin" >> "$GITHUB_PATH"
+
+      # --remote-only builds the image on Fly's builder (no Docker needed in CI). Each
+      # config carries its own app name, so deploys target vitruvius / vitruvius-engine.
+      - name: Deploy web
+        run: flyctl deploy --remote-only --config fly.web.toml
+
+      - name: Deploy engine
+        run: flyctl deploy --remote-only --config fly.engine.toml

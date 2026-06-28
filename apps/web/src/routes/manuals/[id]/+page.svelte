@@ -493,7 +493,7 @@
 							{#if data.failureReason}
 								<details class="mt-3">
 									<summary
-										class="cursor-pointer select-none text-[10px] font-bold uppercase tracking-wider text-rose-400/80 outline-none"
+										class="cursor-pointer select-none rounded text-[10px] font-bold uppercase tracking-wider text-rose-400/80 outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60"
 									>
 										{m.editor_failed_reason()}
 									</summary>

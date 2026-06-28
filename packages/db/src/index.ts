@@ -1,5 +1,12 @@
 export { createDbClient, dbClientFromEnv, type DbClient, type DbClientConfig } from './client.js';
-export { claimNextJob, completeJob, enqueueJob, failJob } from './jobs.js';
+export {
+	claimNextJob,
+	completeJob,
+	enqueueJob,
+	failJob,
+	heartbeatJob,
+	reapStaleJobs
+} from './jobs.js';
 export { relevantLearnings, saveLearnings } from './learnings.js';
 export {
 	countManuals,

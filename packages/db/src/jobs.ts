@@ -35,6 +35,35 @@ export async function claimNextJob(
 	return row ? rowToJob(row) : null;
 }
 
+// Touch a running job's updated_at so reap_stale_jobs can distinguish a live long-running
+// job (a multi-GB media stage writes nothing to the row for minutes) from an abandoned one.
+// The no-op status write fires the jobs_set_updated_at trigger. Scoped to status='running'
+// so a heartbeat that races a completeJob/failJob can't resurrect a finished job.
+export async function heartbeatJob(client: DbClient, id: string): Promise<void> {
+	const { error } = await client
+		.from('jobs')
+		.update({ status: 'running' })
+		.eq('id', id)
+		.eq('status', 'running');
+	if (error) throw new Error(`heartbeatJob: ${error.message}`);
+}
+
+// Requeue (or fail, past the attempt cap) jobs whose worker died mid-run, so a crashed or
+// OOM-killed engine doesn't wedge a manual in `processing` forever. Returns the reaped jobs
+// for logging. See the reap_stale_jobs SQL function.
+export async function reapStaleJobs(
+	client: DbClient,
+	opts: { leaseSeconds: number; maxAttempts: number }
+): Promise<Job[]> {
+	const { data, error } = await client.rpc('reap_stale_jobs', {
+		p_lease: `${opts.leaseSeconds} seconds`,
+		p_max_attempts: opts.maxAttempts
+	});
+	if (error) throw new Error(`reapStaleJobs: ${error.message}`);
+	const rows = (data ?? []) as JobRow[];
+	return rows.map(rowToJob);
+}
+
 export async function completeJob(client: DbClient, id: string): Promise<void> {
 	const { error } = await client.from('jobs').update({ status: 'done' }).eq('id', id);
 	if (error) throw new Error(`completeJob: ${error.message}`);

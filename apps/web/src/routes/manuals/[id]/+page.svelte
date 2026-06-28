@@ -485,11 +485,22 @@
 								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
 							/>
 						</svg>
-						<div>
+						<div class="min-w-0">
 							<p class="font-semibold text-slate-200">{m.editor_failed_title()}</p>
 							<p class="text-slate-500 mt-1 leading-relaxed">
 								{m.editor_failed_body()}
 							</p>
+							{#if data.failureReason}
+								<details class="mt-3">
+									<summary
+										class="cursor-pointer select-none rounded text-[10px] font-bold uppercase tracking-wider text-rose-400/80 outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60"
+									>
+										{m.editor_failed_reason()}
+									</summary>
+									<pre
+										class="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-rose-500/20 bg-slate-950/60 p-3 font-mono text-[11px] leading-relaxed text-rose-300/90">{data.failureReason}</pre>
+								</details>
+							{/if}
 						</div>
 					</div>
 				{/if}

@@ -5,6 +5,7 @@ export {
 	countManuals,
 	deleteManual,
 	getManual,
+	getManualError,
 	getManualProgressStage,
 	getManuals,
 	saveManual,

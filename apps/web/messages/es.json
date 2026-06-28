@@ -103,6 +103,7 @@
 	"editor_processing_heading": "Canalización de procesamiento",
 	"editor_failed_title": "La creación del manual de montaje ha fallado",
 	"editor_failed_body": "El procesamiento encontró un error. Intenta subir de nuevo el vídeo de origen.",
+	"editor_failed_reason": "Detalles del error",
 	"editor_in_progress": "en curso",
 	"editor_wait_note": "Este espacio de trabajo se actualizará automáticamente y abrirá el editor interactivo de pasos en cuanto el estado de procesamiento cambie a {status}.",
 	"editor_enrich_summary": "Añadir BOM / modelo digital (nueva versión)",

@@ -13,14 +13,28 @@ import { handleExportJob } from './export.js';
 import { handleProcessJob } from './process.js';
 import { handleRegenerateJob } from './regenerate.js';
 
-const POLL_INTERVAL_MS = Number(process.env.ENGINE_POLL_INTERVAL_MS ?? 2000);
+// Read a positive-integer tunable from the environment, falling back to the default if unset
+// or misconfigured. Without this, a non-numeric value becomes NaN, and NaN in a setInterval /
+// setTimeout delay is treated as 0 — a tight loop that would hammer the DB on every tick.
+function posIntEnv(name: string, fallback: number): number {
+	const raw = process.env[name];
+	if (raw === undefined) return fallback;
+	const parsed = Number(raw);
+	if (!Number.isInteger(parsed) || parsed <= 0) {
+		console.warn(`[engine] ${name}="${raw}" is not a positive integer; using ${fallback}`);
+		return fallback;
+	}
+	return parsed;
+}
+
+const POLL_INTERVAL_MS = posIntEnv('ENGINE_POLL_INTERVAL_MS', 2000);
 // While a job runs, bump its row so the reaper can tell it apart from an abandoned one.
-const HEARTBEAT_INTERVAL_MS = Number(process.env.ENGINE_HEARTBEAT_INTERVAL_MS ?? 30_000);
+const HEARTBEAT_INTERVAL_MS = posIntEnv('ENGINE_HEARTBEAT_INTERVAL_MS', 30_000);
 // How often to sweep for abandoned jobs, and how long without a heartbeat marks one dead.
 // The lease must comfortably exceed the heartbeat interval (here ~5 missed beats).
-const REAP_INTERVAL_MS = Number(process.env.ENGINE_REAP_INTERVAL_MS ?? 60_000);
-const JOB_LEASE_SECONDS = Number(process.env.ENGINE_JOB_LEASE_SECONDS ?? 150);
-const MAX_JOB_ATTEMPTS = Number(process.env.ENGINE_MAX_JOB_ATTEMPTS ?? 3);
+const REAP_INTERVAL_MS = posIntEnv('ENGINE_REAP_INTERVAL_MS', 60_000);
+const JOB_LEASE_SECONDS = posIntEnv('ENGINE_JOB_LEASE_SECONDS', 150);
+const MAX_JOB_ATTEMPTS = posIntEnv('ENGINE_MAX_JOB_ATTEMPTS', 3);
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));

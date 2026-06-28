@@ -12,6 +12,13 @@
 -- fails them and marks their manual `failed`, so the web retry/delete affordances (which key
 -- off `failed`) apply instead of the manual hanging in `processing` forever. Idempotent and
 -- concurrency-safe (FOR UPDATE SKIP LOCKED); safe to call from every worker tick.
+-- Partial index for the sweep predicate (status = 'running' AND updated_at < lease). Only
+-- running jobs are indexed, so it stays tiny while keeping the reaper from scanning the whole
+-- table as job history grows. Mirrors jobs_claim_idx for the claim path.
+CREATE INDEX IF NOT EXISTS jobs_running_updated_at_idx ON jobs (updated_at)
+WHERE
+	status = 'running';
+
 CREATE OR REPLACE FUNCTION reap_stale_jobs (p_lease INTERVAL, p_max_attempts INTEGER) returns setof jobs language plpgsql AS $$
 begin
   -- Mark the manual failed for jobs that have exhausted their attempts, before the job row
@@ -41,3 +48,9 @@ begin
   returning *;
 end;
 $$;
+
+-- The engine bypasses RLS with the service-role key (see claim_next_job in 0001); grant it
+-- explicitly rather than relying on default function privileges, which differ across
+-- environments. Engine-only — the web client never reaps.
+GRANT
+EXECUTE ON function reap_stale_jobs (INTERVAL, INTEGER) TO service_role;

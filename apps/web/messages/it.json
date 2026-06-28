@@ -103,6 +103,7 @@
 	"editor_processing_heading": "Pipeline di elaborazione",
 	"editor_failed_title": "Creazione del manuale di montaggio non riuscita",
 	"editor_failed_body": "L'elaborazione ha riscontrato un errore. Prova a caricare di nuovo il video sorgente.",
+	"editor_failed_reason": "Dettagli dell'errore",
 	"editor_in_progress": "in corso",
 	"editor_retry": "Riprova",
 	"editor_retrying": "Nuovo tentativo…",

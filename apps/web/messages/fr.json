@@ -103,6 +103,7 @@
 	"editor_processing_heading": "Pipeline de traitement",
 	"editor_failed_title": "La création du manuel de montage a échoué",
 	"editor_failed_body": "Le traitement a rencontré une erreur. Veuillez réessayer de téléverser la vidéo source.",
+	"editor_failed_reason": "Détails de l'erreur",
 	"editor_in_progress": "en cours",
 	"editor_retry": "Réessayer",
 	"editor_retrying": "Nouvelle tentative…",

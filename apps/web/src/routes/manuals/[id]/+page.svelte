@@ -17,7 +17,7 @@
 	} from '@vitruvius/core';
 	import BomPartPicker from './BomPartPicker.svelte';
 	import { m } from '$lib/paraglide/messages';
-	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+	import UserNav from '$lib/components/UserNav.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import type { ActionData, PageData } from './$types';
 
@@ -348,26 +348,7 @@
 
 	<main class="relative mx-auto max-w-5xl px-6 py-12 lg:py-16 space-y-8">
 		<!-- User Profile Nav -->
-		<div class="flex justify-end items-center gap-4 relative z-20">
-			<LanguageSwitcher />
-			{#if data.session?.user}
-				<span class="text-sm text-slate-400">{data.session.user.email}</span>
-				<a
-					href={resolve('/settings')}
-					class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition font-semibold"
-				>
-					{m.nav_settings()}
-				</a>
-				<form action="/logout" method="POST">
-					<button
-						type="submit"
-						class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer font-semibold"
-					>
-						{m.nav_log_out()}
-					</button>
-				</form>
-			{/if}
-		</div>
+		<UserNav session={data.session} class="relative z-20" />
 
 		<!-- Header -->
 		<header class="space-y-3 relative z-10">
@@ -494,6 +475,17 @@
 							<p class="text-slate-500 mt-1 leading-relaxed">
 								{m.editor_failed_body()}
 							</p>
+							{#if data.failureReason}
+								<details class="mt-3">
+									<summary
+										class="cursor-pointer select-none rounded text-[10px] font-bold uppercase tracking-wider text-rose-400/80 outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60"
+									>
+										{m.editor_failed_reason()}
+									</summary>
+									<pre
+										class="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-rose-500/20 bg-slate-950/60 p-3 font-mono text-[11px] leading-relaxed text-rose-300/90">{data.failureReason}</pre>
+								</details>
+							{/if}
 						</div>
 					</div>
 

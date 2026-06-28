@@ -4,7 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
-	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+	import UserNav from '$lib/components/UserNav.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import type { ActionResult } from '@sveltejs/kit';
 	import type { ActionData, PageData } from './$types';
@@ -316,28 +316,7 @@
 		<!-- User Profile Nav -->
 		<div class="flex flex-wrap justify-between items-center gap-x-4 gap-y-3 mb-8">
 			<Logo size={30} />
-			<div class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 min-w-0 ml-auto">
-				<LanguageSwitcher />
-				{#if data.session?.user}
-					<span class="min-w-0 max-w-[55vw] truncate text-sm text-slate-400 sm:max-w-none"
-						>{data.session.user.email}</span
-					>
-					<a
-						href={resolve('/settings')}
-						class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition font-semibold"
-					>
-						{m.nav_settings()}
-					</a>
-					<form action="/logout" method="POST">
-						<button
-							type="submit"
-							class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer font-semibold"
-						>
-							{m.nav_log_out()}
-						</button>
-					</form>
-				{/if}
-			</div>
+			<UserNav session={data.session} />
 		</div>
 
 		<!-- Header -->

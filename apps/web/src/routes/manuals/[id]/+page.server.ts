@@ -9,6 +9,7 @@ import {
 	deleteVideo,
 	enqueueJob,
 	getManual,
+	getManualError,
 	getManualProgressStage,
 	listManualVersions,
 	retryManual,
@@ -37,22 +38,31 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const manual = await getManual(locals.db, params.id);
 	if (!manual) error(404, m.error_manual_not_found());
 
-	// The version lineage drives the switcher and the freeze rule. A video-only manual
-	// that was never enriched is a one-element lineage (and its own head).
-	const versions = await listManualVersions(locals.db, manual.id);
+	const isProcessingOrFailed = manual.status === 'processing' || manual.status === 'failed';
 
-	// Live pipeline stage (spec 07) for the processing view's stage checklist. While `processing`
-	// it's the stage in flight (the page polls via invalidateAll so it advances); on `failed` it's
-	// the last stage the engine reached before erroring, so the checklist can mark *which* stage
-	// died. Irrelevant once `ready` (the editor replaces the status view) or still `uploaded`.
-	const progressStage =
-		manual.status === 'processing' || manual.status === 'failed'
-			? await getManualProgressStage(locals.db, manual.id)
-			: null;
+	// These three reads only depend on the manual, not on each other, so fetch them concurrently.
+	// - versions: the lineage drives the switcher and the freeze rule. A video-only manual that was
+	//   never enriched is a one-element lineage (and its own head).
+	// - progressStage (spec 07): the status view's stage checklist. While `processing` it's the stage
+	//   in flight (the page polls via invalidateAll so it advances); on `failed` it's the last stage
+	//   the engine reached before erroring. Irrelevant once `ready` or still `uploaded`.
+	// - failureReason: the engine's recorded reason (jobs.last_error) so a `failed` manual shows *why*
+	//   it failed instead of a generic message.
+	const [versions, progressStage, failureReason] = await Promise.all([
+		listManualVersions(locals.db, manual.id),
+		isProcessingOrFailed ? getManualProgressStage(locals.db, manual.id) : Promise.resolve(null),
+		manual.status === 'failed' ? getManualError(locals.db, manual.id) : Promise.resolve(null)
+	]);
 
 	// Hand the full manual to the page: the status view needs only the header
 	// fields, but the editor (shown once `ready`) needs every step field.
-	return { manual, versions, isHead: isHeadVersion(manual.id, versions), progressStage };
+	return {
+		manual,
+		versions,
+		isHead: isHeadVersion(manual.id, versions),
+		progressStage,
+		failureReason
+	};
 };
 
 /** Reject edits/regeneration on a frozen (non-head) version. Returns a `fail` or null. */

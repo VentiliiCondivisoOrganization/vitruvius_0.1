@@ -13,7 +13,9 @@ export default ts.config(
 	...svelte.configs.recommended,
 	{
 		languageOptions: {
-			globals: { ...globals.browser, ...globals.node }
+			// `App` is the ambient SvelteKit namespace declared in src/app.d.ts; declare it
+			// so components can reference App.Locals types without tripping no-undef.
+			globals: { ...globals.browser, ...globals.node, App: 'readonly' }
 		}
 	},
 	{

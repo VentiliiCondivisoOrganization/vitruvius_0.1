@@ -8,7 +8,7 @@
 		compact = false,
 		class: className = ''
 	}: {
-		session: { user: { email?: string | null } } | null;
+		session: App.Locals['session'];
 		/** Hide the email and Settings link, leaving just the language switcher and log out. */
 		compact?: boolean;
 		class?: string;

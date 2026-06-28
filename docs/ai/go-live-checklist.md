@@ -33,7 +33,10 @@ What stands between the current codebase and a **running, operational web app**.
 ## A. Supabase provisioning (Partially completed)
 
 - [x] Create a **hosted Supabase project** (Postgres + Storage + Auth).
-- [x] Apply migrations: `supabase link` + `supabase db push` (`0001–0010`).
+- [x] Apply migrations: `supabase link` + `supabase db push`. **Now automated** — the `Deploy`
+      workflow (`.github/workflows/deploy.yml`) runs `supabase db push` before the fly deploys, so
+      the schema can never lag behind the code. Requires repo secrets `SUPABASE_ACCESS_TOKEN`,
+      `SUPABASE_DB_PASSWORD`, and `SUPABASE_PROJECT_REF`; the job fails fast if any is missing.
 - [x] Verify/create **Storage buckets**: `videos`, `exports` (from migrations) are confirmed to exist.
 - [ ] Configure **Auth** in the dashboard: enable email/password; set **Site URL + Redirect URLs**
       (the `/auth` callback and `/reset-password`); email templates; **SMTP** for real delivery of

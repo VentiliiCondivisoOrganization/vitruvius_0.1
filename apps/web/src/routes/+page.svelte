@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { applyAction, deserialize, enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -21,6 +22,24 @@
 	// Server-side validation/upload errors still arrive via the `form` prop through applyAction.
 	let clientError = $state<string | null>(null);
 	const manuals = $derived(data.manuals ?? []);
+
+	// Gallery retry/delete post to the manual route's own actions. We handle the result here
+	// instead of letting use:enhance call its default update()/applyAction — that would apply the
+	// *other* route's result to this page's `form` prop (which the upload card reads), surfacing
+	// misleading errors in the upload UI. On success we refresh the list; on failure we show the
+	// message in a gallery-local banner. Redirects (delete) just refresh — we stay on this page.
+	let galleryError = $state<string | null>(null);
+	async function handleGalleryResult(result: ActionResult): Promise<void> {
+		if (result.type === 'failure') {
+			const data = result.data as { error?: string } | undefined;
+			galleryError = data?.error ?? null;
+		} else if (result.type === 'error') {
+			galleryError = result.error instanceof Error ? result.error.message : String(result.error);
+		} else {
+			galleryError = null;
+			await invalidateAll();
+		}
+	}
 
 	type CreatedUpload = {
 		id: string;
@@ -626,6 +645,13 @@
 						</p>
 					</div>
 				{:else}
+					{#if galleryError}
+						<div
+							class="mb-3 rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-xs text-rose-400"
+						>
+							{galleryError}
+						</div>
+					{/if}
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						{#each manuals as manual (manual.id)}
 							<div
@@ -709,9 +735,8 @@
 											method="POST"
 											action={`/manuals/${manual.id}?/retry`}
 											use:enhance={() => {
-												return async ({ update }) => {
-													await update({ reset: false });
-												};
+												galleryError = null;
+												return async ({ result }) => handleGalleryResult(result);
 											}}
 										>
 											<button
@@ -729,9 +754,8 @@
 													cancel();
 													return;
 												}
-												return async ({ update }) => {
-													await update();
-												};
+												galleryError = null;
+												return async ({ result }) => handleGalleryResult(result);
 											}}
 										>
 											<button

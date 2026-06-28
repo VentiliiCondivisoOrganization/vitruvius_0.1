@@ -227,22 +227,24 @@ export const actions: Actions = {
 	},
 
 	// Re-queue a failed manual for processing (spec 07). Only a `failed` manual is retryable —
-	// retrying anything else would race the engine or resurrect a good manual. Resets status to
-	// `processing` and enqueues a fresh `process` job; the page then shows the live status view.
+	// retrying anything else would race the engine or resurrect a good manual. `retryManual`
+	// (the `retry_manual` SQL function) atomically resets the manual and enqueues a fresh
+	// `process` job, guarded to `status = 'failed'`; the page then shows the live status view.
 	retry: async ({ params, locals }) => {
 		if (!UUID_RE.test(params.id)) error(404, m.error_manual_not_found());
 
-		const manual = await getManual(locals.db, params.id);
-		if (!manual) error(404, m.error_manual_not_found());
-		if (manual.status !== 'failed') {
-			return fail(409, { error: m.error_not_failed_for_retry() });
-		}
-
+		let queued: boolean;
 		try {
-			await retryManual(locals.db, manual.id);
+			queued = await retryManual(locals.db, params.id);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : 'unknown error';
 			return fail(500, { error: m.error_could_not_retry({ message }) });
+		}
+
+		// `false` means the manual was not `failed` — a 404 (not ours / gone) or a lost race with
+		// another retry that already moved it to `processing`. Surface the same guard message.
+		if (!queued) {
+			return fail(409, { error: m.error_not_failed_for_retry() });
 		}
 
 		return { retryQueued: true };

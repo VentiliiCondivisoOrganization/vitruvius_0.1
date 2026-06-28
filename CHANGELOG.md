@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.4...v0.2.5) (2026-06-28)
+
+
+### Bug Fixes
+
+* **web:** replace em dashes in user-facing copy and metadata ([#87](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/87)) ([db17d60](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/db17d60181c9f1b9282c17fb042f5e8ebc1f0cc2))
+
 ## [0.2.4](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.3...v0.2.4) (2026-06-27)
 
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.6](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.5...v0.2.6) (2026-06-28)
+
+
+### Features
+
+* **web:** retry and delete failed manuals ([#91](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/91)) ([d41b960](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/d41b9601d0d0619d85f610cebc5947d3a5a85237))
+* **web:** surface failure reason on failed manuals ([#90](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/90)) ([2ea74ee](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/2ea74eeeb7f959b6567381e54c01bf9786392683))
+
+
+### Bug Fixes
+
+* **web:** single shared header (UserNav), fix mobile overflow ([#92](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/92)) ([02fcf65](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/02fcf65634a6499ca0e1a6050e29f5e64c8d7629))
+
+
+### Continuous Integration
+
+* **deploy:** apply DB migrations before deploying ([#89](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/89)) ([6155603](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/615560346bac301655cbd27729fdd3fe3c1423c3))
+
 ## [0.2.5](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.4...v0.2.5) (2026-06-28)
 
 

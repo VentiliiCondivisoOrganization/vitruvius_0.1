@@ -103,6 +103,20 @@ export async function deleteManual(client: DbClient, id: string): Promise<void> 
 	if (error) throw new Error(`deleteManual: ${error.message}`);
 }
 
+// Re-queue a failed manual for a clean re-run from the start. Delegates to the `retry_manual`
+// SQL function (migration 0012), which does the whole transition in one transaction: it resets
+// ONLY a `failed` manual (clearing the stale `progress_stage` and derived `bom`, and wiping any
+// persisted steps so the re-run starts clean), then enqueues a single fresh `process` job. The
+// source inputs (video + BOM/model refs) are kept so the engine can reprocess. Doing this in one
+// transaction with a `status = 'failed'` guard avoids a half-applied retry (stuck `processing`
+// with no job) and prevents concurrent retries from enqueuing duplicate jobs. Returns true when
+// a retry was queued, false when the manual was not `failed` (already retried, or not visible).
+export async function retryManual(client: DbClient, id: string): Promise<boolean> {
+	const { data, error } = await client.rpc('retry_manual', { p_manual_id: id });
+	if (error) throw new Error(`retryManual: ${error.message}`);
+	return data === true;
+}
+
 // Count the caller's manuals (head request, no rows returned). The db client is
 // RLS-scoped to the signed-in user, so this is inherently a per-user count — used by
 // the upload quota guard. Pass `sinceIso` to count only manuals created on/after that

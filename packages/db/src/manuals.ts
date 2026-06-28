@@ -5,6 +5,7 @@ import {
 	type ProcessStage
 } from '@vitruvius/core';
 import type { DbClient } from './client.js';
+import { enqueueJob } from './jobs.js';
 import { rowToManual } from './mappers.js';
 import type { ManualRow, StepRow } from './types.js';
 
@@ -84,6 +85,19 @@ export async function getManualProgressStage(
 export async function deleteManual(client: DbClient, id: string): Promise<void> {
 	const { error } = await client.from('manuals').delete().eq('id', id);
 	if (error) throw new Error(`deleteManual: ${error.message}`);
+}
+
+// Re-queue a failed manual for processing. Resets the lifecycle status to `processing` and
+// clears the stale failed progress_stage, then enqueues a fresh `process` job for the engine
+// to claim. Only meaningful for a `failed` manual — the caller guards status. The prior failed
+// job row is left as history; claim_next_job only ever picks up the new `queued` job.
+export async function retryManual(client: DbClient, id: string): Promise<void> {
+	const { error } = await client
+		.from('manuals')
+		.update({ status: 'processing', progress_stage: null })
+		.eq('id', id);
+	if (error) throw new Error(`retryManual: ${error.message}`);
+	await enqueueJob(client, { manualId: id, type: 'process' });
 }
 
 // Count the caller's manuals (head request, no rows returned). The db client is

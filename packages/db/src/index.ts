@@ -7,6 +7,7 @@ export {
 	getManual,
 	getManualProgressStage,
 	getManuals,
+	retryManual,
 	saveManual,
 	setManualStage,
 	setManualStatus

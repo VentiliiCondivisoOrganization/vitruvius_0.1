@@ -33,6 +33,10 @@
 	const readOnly = $derived(!data.isHead);
 	let enriching = $state(false);
 
+	// ---- Retry / delete (failed manuals) -----------------------------------
+	let retrying = $state(false);
+	let deleting = $state(false);
+
 	// ---- Auto-refresh for non-ready manuals ---------------------------------
 	const failed = $derived(manual.status === 'failed');
 	$effect(() => {
@@ -485,13 +489,70 @@
 								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
 							/>
 						</svg>
-						<div>
+						<div class="min-w-0">
 							<p class="font-semibold text-slate-200">{m.editor_failed_title()}</p>
 							<p class="text-slate-500 mt-1 leading-relaxed">
 								{m.editor_failed_body()}
 							</p>
 						</div>
 					</div>
+
+					<!-- Recover a failed run: retry re-queues a fresh `process` job; delete removes the
+					     manual for good. Both server actions are guarded to `failed` status. -->
+					<div class="mt-4 flex items-center gap-2">
+						<form
+							method="POST"
+							action="?/retry"
+							use:enhance={() => {
+								retrying = true;
+								return async ({ update }) => {
+									try {
+										await update({ reset: false });
+									} finally {
+										retrying = false;
+									}
+								};
+							}}
+						>
+							<button
+								type="submit"
+								disabled={retrying || deleting}
+								class="rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-bold text-indigo-300 transition-all hover:border-indigo-500/60 hover:bg-indigo-500/15 disabled:pointer-events-none disabled:opacity-40"
+							>
+								{retrying ? m.editor_retrying() : m.editor_retry()}
+							</button>
+						</form>
+						<form
+							method="POST"
+							action="?/delete"
+							use:enhance={({ cancel }) => {
+								if (!confirm(m.editor_delete_confirm())) {
+									cancel();
+									return;
+								}
+								deleting = true;
+								return async ({ update }) => {
+									try {
+										await update();
+									} finally {
+										deleting = false;
+									}
+								};
+							}}
+						>
+							<button
+								type="submit"
+								disabled={retrying || deleting}
+								class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-300 transition-all hover:border-rose-500/60 hover:bg-rose-500/15 disabled:pointer-events-none disabled:opacity-40"
+							>
+								{m.editor_delete()}
+							</button>
+						</form>
+					</div>
+
+					{#if form?.error}
+						<p class="mt-2 text-xs text-rose-400">{form.error}</p>
+					{/if}
 				{/if}
 
 				<!-- Full pipeline as a checklist: each engine stage is done ✓ / active ⟳ / failed ✗ /

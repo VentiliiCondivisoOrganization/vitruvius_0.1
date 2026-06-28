@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { applyAction, deserialize } from '$app/forms';
+	import { applyAction, deserialize, enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime';
@@ -628,73 +628,122 @@
 				{:else}
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						{#each manuals as manual (manual.id)}
-							<a
-								href={resolve(`/manuals/${manual.id}`)}
-								class="block rounded-xl border border-slate-900 hover:border-slate-800/80 bg-slate-900/20 hover:bg-slate-900/40 p-5 shadow-lg active:scale-[0.99] transition-all group relative overflow-hidden"
+							<div
+								class="rounded-xl border border-slate-900 hover:border-slate-800/80 bg-slate-900/20 hover:bg-slate-900/40 shadow-lg transition-all group relative overflow-hidden"
 							>
-								<!-- Hover subtle blue glow -->
-								<div
-									class="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/0 to-indigo-500/0 group-hover:from-indigo-500/1 group-hover:to-indigo-500/5 transition-all duration-300 pointer-events-none"
-								></div>
-
-								<div class="flex flex-col h-full justify-between gap-4">
-									<div>
-										<div class="flex items-center justify-between gap-2 mb-2">
-											<span class="text-[10px] font-medium text-slate-500">
-												{formatDate(manual.createdAt)}
-											</span>
-											<span
-												class={`px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${statusColors[manual.status] || 'bg-slate-900 text-slate-400 border-slate-800'}`}
-											>
-												{statusLabels[manual.status]?.() ?? manual.status}
-											</span>
-										</div>
-
-										<h3
-											class="text-sm font-bold text-slate-200 group-hover:text-white line-clamp-2 transition-colors"
-										>
-											{manual.title}
-										</h3>
-									</div>
-
+								<a
+									href={resolve(`/manuals/${manual.id}`)}
+									class="block p-5 active:scale-[0.99] transition-transform"
+								>
+									<!-- Hover subtle blue glow -->
 									<div
-										class="flex items-center justify-between border-t border-slate-950 pt-3 text-[11px] text-slate-500"
-									>
-										<div class="flex items-center gap-1">
-											<svg
-												class="w-3.5 h-3.5 text-slate-600"
-												fill="none"
-												viewBox="0 0 24 24"
-												stroke="currentColor"
-												><path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-												/></svg
+										class="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/0 to-indigo-500/0 group-hover:from-indigo-500/1 group-hover:to-indigo-500/5 transition-all duration-300 pointer-events-none"
+									></div>
+
+									<div class="flex flex-col h-full justify-between gap-4">
+										<div>
+											<div class="flex items-center justify-between gap-2 mb-2">
+												<span class="text-[10px] font-medium text-slate-500">
+													{formatDate(manual.createdAt)}
+												</span>
+												<span
+													class={`px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${statusColors[manual.status] || 'bg-slate-900 text-slate-400 border-slate-800'}`}
+												>
+													{statusLabels[manual.status]?.() ?? manual.status}
+												</span>
+											</div>
+
+											<h3
+												class="text-sm font-bold text-slate-200 group-hover:text-white line-clamp-2 transition-colors"
 											>
-											<span>{m.home_card_steps({ count: manual.steps?.length ?? 0 })}</span>
+												{manual.title}
+											</h3>
 										</div>
-										<span
-											class="text-indigo-400/80 group-hover:text-indigo-400 font-semibold inline-flex items-center gap-0.5 transition-colors"
+
+										<div
+											class="flex items-center justify-between border-t border-slate-950 pt-3 text-[11px] text-slate-500"
 										>
-											{m.home_card_view()}
-											<svg
-												class="w-3 h-3 transition-transform group-hover:translate-x-0.5"
-												fill="none"
-												viewBox="0 0 24 24"
-												stroke="currentColor"
-												><path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M9 5l7 7-7 7"
-												/></svg
+											<div class="flex items-center gap-1">
+												<svg
+													class="w-3.5 h-3.5 text-slate-600"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+													><path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+													/></svg
+												>
+												<span>{m.home_card_steps({ count: manual.steps?.length ?? 0 })}</span>
+											</div>
+											<span
+												class="text-indigo-400/80 group-hover:text-indigo-400 font-semibold inline-flex items-center gap-0.5 transition-colors"
 											>
-										</span>
+												{m.home_card_view()}
+												<svg
+													class="w-3 h-3 transition-transform group-hover:translate-x-0.5"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+													><path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M9 5l7 7-7 7"
+													/></svg
+												>
+											</span>
+										</div>
 									</div>
-								</div>
-							</a>
+								</a>
+
+								{#if manual.status === 'failed'}
+									<!-- Recover a failed run without opening it: retry re-queues processing,
+								     delete removes it. Both POST to the manual route's guarded actions. -->
+									<div
+										class="flex items-center gap-2 border-t border-slate-950 px-5 py-3 relative z-10"
+									>
+										<form
+											method="POST"
+											action={`/manuals/${manual.id}?/retry`}
+											use:enhance={() => {
+												return async ({ update }) => {
+													await update({ reset: false });
+												};
+											}}
+										>
+											<button
+												type="submit"
+												class="rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-[11px] font-bold text-indigo-300 transition-all hover:border-indigo-500/60 hover:bg-indigo-500/15 cursor-pointer"
+											>
+												{m.editor_retry()}
+											</button>
+										</form>
+										<form
+											method="POST"
+											action={`/manuals/${manual.id}?/delete`}
+											use:enhance={({ cancel }) => {
+												if (!confirm(m.editor_delete_confirm())) {
+													cancel();
+													return;
+												}
+												return async ({ update }) => {
+													await update();
+												};
+											}}
+										>
+											<button
+												type="submit"
+												class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-[11px] font-bold text-rose-300 transition-all hover:border-rose-500/60 hover:bg-rose-500/15 cursor-pointer"
+											>
+												{m.editor_delete()}
+											</button>
+										</form>
+									</div>
+								{/if}
+							</div>
 						{/each}
 					</div>
 				{/if}

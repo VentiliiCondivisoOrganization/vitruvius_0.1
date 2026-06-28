@@ -5,10 +5,12 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { instructionManualSchema, regenerateRequestSchema } from '@vitruvius/core';
 import {
 	createManualVersion,
+	deleteManual,
 	enqueueJob,
 	getManual,
 	getManualProgressStage,
 	listManualVersions,
+	retryManual,
 	saveManual,
 	type DbClient,
 	type ManualVersionSummary
@@ -221,5 +223,49 @@ export const actions: Actions = {
 		}
 
 		redirect(303, `/manuals/${next.id}`);
+	},
+
+	// Re-queue a failed manual for processing (spec 07). Only a `failed` manual is retryable —
+	// retrying anything else would race the engine or resurrect a good manual. Resets status to
+	// `processing` and enqueues a fresh `process` job; the page then shows the live status view.
+	retry: async ({ params, locals }) => {
+		if (!UUID_RE.test(params.id)) error(404, m.error_manual_not_found());
+
+		const manual = await getManual(locals.db, params.id);
+		if (!manual) error(404, m.error_manual_not_found());
+		if (manual.status !== 'failed') {
+			return fail(409, { error: m.error_not_failed_for_retry() });
+		}
+
+		try {
+			await retryManual(locals.db, manual.id);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'unknown error';
+			return fail(500, { error: m.error_could_not_retry({ message }) });
+		}
+
+		return { retryQueued: true };
+	},
+
+	// Permanently delete a failed manual and everything that references it (steps and jobs
+	// cascade). Scoped to `failed` so a good manual can't be deleted from this control. The
+	// db client is RLS-scoped to the owner, so this can only ever touch the caller's own rows.
+	delete: async ({ params, locals }) => {
+		if (!UUID_RE.test(params.id)) error(404, m.error_manual_not_found());
+
+		const manual = await getManual(locals.db, params.id);
+		if (!manual) error(404, m.error_manual_not_found());
+		if (manual.status !== 'failed') {
+			return fail(409, { error: m.error_not_failed_for_delete() });
+		}
+
+		try {
+			await deleteManual(locals.db, manual.id);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'unknown error';
+			return fail(500, { error: m.error_could_not_delete({ message }) });
+		}
+
+		redirect(303, '/');
 	}
 };

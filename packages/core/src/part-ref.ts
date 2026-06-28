@@ -24,7 +24,7 @@ export function partRefLabels(parts: PartRef[]): string[] {
 export function formatPartRef(part: PartRef): string {
 	const code = part.bomCode?.trim();
 	const label = part.label.trim();
-	if (code && label) return `${code} — ${label}`;
+	if (code && label) return `${code}: ${label}`;
 	return code || label;
 }
 
@@ -37,7 +37,7 @@ export function partRefHasOpenCandidates(part: PartRef): boolean {
 export function formatManualBomItem(item: ManualBomItem): string {
 	const code = item.bomCode?.trim();
 	const name = item.partName.trim();
-	if (code && name) return `${code} — ${name}`;
+	if (code && name) return `${code}: ${name}`;
 	return code || name || item.description.trim() || item.id;
 }
 

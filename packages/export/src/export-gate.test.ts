@@ -120,7 +120,7 @@ describe('formatManualBomItem', () => {
 			description: 'Left rail bracket',
 			source: 'file'
 		};
-		expect(formatManualBomItem(bomItem)).toBe('RB-42 — Rail bracket');
+		expect(formatManualBomItem(bomItem)).toBe('RB-42: Rail bracket');
 	});
 
 	it('falls back to id when all fields are empty', () => {

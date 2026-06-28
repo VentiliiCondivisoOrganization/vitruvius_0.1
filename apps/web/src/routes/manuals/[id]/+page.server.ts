@@ -6,6 +6,7 @@ import { instructionManualSchema, regenerateRequestSchema } from '@vitruvius/cor
 import {
 	createManualVersion,
 	deleteManual,
+	deleteVideo,
 	enqueueJob,
 	getManual,
 	getManualProgressStage,
@@ -15,6 +16,7 @@ import {
 	type DbClient,
 	type ManualVersionSummary
 } from '@vitruvius/db';
+import { VIDEO_BUCKET } from '$lib/server/uploads';
 import type { Actions, PageServerLoad } from './$types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -247,9 +249,13 @@ export const actions: Actions = {
 		return { retryQueued: true };
 	},
 
-	// Permanently delete a failed manual and everything that references it (steps and jobs
-	// cascade). Scoped to `failed` so a good manual can't be deleted from this control. The
-	// db client is RLS-scoped to the owner, so this can only ever touch the caller's own rows.
+	// Permanently delete a failed manual — a clean slate. Removes the source storage objects
+	// (the video, in R2 or Supabase, plus the BOM/model in the Supabase `videos` bucket) and
+	// then the DB row, which cascades its steps and jobs. A failed manual never produced an
+	// export, keyframes, or learnings (the pipeline only persists on success), so the source
+	// inputs are the only artifacts to purge. Scoped to `failed` so a good manual can't be
+	// deleted from this control. The db client is RLS-scoped to the owner, so this can only
+	// ever touch the caller's own rows.
 	delete: async ({ params, locals }) => {
 		if (!UUID_RE.test(params.id)) error(404, m.error_manual_not_found());
 
@@ -258,6 +264,15 @@ export const actions: Actions = {
 		if (manual.status !== 'failed') {
 			return fail(409, { error: m.error_not_failed_for_delete() });
 		}
+
+		// Purge storage first; this is best-effort (deleteVideo never throws) so a storage hiccup
+		// can't strand the DB row. The video lives in R2 when configured, else the Supabase bucket
+		// — deleteVideo handles both. The BOM/model are always in the Supabase `videos` bucket.
+		if (manual.videoUrl) await deleteVideo(locals.db, [manual.videoUrl]);
+		const auxKeys = [manual.bomFileUrl, manual.digitalModelUrl].filter(
+			(key): key is string => Boolean(key)
+		);
+		if (auxKeys.length > 0) await locals.db.storage.from(VIDEO_BUCKET).remove(auxKeys);
 
 		try {
 			await deleteManual(locals.db, manual.id);

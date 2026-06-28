@@ -87,16 +87,24 @@ export async function deleteManual(client: DbClient, id: string): Promise<void> 
 	if (error) throw new Error(`deleteManual: ${error.message}`);
 }
 
-// Re-queue a failed manual for processing. Resets the lifecycle status to `processing` and
-// clears the stale failed progress_stage, then enqueues a fresh `process` job for the engine
-// to claim. Only meaningful for a `failed` manual — the caller guards status. The prior failed
-// job row is left as history; claim_next_job only ever picks up the new `queued` job.
+// Re-queue a failed manual for a clean re-run from the start. The pipeline only persists
+// output on success (process.ts saves once at the end), so a failed manual normally has no
+// steps — but we still wipe any persisted output defensively so a retry never resumes a
+// half-written state: delete its steps and clear the derived `bom` and the stale failed
+// `progress_stage`. The source inputs (video + BOM/model refs) are kept so the engine can
+// reprocess. Then reset status to `processing` and enqueue a fresh `process` job. The prior
+// failed job row is left as history; claim_next_job only ever picks up the new `queued` job.
+// Only meaningful for a `failed` manual — the caller guards status.
 export async function retryManual(client: DbClient, id: string): Promise<void> {
+	const stepsResult = await client.from('steps').delete().eq('manual_id', id);
+	if (stepsResult.error) throw new Error(`retryManual steps: ${stepsResult.error.message}`);
+
 	const { error } = await client
 		.from('manuals')
-		.update({ status: 'processing', progress_stage: null })
+		.update({ status: 'processing', progress_stage: null, bom: [] })
 		.eq('id', id);
 	if (error) throw new Error(`retryManual: ${error.message}`);
+
 	await enqueueJob(client, { manualId: id, type: 'process' });
 }
 

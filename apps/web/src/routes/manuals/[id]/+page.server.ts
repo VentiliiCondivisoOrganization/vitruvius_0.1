@@ -1,6 +1,6 @@
 import { m } from '$lib/paraglide/messages';
 import { checkAuxSizes } from '$lib/server/limits';
-import { readAuxFiles, uploadAuxFiles } from '$lib/server/uploads';
+import { readAuxFiles, uploadAuxFiles, VIDEO_BUCKET } from '$lib/server/uploads';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { instructionManualSchema, regenerateRequestSchema } from '@vitruvius/core';
 import {
@@ -16,7 +16,6 @@ import {
 	type DbClient,
 	type ManualVersionSummary
 } from '@vitruvius/db';
-import { VIDEO_BUCKET } from '$lib/server/uploads';
 import type { Actions, PageServerLoad } from './$types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -269,8 +268,8 @@ export const actions: Actions = {
 		// can't strand the DB row. The video lives in R2 when configured, else the Supabase bucket
 		// — deleteVideo handles both. The BOM/model are always in the Supabase `videos` bucket.
 		if (manual.videoUrl) await deleteVideo(locals.db, [manual.videoUrl]);
-		const auxKeys = [manual.bomFileUrl, manual.digitalModelUrl].filter(
-			(key): key is string => Boolean(key)
+		const auxKeys = [manual.bomFileUrl, manual.digitalModelUrl].filter((key): key is string =>
+			Boolean(key)
 		);
 		if (auxKeys.length > 0) await locals.db.storage.from(VIDEO_BUCKET).remove(auxKeys);
 

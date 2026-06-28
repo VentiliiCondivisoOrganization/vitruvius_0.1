@@ -103,6 +103,7 @@
 	"editor_processing_heading": "Processing Pipeline",
 	"editor_failed_title": "Assembly manual creation failed",
 	"editor_failed_body": "The processing run encountered an error. Please try uploading the source video again.",
+	"editor_failed_reason": "Error details",
 	"editor_in_progress": "in progress",
 	"editor_wait_note": "This workspace will refresh automatically and open the interactive step editor as soon as the processing status transitions to {status}.",
 	"editor_enrich_summary": "Add BOM / digital model (new version)",

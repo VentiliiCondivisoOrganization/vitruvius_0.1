@@ -7,6 +7,7 @@ import {
 	createManualVersion,
 	enqueueJob,
 	getManual,
+	getManualError,
 	getManualProgressStage,
 	listManualVersions,
 	saveManual,
@@ -47,9 +48,20 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			? await getManualProgressStage(locals.db, manual.id)
 			: null;
 
+	// On failure, surface the engine's recorded reason (jobs.last_error) so the user sees
+	// *why* it failed instead of a generic message. Only fetched for `failed` manuals.
+	const failureReason =
+		manual.status === 'failed' ? await getManualError(locals.db, manual.id) : null;
+
 	// Hand the full manual to the page: the status view needs only the header
 	// fields, but the editor (shown once `ready`) needs every step field.
-	return { manual, versions, isHead: isHeadVersion(manual.id, versions), progressStage };
+	return {
+		manual,
+		versions,
+		isHead: isHeadVersion(manual.id, versions),
+		progressStage,
+		failureReason
+	};
 };
 
 /** Reject edits/regeneration on a frozen (non-head) version. Returns a `fail` or null. */

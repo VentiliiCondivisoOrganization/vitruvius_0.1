@@ -79,6 +79,23 @@ export async function getManualProgressStage(
 		: null;
 }
 
+// Read the reason the manual's most recent job failed, or null when none failed. The engine
+// records `last_error` on a job when it throws (failJob); this surfaces it on the manual page
+// so a `failed` manual explains itself instead of showing a generic message. Operational
+// telemetry only — like progress_stage it never flows through the manual document.
+export async function getManualError(client: DbClient, id: string): Promise<string | null> {
+	const { data, error } = await client
+		.from('jobs')
+		.select('last_error')
+		.eq('manual_id', id)
+		.eq('status', 'failed')
+		.order('updated_at', { ascending: false })
+		.limit(1)
+		.maybeSingle<{ last_error: string | null }>();
+	if (error) throw new Error(`getManualError: ${error.message}`);
+	return data?.last_error ?? null;
+}
+
 // Delete a manual and everything that references it (steps and jobs cascade via
 // their foreign keys). Used to roll back a half-created manual.
 export async function deleteManual(client: DbClient, id: string): Promise<void> {

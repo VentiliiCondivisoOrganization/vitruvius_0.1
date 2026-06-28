@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages';
-	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+	import UserNav from '$lib/components/UserNav.svelte';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -32,17 +32,7 @@
 			>
 				{m.settings_back_to_dashboard()}
 			</a>
-			<div class="flex items-center gap-4">
-				<LanguageSwitcher />
-				<form action="/logout" method="POST">
-					<button
-						type="submit"
-						class="text-xs px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer font-semibold"
-					>
-						{m.nav_log_out()}
-					</button>
-				</form>
-			</div>
+			<UserNav session={data.session} compact />
 		</div>
 
 		<!-- Page Header -->

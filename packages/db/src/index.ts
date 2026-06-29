@@ -20,6 +20,7 @@ export {
 	setManualStage,
 	setManualStatus
 } from './manuals.js';
+export { signManualMedia, signManualMediaUrls } from './media.js';
 export {
 	abortMultipartUpload,
 	completeMultipartUpload,
@@ -27,10 +28,15 @@ export {
 	deleteVideo,
 	headVideo,
 	isR2Configured,
+	manualMediaKey,
+	presignManualMedia,
+	presignManualMediaBatch,
 	presignUploadParts,
 	presignVideoGet,
+	uploadManualMedia,
 	uploadVideo,
 	type CompletedPart,
+	type ManualMediaKind,
 	type PartSignature,
 	type VideoHead
 } from './storage.js';

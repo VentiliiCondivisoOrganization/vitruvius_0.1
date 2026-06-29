@@ -14,6 +14,7 @@ import {
 	listManualVersions,
 	retryManual,
 	saveManual,
+	signManualMediaUrls,
 	type DbClient,
 	type ManualVersionSummary
 } from '@vitruvius/db';
@@ -48,10 +49,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	//   the engine reached before erroring. Irrelevant once `ready` or still `uploaded`.
 	// - failureReason: the engine's recorded reason (jobs.last_error) so a `failed` manual shows *why*
 	//   it failed instead of a generic message.
-	const [versions, progressStage, failureReason] = await Promise.all([
+	const [versions, progressStage, failureReason, mediaUrls] = await Promise.all([
 		listManualVersions(locals.db, manual.id),
 		isProcessingOrFailed ? getManualProgressStage(locals.db, manual.id) : Promise.resolve(null),
-		manual.status === 'failed' ? getManualError(locals.db, manual.id) : Promise.resolve(null)
+		manual.status === 'failed' ? getManualError(locals.db, manual.id) : Promise.resolve(null),
+		// Resolve per-step media object keys to signed URLs for display. Kept SEPARATE from the
+		// manual so `manual.steps[*].keyframeUrl` stays the durable storage key — the editor saves
+		// the step set wholesale, and round-tripping an expiring signed URL would corrupt the ref.
+		signManualMediaUrls(locals.db, manual)
 	]);
 
 	// Hand the full manual to the page: the status view needs only the header
@@ -61,7 +66,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		versions,
 		isHead: isHeadVersion(manual.id, versions),
 		progressStage,
-		failureReason
+		failureReason,
+		// key → signed URL, looked up by step.keyframeUrl/illustrationUrl for rendering only.
+		mediaUrls: Object.fromEntries(mediaUrls)
 	};
 };
 

@@ -1,6 +1,6 @@
 import type { Job } from '@vitruvius/core';
 import { checkExportGate } from '@vitruvius/core';
-import { getManual, type DbClient } from '@vitruvius/db';
+import { getManual, signManualMedia, type DbClient } from '@vitruvius/db';
 import { renderManualPdf } from '@vitruvius/export';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -34,7 +34,9 @@ export async function handleExportJob(db: DbClient, job: Job): Promise<void> {
 	// must not leak temp PDFs once they have been read and uploaded.
 	const outDir = await mkdtemp(join(tmpdir(), 'vitruvius-export-'));
 	try {
-		const { fileRef } = await renderManualPdf(manual, { outDir });
+		// Resolve per-step keyframe/illustration object keys to signed URLs Playwright can fetch.
+		const resolved = await signManualMedia(db, manual);
+		const { fileRef } = await renderManualPdf(resolved, { outDir });
 		const pdf = await readFile(fileRef);
 
 		const { error } = await db.storage

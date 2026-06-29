@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { getManual } from '@vitruvius/db';
+import { getManual, signManualMedia } from '@vitruvius/db';
 // Import only the pure HTML renderer — the PDF path pulls in Playwright (engine-only),
 // which must never enter the web bundle.
 import { m } from '$lib/paraglide/messages';
@@ -19,7 +19,9 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 	// partial/empty output, so gate this the same way the export UI does.
 	if (manual.status !== 'ready') error(409, m.error_not_ready_to_export());
 
-	return new Response(renderManualHtml(manual), {
+	// Resolve per-step keyframe/illustration object keys to signed URLs the browser can fetch.
+	const resolved = await signManualMedia(locals.db, manual);
+	return new Response(renderManualHtml(resolved), {
 		headers: { 'content-type': 'text/html; charset=utf-8' }
 	});
 };

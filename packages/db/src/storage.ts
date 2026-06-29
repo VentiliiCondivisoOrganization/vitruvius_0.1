@@ -19,6 +19,10 @@ import type { DbClient } from './client.js';
 // helpers fall back to the Supabase `videos` bucket, so local dev and tests keep
 // working without R2 credentials.
 const VIDEO_BUCKET = 'videos';
+// Per-step keyframes and illustrations. Small images, so they live on Supabase Storage
+// (like exports/aux files), not R2. Engine writes via the service-role key; the web and the
+// export job resolve object keys to short-lived signed URLs at read time. See 0014_media_bucket.sql.
+const MEDIA_BUCKET = 'media';
 const DEFAULT_SIGNED_URL_TTL_S = 600;
 
 type R2Env = Record<string, string | undefined>;
@@ -146,6 +150,68 @@ export async function deleteVideo(
 		const reason = error instanceof Error ? error.message : String(error);
 		console.warn(`[storage] best-effort video delete failed for ${keys.join(', ')}: ${reason}`);
 	}
+}
+
+// --- Per-step media: keyframes & illustrations (spec 07) ------------------------------------
+//
+// Object keys are scoped under the manual id so the RLS policy (0014_media_bucket.sql) can
+// authorize reads by the owning manual: `<manualId>/<kind>/<file>`.
+
+/** Which class of step media an object holds; the second path segment of its key. */
+export type ManualMediaKind = 'keyframes' | 'illustrations';
+
+/** Storage object key for a step media file, scoped under the manual id. */
+export function manualMediaKey(manualId: string, kind: ManualMediaKind, fileName: string): string {
+	return `${manualId}/${kind}/${fileName}`;
+}
+
+/** Upload a keyframe/illustration to the `media` bucket (service-role). Throws on failure. */
+export async function uploadManualMedia(
+	db: DbClient,
+	key: string,
+	body: Buffer,
+	contentType: string
+): Promise<void> {
+	const { error } = await db.storage
+		.from(MEDIA_BUCKET)
+		.upload(key, body, { contentType, upsert: true });
+	if (error) throw new Error(`media upload failed for ${key}: ${error.message}`);
+}
+
+/** Resolve a single media object key to a short-lived signed URL. Throws on failure. */
+export async function presignManualMedia(
+	db: DbClient,
+	key: string,
+	ttlSeconds: number = DEFAULT_SIGNED_URL_TTL_S
+): Promise<string> {
+	const { data, error } = await db.storage.from(MEDIA_BUCKET).createSignedUrl(key, ttlSeconds);
+	if (error || !data?.signedUrl) {
+		throw new Error(`sign media url failed for ${key}: ${error?.message ?? 'no url returned'}`);
+	}
+	return data.signedUrl;
+}
+
+/**
+ * Batch-sign media object keys in one round-trip. Returns a Map from key → signed URL; keys
+ * that fail to sign are omitted (callers fall back to leaving the original ref). An empty
+ * input yields an empty map without touching the network.
+ */
+export async function presignManualMediaBatch(
+	db: DbClient,
+	keys: string[],
+	ttlSeconds: number = DEFAULT_SIGNED_URL_TTL_S
+): Promise<Map<string, string>> {
+	const out = new Map<string, string>();
+	if (keys.length === 0) return out;
+	const { data, error } = await db.storage.from(MEDIA_BUCKET).createSignedUrls(keys, ttlSeconds);
+	if (error || !data) {
+		throw new Error(`sign media urls failed: ${error?.message ?? 'no urls returned'}`);
+	}
+	for (const entry of data) {
+		// createSignedUrls echoes the input `path` and a per-entry `error`; skip failures.
+		if (entry.signedUrl && entry.path) out.set(entry.path, entry.signedUrl);
+	}
+	return out;
 }
 
 // --- Direct browser→R2 multipart upload (spec 20) -------------------------------------------

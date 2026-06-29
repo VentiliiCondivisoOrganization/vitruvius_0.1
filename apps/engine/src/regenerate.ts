@@ -9,8 +9,10 @@ import {
 } from '@vitruvius/core';
 import { getManual, relevantLearnings, saveManual, type DbClient } from '@vitruvius/db';
 import { randomUUID } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { publishStepMedia } from './publish-media.js';
 
 /** Trim, drop blanks, and de-duplicate a string list (mirrors the editor's `dedupe`). */
 function dedupe(values: string[]): string[] {
@@ -152,18 +154,19 @@ async function regenerateTargets(
 	manualId: string,
 	targets: ManualStep[],
 	request: RegenerateRequest,
-	learnings: string[]
+	learnings: string[],
+	workDir: string
 ): Promise<ManualStep[]> {
 	switch (request.scope) {
 		case 'text':
 			return writeInstructions({ steps: targets, learnings, manualId, guidance: request.prompt });
 		case 'illustration':
 		case 'layout': {
-			// Illustrations are written to a persistent dir and referenced as file refs (spec 14).
-			const outDir = join(tmpdir(), 'vitruvius', 'illustrations', manualId);
+			// New illustrations are written to workDir scratch; publishStepMedia (in the handler)
+			// uploads them to the `media` bucket and rewrites the refs to durable object keys.
 			return await illustrateSteps({
 				steps: targets,
-				outDir,
+				outDir: join(workDir, 'illustrations'),
 				manualId,
 				guidance: request.prompt
 			});
@@ -201,22 +204,31 @@ export async function handleRegenerateJob(db: DbClient, job: Job): Promise<void>
 
 	const learnings = (await relevantLearnings(db)).map((l) => l.text);
 
-	let steps: ManualStep[];
-	if (request.scope === 'structure') {
-		steps = await restructureSteps(manual, targets, request, learnings);
-	} else {
-		const regenerated = await regenerateTargets(manual.id, targets, request, learnings);
-		const byId = new Map(regenerated.map((step) => [step.id, step]));
-		steps = manual.steps.map((step) => {
-			const next = byId.get(step.id);
-			return next ? { ...next, reviewStatus: 'edited' as const } : step;
-		});
-	}
+	const workDir = await mkdtemp(join(tmpdir(), 'vitruvius-regenerate-'));
+	try {
+		let steps: ManualStep[];
+		if (request.scope === 'structure') {
+			steps = await restructureSteps(manual, targets, request, learnings);
+		} else {
+			const regenerated = await regenerateTargets(manual.id, targets, request, learnings, workDir);
+			const byId = new Map(regenerated.map((step) => [step.id, step]));
+			steps = manual.steps.map((step) => {
+				const next = byId.get(step.id);
+				return next ? { ...next, reviewStatus: 'edited' as const } : step;
+			});
+		}
 
-	const finished: InstructionManual = {
-		...manual,
-		steps,
-		updatedAt: new Date().toISOString()
-	};
-	await saveManual(db, finished);
+		// Upload any newly-written illustrations to the `media` bucket and rewrite their refs to
+		// durable keys before saving, so workDir cleanup can take all local scratch.
+		const publishedSteps = await publishStepMedia(db, manual.id, steps);
+
+		const finished: InstructionManual = {
+			...manual,
+			steps: publishedSteps,
+			updatedAt: new Date().toISOString()
+		};
+		await saveManual(db, finished);
+	} finally {
+		await rm(workDir, { recursive: true, force: true }).catch(() => {});
+	}
 }

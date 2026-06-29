@@ -27,7 +27,11 @@ vi.mock('@vitruvius/db', () => ({
 	relevantLearnings: async () => [],
 	saveManual: async (_db: unknown, manual: InstructionManual) => {
 		dbState.saved.push(manual);
-	}
+	},
+	// publishStepMedia (via './publish-media') uploads only absolute local refs; these structure
+	// tests carry `file://` refs, so the media helpers are never invoked — stub them regardless.
+	manualMediaKey: (manualId: string, kind: string, file: string) => `${manualId}/${kind}/${file}`,
+	uploadManualMedia: async () => {}
 }));
 
 // Imported after `vi.mock` so the handler binds to the mocked db queries.

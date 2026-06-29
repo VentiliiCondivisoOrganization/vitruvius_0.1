@@ -11,6 +11,7 @@ import { getManual, saveManual, setManualStatus, type DbClient } from '@vitruviu
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
+import { publishStepMedia } from './publish-media.js';
 import { maybeDownload } from './storage.js';
 
 /**
@@ -64,14 +65,14 @@ export async function handleEnrichJob(db: DbClient, job: Job): Promise<void> {
 
 		// Re-illustrate only when a CAD model is present (Compositor-lite on canonical views);
 		// like the process pipeline this is non-fatal so a render failure can't fail the run.
-		// Illustrations go to a persistent dir (not workDir, which is deleted below) so the
-		// saved `illustrationUrl` refs survive the job — matching process/regenerate.
+		// New illustrations go to workDir scratch and are uploaded to the `media` bucket by
+		// publishStepMedia below; inherited keyframe/illustration keys pass through unchanged.
 		let steps = bomSteps;
 		if (digitalModel?.status === 'primed') {
 			try {
 				steps = await illustrateSteps({
 					steps: bomSteps,
-					outDir: join(tmpdir(), 'vitruvius', 'illustrations', manual.id),
+					outDir: join(workDir, 'illustrations'),
 					digitalModel,
 					manualId: manual.id
 				});
@@ -81,10 +82,12 @@ export async function handleEnrichJob(db: DbClient, job: Job): Promise<void> {
 			}
 		}
 
+		const publishedSteps = await publishStepMedia(db, manual.id, steps);
+
 		const finished: InstructionManual = {
 			...manual,
 			status: 'ready',
-			steps,
+			steps: publishedSteps,
 			bom: bomMapped.manualBom,
 			updatedAt: new Date().toISOString()
 		};

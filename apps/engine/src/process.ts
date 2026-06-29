@@ -28,6 +28,7 @@ import { detectScenes, extractKeyframes, probeDurationMs } from '@vitruvius/medi
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
+import { publishStepMedia } from './publish-media.js';
 import { downloadStorageObject, maybeDownload } from './storage.js';
 
 /**
@@ -71,7 +72,10 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 		const manualBom: ManualBomItem[] = reconcileBom(digitalModel, fileBomRows);
 
 		const videoDurationMs = await probeDurationMs(localVideo);
-		const keyframesDir = join(tmpdir(), 'vitruvius', 'keyframes', manual.id);
+		// Keyframes are in-run scratch: extracted locally for the AI stages, uploaded to the
+		// `media` bucket by publishStepMedia, then dropped with workDir. They live under workDir
+		// (not a stable /tmp path) so a crash or a finished run never leaks them onto disk.
+		const keyframesDir = join(workDir, 'keyframes');
 		await mkdir(keyframesDir, { recursive: true });
 
 		const [scenes, keyframes] = await Promise.all([
@@ -123,7 +127,7 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 		try {
 			illustrated = await illustrateSteps({
 				steps: reviewed,
-				outDir: join(tmpdir(), 'vitruvius', 'illustrations', manual.id),
+				outDir: join(workDir, 'illustrations'),
 				digitalModel,
 				manualId: manual.id
 			});
@@ -132,11 +136,15 @@ export async function handleProcessJob(db: DbClient, job: Job): Promise<void> {
 			console.warn(`[engine] illustration skipped for ${manual.id}: ${reason}`);
 		}
 
+		// Upload locally-written keyframes/illustrations to the `media` bucket and rewrite the
+		// step refs to durable object keys before saving, so workDir cleanup can take all scratch.
+		const publishedSteps = await publishStepMedia(db, manual.id, illustrated);
+
 		await setManualStage(db, manual.id, 'finalizing');
 		const finished: InstructionManual = {
 			...manual,
 			status: 'ready',
-			steps: illustrated,
+			steps: publishedSteps,
 			bom: bomMapped.manualBom,
 			updatedAt: new Date().toISOString()
 		};

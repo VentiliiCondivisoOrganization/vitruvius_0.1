@@ -3,8 +3,12 @@ import type { DbClient } from './client.js';
 import {
 	deleteVideo,
 	isR2Configured,
+	manualMediaKey,
+	presignManualMedia,
+	presignManualMediaBatch,
 	presignUploadParts,
 	presignVideoGet,
+	uploadManualMedia,
 	uploadVideo
 } from './storage.js';
 
@@ -120,5 +124,87 @@ describe('deleteVideo', () => {
 		await expect(deleteVideo(db, ['k'], {})).resolves.toBeUndefined();
 		expect(warn).toHaveBeenCalled();
 		warn.mockRestore();
+	});
+});
+
+describe('manualMediaKey', () => {
+	it('scopes the object key under the manual id and kind', () => {
+		expect(manualMediaKey('manual-1', 'keyframes', 'keyframe-00003.jpg')).toBe(
+			'manual-1/keyframes/keyframe-00003.jpg'
+		);
+		expect(manualMediaKey('manual-1', 'illustrations', 'illustration_2.png')).toBe(
+			'manual-1/illustrations/illustration_2.png'
+		);
+	});
+});
+
+describe('uploadManualMedia', () => {
+	it('uploads to the media bucket with upsert', async () => {
+		const upload = vi.fn().mockResolvedValue({ error: null });
+		const from = vi.fn(() => ({ upload }));
+		const db = { storage: { from } } as unknown as DbClient;
+
+		await uploadManualMedia(db, 'manual-1/keyframes/k.jpg', Buffer.from('x'), 'image/jpeg');
+		expect(from).toHaveBeenCalledWith('media');
+		expect(upload).toHaveBeenCalledWith('manual-1/keyframes/k.jpg', expect.any(Buffer), {
+			contentType: 'image/jpeg',
+			upsert: true
+		});
+	});
+
+	it('throws when the upload errors', async () => {
+		const upload = vi.fn().mockResolvedValue({ error: { message: 'boom' } });
+		const db = { storage: { from: () => ({ upload }) } } as unknown as DbClient;
+		await expect(uploadManualMedia(db, 'k', Buffer.from('x'), 'image/jpeg')).rejects.toThrow(
+			/boom/
+		);
+	});
+});
+
+describe('presignManualMedia', () => {
+	it('signs a single media key from the media bucket', async () => {
+		const createSignedUrl = vi
+			.fn()
+			.mockResolvedValue({ data: { signedUrl: 'https://supabase/signed' }, error: null });
+		const from = vi.fn(() => ({ createSignedUrl }));
+		const db = { storage: { from } } as unknown as DbClient;
+
+		const url = await presignManualMedia(db, 'manual-1/keyframes/k.jpg', 600);
+		expect(from).toHaveBeenCalledWith('media');
+		expect(url).toBe('https://supabase/signed');
+		expect(createSignedUrl).toHaveBeenCalledWith('manual-1/keyframes/k.jpg', 600);
+	});
+});
+
+describe('presignManualMediaBatch', () => {
+	it('returns an empty map without touching the network for no keys', async () => {
+		const from = vi.fn();
+		const db = { storage: { from } } as unknown as DbClient;
+		const map = await presignManualMediaBatch(db, []);
+		expect(map.size).toBe(0);
+		expect(from).not.toHaveBeenCalled();
+	});
+
+	it('maps each input key to its signed URL and skips per-entry failures', async () => {
+		const createSignedUrls = vi.fn().mockResolvedValue({
+			data: [
+				{ path: 'a/keyframes/1.jpg', signedUrl: 'https://s/a', error: null },
+				{ path: 'a/illustrations/2.png', signedUrl: null, error: 'nope' }
+			],
+			error: null
+		});
+		const from = vi.fn(() => ({ createSignedUrls }));
+		const db = { storage: { from } } as unknown as DbClient;
+
+		const map = await presignManualMediaBatch(db, ['a/keyframes/1.jpg', 'a/illustrations/2.png']);
+		expect(from).toHaveBeenCalledWith('media');
+		expect(map.get('a/keyframes/1.jpg')).toBe('https://s/a');
+		expect(map.has('a/illustrations/2.png')).toBe(false);
+	});
+
+	it('throws when the batch sign call errors', async () => {
+		const createSignedUrls = vi.fn().mockResolvedValue({ data: null, error: { message: 'boom' } });
+		const db = { storage: { from: () => ({ createSignedUrls }) } } as unknown as DbClient;
+		await expect(presignManualMediaBatch(db, ['k'])).rejects.toThrow(/boom/);
 	});
 });

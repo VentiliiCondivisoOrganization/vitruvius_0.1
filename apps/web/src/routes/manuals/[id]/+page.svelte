@@ -26,6 +26,13 @@
 	const manual = $derived(data.manual);
 	const isReady = $derived(manual.status === 'ready');
 
+	// Per-step media (keyframes/illustrations) is stored as `media` bucket object keys on the
+	// step; the server resolves them to short-lived signed URLs for display only. Look up by the
+	// step's stored key — the step keeps the key so saving never round-trips an expiring URL.
+	const mediaUrls = $derived(data.mediaUrls ?? {});
+	const keyframeSrc = (step: { keyframeUrl: string }): string =>
+		mediaUrls[step.keyframeUrl] ?? step.keyframeUrl;
+
 	// ---- Versioning (spec 17) ----------------------------------------------
 	// Only the head of a lineage is editable; older versions are read-only snapshots
 	// (still exportable). The switcher lets the user jump between versions.
@@ -1094,7 +1101,7 @@
 											>
 												<!-- eslint-disable svelte/no-navigation-without-resolve -->
 												<img
-													src={step.keyframeUrl}
+													src={keyframeSrc(step)}
 													alt={m.editor_keyframe_alt()}
 													class="w-full h-full object-cover transition-transform group-hover/img:scale-[1.02] duration-500"
 												/>

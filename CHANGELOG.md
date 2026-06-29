@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.6...v0.2.7) (2026-06-29)
+
+
+### Bug Fixes
+
+* **engine:** reap orphaned jobs so a crashed worker can't wedge a manual ([#94](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/94)) ([2093c37](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/2093c37fb5ce3247237a8996d030d6e6ce08186c))
+
 ## [0.2.6](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.5...v0.2.6) (2026-06-28)
 
 

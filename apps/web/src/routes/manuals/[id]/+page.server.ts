@@ -59,6 +59,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		signManualMediaUrls(locals.db, manual)
 	]);
 
+	// key → signed URL, looked up by step.keyframeUrl/illustrationUrl for rendering only. Built
+	// by hand (not Object.fromEntries) so a step ref persisted as `__proto__`/`constructor` can't
+	// land on the object's prototype chain — keys are client-editable via the editor save.
+	const mediaUrlMap: Record<string, string> = {};
+	for (const [key, url] of mediaUrls) {
+		if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+		mediaUrlMap[key] = url;
+	}
+
 	// Hand the full manual to the page: the status view needs only the header
 	// fields, but the editor (shown once `ready`) needs every step field.
 	return {
@@ -67,8 +76,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		isHead: isHeadVersion(manual.id, versions),
 		progressStage,
 		failureReason,
-		// key → signed URL, looked up by step.keyframeUrl/illustrationUrl for rendering only.
-		mediaUrls: Object.fromEntries(mediaUrls)
+		mediaUrls: mediaUrlMap
 	};
 };
 

@@ -1,6 +1,6 @@
 import { manualStepSchema, type ManualStep } from '@vitruvius/core';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -49,8 +49,9 @@ beforeEach(async () => {
 	dir = await mkdtemp(join(tmpdir(), 'publish-media-test-'));
 });
 
-afterEach(() => {
+afterEach(async () => {
 	uploads.length = 0;
+	await rm(dir, { recursive: true, force: true });
 });
 
 describe('publishStepMedia', () => {

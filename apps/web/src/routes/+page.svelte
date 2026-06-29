@@ -113,7 +113,9 @@
 
 	// Presigned PUT URL for one part. Signed *just before* its own upload (even with concurrency):
 	// signing all parts up front let a large upload outlive the URL TTL, so later parts 403'd with
-	// "Request has expired". Per-part signing bounds each URL's lifetime to one part's transfer.
+	// "Request has expired". Per-part signing keeps each URL's lifetime to a single part's transfer;
+	// under concurrency that transfer shares the uplink with its siblings, so the sign TTL
+	// (api/uploads/sign) is generous enough to outlive even a slow part under contention.
 	async function signPart(created: CreatedUpload, partNumber: number): Promise<string> {
 		const { parts } = await postJson<{ parts: PartSig[] }>('/api/uploads/sign', {
 			key: created.key,
@@ -164,10 +166,19 @@
 		// Worker pool: a fixed set of workers each pull the next part number until the file is fully
 		// uploaded. `nextPart++` is atomic in single-threaded JS, so no two workers claim the same
 		// part. Bounded so we never open more sockets than the browser/R2 are comfortable with.
+		// Once any part fails for good, `aborted` stops the siblings from claiming new parts so the
+		// upload winds down promptly (the caller aborts the whole multipart upload) instead of
+		// burning uplink on parts that will be discarded.
 		let nextPart = 1;
+		let aborted = false;
 		const worker = async (): Promise<void> => {
-			for (let n = nextPart++; n <= created.partCount; n = nextPart++) {
-				await uploadOne(n);
+			for (let n = nextPart++; n <= created.partCount && !aborted; n = nextPart++) {
+				try {
+					await uploadOne(n);
+				} catch (e) {
+					aborted = true;
+					throw e;
+				}
 			}
 		};
 		const workerCount = Math.min(UPLOAD_CONCURRENCY, created.partCount);

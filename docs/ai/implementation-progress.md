@@ -2,7 +2,9 @@
 
 Living summary of vertical slices shipped or in review. Update this file when a spec lands.
 
-_Last updated: 2026-06-24 (spec 09 schematic export keyframe-fallback divergence resolved — keyframe
+_Last updated: 2026-06-29 (spec 20 direct R2 upload added to the status matrix and its client made to
+upload parts **concurrently** with per-part retry — fixes slow/stalling large-video uploads; spec 19
+row corrected to merged). Earlier: 2026-06-24 (spec 09 schematic export keyframe-fallback divergence resolved — keyframe
 demoted to a marked reference, illustration is the only primary image; regenerate `structure` scope
 wired engine-side — split/merge + Instructor,
 now with engine vitest coverage + a `test-engine` CI job; spec 15 auth + multi-tenancy merged #45; UI
@@ -189,18 +191,19 @@ on research and must not block phase 1.
 
 ## Spec status matrix
 
-| Spec                 | Status                                                                                                                                                        |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01-core              | Bootstrap done; PartRef extension merged (#33)                                                                                                                |
-| 02-db                | Done; migrations 0006 (#33), 0007 (#34), 0008 (#41), 0009 (#44), 0010 (#45)                                                                                   |
-| 03–07                | Done on `main`                                                                                                                                                |
-| 08-web-editor        | **BOM disambiguation merged (#35/#43)** + spec 17 versioning trigger/switcher/freeze                                                                          |
-| 09-export            | Gate + PDF done; **schematic template (illustrationUrl/caption) implemented**; keyframe-fallback divergence resolved (keyframe demoted to a marked reference) |
-| 10–12                | Done on `main`                                                                                                                                                |
-| 13-bom-map           | **Merged** (#34)                                                                                                                                              |
-| 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite); tier 2 blocked (phase 2)                                                                             |
-| 15-auth-multi-tenant | **Merged (#45)** — auth + multi-tenancy implemented (was "spec drafted")                                                                                      |
-| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired + tested** (`test-engine`; AI re-segment opt-in unbuilt)                       |
-| 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)                                                                                     |
-| 18-i18n              | **Localization en/it/es/fr merged (#48)** — retro-documented spec and Decision 13                                                                             |
-| 19-r2-video-storage  | **In review** — source video moved to Cloudflare R2 (S3-compatible) to escape Supabase's free-plan per-file cap; Supabase fallback when R2 env absent         |
+| Spec                 | Status                                                                                                                                                                                                                                                                                               |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01-core              | Bootstrap done; PartRef extension merged (#33)                                                                                                                                                                                                                                                       |
+| 02-db                | Done; migrations 0006 (#33), 0007 (#34), 0008 (#41), 0009 (#44), 0010 (#45)                                                                                                                                                                                                                          |
+| 03–07                | Done on `main`                                                                                                                                                                                                                                                                                       |
+| 08-web-editor        | **BOM disambiguation merged (#35/#43)** + spec 17 versioning trigger/switcher/freeze                                                                                                                                                                                                                 |
+| 09-export            | Gate + PDF done; **schematic template (illustrationUrl/caption) implemented**; keyframe-fallback divergence resolved (keyframe demoted to a marked reference)                                                                                                                                        |
+| 10–12                | Done on `main`                                                                                                                                                                                                                                                                                       |
+| 13-bom-map           | **Merged** (#34)                                                                                                                                                                                                                                                                                     |
+| 14-ai-illustrate     | **Tier 1 merged (#40)** (Illustrator + Compositor-lite); tier 2 blocked (phase 2)                                                                                                                                                                                                                    |
+| 15-auth-multi-tenant | **Merged (#45)** — auth + multi-tenancy implemented (was "spec drafted")                                                                                                                                                                                                                             |
+| 16-regenerate-job    | **Merged (#41)** (text + illustration/layout); **`structure` split/merge wired + tested** (`test-engine`; AI re-segment opt-in unbuilt)                                                                                                                                                              |
+| 17-manual-versioning | **Implemented** (lineage + `enrich` job + editor trigger/switcher/freeze)                                                                                                                                                                                                                            |
+| 18-i18n              | **Localization en/it/es/fr merged (#48)** — retro-documented spec and Decision 13                                                                                                                                                                                                                    |
+| 19-r2-video-storage  | **Merged (#66)** — source video moved to Cloudflare R2 (S3-compatible) to escape Supabase's free-plan per-file cap; Supabase fallback when R2 env absent                                                                                                                                             |
+| 20-direct-r2-upload  | **Merged (#80, hardened #83/#85)** — browser→R2 multipart presigned upload (server never sees the bytes); client now uploads parts **concurrently** (bounded pool + per-part retry) so large videos don't crawl or stall — see [`specs/20`](../../specs/20-direct-r2-upload.md#implementation-notes) |

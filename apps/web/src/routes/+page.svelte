@@ -100,30 +100,89 @@
 		});
 	}
 
+	// Upload several parts at once. The old loop uploaded one part at a time, with a signing
+	// round-trip between each: a single connection never saturates the uplink, and the link sat
+	// idle during every sign — so a large video crawled and the progress bar appeared to freeze
+	// at each part boundary. A small worker pool keeps multiple parts in flight (and a part
+	// signing while others transfer), which is the actual fix for "slow and stalls". 4 stays
+	// within browsers' per-host socket limits without overwhelming a modest uplink.
+	const UPLOAD_CONCURRENCY = 4;
+	// Retry a part a few times on a transient network error before failing the whole upload, so a
+	// single dropped chunk can't abort a multi-GB transfer that was otherwise fine.
+	const PART_MAX_ATTEMPTS = 3;
+
+	// Presigned PUT URL for one part. Signed *just before* its own upload (even with concurrency):
+	// signing all parts up front let a large upload outlive the URL TTL, so later parts 403'd with
+	// "Request has expired". Per-part signing keeps each URL's lifetime to a single part's transfer;
+	// under concurrency that transfer shares the uplink with its siblings, so the sign TTL
+	// (api/uploads/sign) is generous enough to outlive even a slow part under contention.
+	async function signPart(created: CreatedUpload, partNumber: number): Promise<string> {
+		const { parts } = await postJson<{ parts: PartSig[] }>('/api/uploads/sign', {
+			key: created.key,
+			uploadId: created.uploadId,
+			partNumbers: [partNumber]
+		});
+		const sig = parts?.find((p) => p.partNumber === partNumber);
+		if (!sig?.url) throw new Error(`no presigned URL returned for part ${partNumber}`);
+		return sig.url;
+	}
+
 	async function uploadParts(file: File, created: CreatedUpload) {
-		const completed: { partNumber: number; etag: string }[] = [];
-		let uploadedBytes = 0;
-		// Sign each part *just before* uploading it. Signing all parts up front meant a large upload
-		// (e.g. 6GB ≈ 94×64MB parts uploaded sequentially) outlived the presigned URL's TTL, so later
-		// parts 403'd with "Request has expired". Per-part signing bounds each URL's lifetime to one
-		// part's transfer, so total upload duration is unlimited.
-		for (let partNumber = 1; partNumber <= created.partCount; partNumber++) {
-			const { parts } = await postJson<{ parts: PartSig[] }>('/api/uploads/sign', {
-				key: created.key,
-				uploadId: created.uploadId,
-				partNumbers: [partNumber]
-			});
-			const sig = parts?.find((p) => p.partNumber === partNumber);
-			if (!sig?.url) throw new Error(`no presigned URL returned for part ${partNumber}`);
+		const completed: { partNumber: number; etag: string }[] = new Array(created.partCount);
+		// Bytes transferred per part, summed for the progress bar. A flat per-part array (not a
+		// single running total) keeps progress correct while several parts upload concurrently and
+		// when a part restarts after a failed attempt.
+		const loadedByPart = new Array<number>(created.partCount).fill(0);
+		const reportProgress = (): void => {
+			const total = loadedByPart.reduce((sum, n) => sum + n, 0);
+			uploadProgress = Math.round((total / file.size) * 100);
+		};
+
+		async function uploadOne(partNumber: number): Promise<void> {
 			const start = (partNumber - 1) * created.partSize;
 			const chunk = file.slice(start, Math.min(start + created.partSize, file.size));
-			const etag = await putPart(sig.url, chunk, (loaded) => {
-				uploadProgress = Math.round(((uploadedBytes + loaded) / file.size) * 100);
-			});
-			uploadedBytes += chunk.size;
-			uploadProgress = Math.round((uploadedBytes / file.size) * 100);
-			completed.push({ partNumber, etag });
+			let lastError: unknown;
+			for (let attempt = 1; attempt <= PART_MAX_ATTEMPTS; attempt++) {
+				try {
+					const url = await signPart(created, partNumber);
+					const etag = await putPart(url, chunk, (loaded) => {
+						loadedByPart[partNumber - 1] = loaded;
+						reportProgress();
+					});
+					loadedByPart[partNumber - 1] = chunk.size;
+					reportProgress();
+					completed[partNumber - 1] = { partNumber, etag };
+					return;
+				} catch (e) {
+					lastError = e;
+					// A failed attempt transferred nothing usable; reset so progress doesn't overcount.
+					loadedByPart[partNumber - 1] = 0;
+					reportProgress();
+				}
+			}
+			throw lastError instanceof Error ? lastError : new Error(String(lastError));
 		}
+
+		// Worker pool: a fixed set of workers each pull the next part number until the file is fully
+		// uploaded. `nextPart++` is atomic in single-threaded JS, so no two workers claim the same
+		// part. Bounded so we never open more sockets than the browser/R2 are comfortable with.
+		// Once any part fails for good, `aborted` stops the siblings from claiming new parts so the
+		// upload winds down promptly (the caller aborts the whole multipart upload) instead of
+		// burning uplink on parts that will be discarded.
+		let nextPart = 1;
+		let aborted = false;
+		const worker = async (): Promise<void> => {
+			for (let n = nextPart++; n <= created.partCount && !aborted; n = nextPart++) {
+				try {
+					await uploadOne(n);
+				} catch (e) {
+					aborted = true;
+					throw e;
+				}
+			}
+		};
+		const workerCount = Math.min(UPLOAD_CONCURRENCY, created.partCount);
+		await Promise.all(Array.from({ length: workerCount }, () => worker()));
 		return completed;
 	}
 

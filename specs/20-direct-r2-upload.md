@@ -63,3 +63,22 @@ PutObject limit, so this uses **multipart** to support arbitrarily large videos.
   `scripts/set-r2-cors.mjs`).
 - Live: with R2 secrets + CORS set, upload a multi-GB video and confirm the object lands in R2
   and the manual reaches `ready`.
+
+## Implementation notes
+
+- **Status: implemented** (browser→R2 multipart helpers in `@vitruvius/db`, the
+  `/api/uploads/{create,sign,complete,abort}` endpoints, and the direct-upload UI in
+  `apps/web/src/routes/+page.svelte`). Hardened post-merge: presigned checksum dropped and
+  orphaned parts reaped (#83), and parts signed just-in-time so a long upload can't outlive a
+  presigned URL (#85).
+- **Concurrent part uploads (client).** `uploadParts` streams parts through a bounded worker
+  pool (`UPLOAD_CONCURRENCY = 4`) instead of one part at a time. The sequential version left a
+  single connection unable to saturate the uplink and idled the link during every per-part
+  signing round-trip, so large videos crawled and the progress bar appeared to freeze at each
+  part boundary. Parts are still signed individually just before their own PUT (#85's reasoning
+  holds — the sign TTL must outlive one part's transfer, which under concurrency shares the
+  uplink with its siblings). Each part gets a few transient-failure retries so one dropped
+  chunk can't abort a multi-GB upload; once a part fails for good the pool stops claiming new
+  parts and the whole multipart upload is aborted by the caller. Progress is summed from a
+  per-part byte map so it stays correct across concurrent and retried parts. This is purely a
+  client change — the sign endpoints and the multipart contract are unchanged.

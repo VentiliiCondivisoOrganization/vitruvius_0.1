@@ -7,3 +7,10 @@ primary_region = "ams"
 
 [build]
   dockerfile = "apps/engine/Dockerfile"
+
+# The media stage downloads the full source video and runs ffmpeg (scene detection +
+# keyframe extraction), which is memory-heavy. Fly's 256 MB default OOM-kills the worker
+# mid-run; flyd then restarts the machine, orphaning the in-flight job. Give ffmpeg headroom.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

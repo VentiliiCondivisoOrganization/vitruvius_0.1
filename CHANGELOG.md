@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.8](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.7...v0.2.8) (2026-06-29)
+
+
+### Bug Fixes
+
+* **engine:** upload keyframes & illustrations to storage to stop disk leak ([#97](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/97)) ([a2547be](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/a2547be559ba6147b91afd4f6dd83fff610316b5))
+* **web:** upload video parts concurrently to stop slow, stalling uploads ([#99](https://github.com/VentiliiCondivisoOrganization/vitruvius/issues/99)) ([bfd3004](https://github.com/VentiliiCondivisoOrganization/vitruvius/commit/bfd300435332d62dd6f0ad381c981bfd0ce4f6c8))
+
 ## [0.2.7](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.6...v0.2.7) (2026-06-29)
 
 

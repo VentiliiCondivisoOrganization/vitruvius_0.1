@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.9](https://github.com/VentiliiCondivisoOrganization/vitruvius_0.1/compare/v0.2.8...v0.2.9) (2026-11-04)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump @sveltejs/kit from 2.65.2 to 2.69.1 in the npm_and_yarn group across 1 directory ([#100](https://github.com/VentiliiCondivisoOrganization/vitruvius_0.1/issues/100)) ([ee05cad](https://github.com/VentiliiCondivisoOrganization/vitruvius_0.1/commit/ee05cad005ab8b9bff020f28b3a2530a97cc37cc))
+
+
+### Continuous Integration
+
+* **workflows:** pass client-id to create-github-app-token ([#101](https://github.com/VentiliiCondivisoOrganization/vitruvius_0.1/issues/101)) ([20f74ef](https://github.com/VentiliiCondivisoOrganization/vitruvius_0.1/commit/20f74efd81d02dbcc5ab40221580c658c7c5db05))
+
 ## [0.2.8](https://github.com/VentiliiCondivisoOrganization/vitruvius/compare/v0.2.7...v0.2.8) (2026-06-29)
 
 
